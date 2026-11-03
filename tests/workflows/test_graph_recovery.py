@@ -14,7 +14,7 @@ from packages.persistence.models import (
 )
 from packages.workflows.checkpointer import get_checkpointer
 from packages.workflows.script_intelligence.graph import build_script_intelligence_graph
-from tests.conftest import SAMPLE_SCRIPT
+from tests.support import SAMPLE_SCRIPT
 
 
 @pytest.fixture
@@ -85,8 +85,8 @@ def test_langgraph_checkpoint_interrupt_and_resume(run_context):
                 "decision": "approved",
                 "notes": "Verified historical accuracy",
                 "actor_id": ctx["user_id"],
-                "approved_scene_ids": [],  # empty signifies approve all
-                "approved_entity_ids": [],
+                "approved_scene_ids": None,  # None = approve every candidate
+                "approved_entity_ids": None,
             }
         )
         res2 = fresh_graph.invoke(resume_command, config=config)

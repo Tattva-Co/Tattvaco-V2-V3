@@ -10,6 +10,17 @@ from typing import BinaryIO, Optional, Tuple
 
 _UNSAFE_FILENAME_CHARS = re.compile(r"[^A-Za-z0-9._ -]")
 
+# Fountain screenplays are plain text but unknown to the stdlib mimetypes table.
+mimetypes.add_type("text/plain", ".fountain")
+
+
+def detect_mime_type(filename: str, declared_mime: Optional[str] = None) -> str:
+    """Prefer a specific client-declared type; otherwise infer from the extension."""
+    if declared_mime and declared_mime != "application/octet-stream":
+        return declared_mime
+    detected, _ = mimetypes.guess_type(filename)
+    return detected or "application/octet-stream"
+
 
 @dataclass(frozen=True)
 class StoredAssetMetadata:
@@ -88,12 +99,6 @@ class LocalFileSystemStorageService(StorageService):
         sha256 = hashlib.sha256(content).hexdigest()
         return sha256, len(content)
 
-    def _detect_mime_type(self, filename: str, explicit_mime: Optional[str] = None) -> str:
-        if explicit_mime and explicit_mime != "application/octet-stream":
-            return explicit_mime
-        detected, _ = mimetypes.guess_type(filename)
-        return detected or "application/octet-stream"
-
     def store_bytes(
         self,
         content: bytes,
@@ -104,7 +109,7 @@ class LocalFileSystemStorageService(StorageService):
     ) -> StoredAssetMetadata:
         filename = self._safe_filename(filename)
         checksum, size = self._compute_checksum_and_size(content)
-        final_mime = self._detect_mime_type(filename, mime_type)
+        final_mime = detect_mime_type(filename, mime_type)
 
         # Content-addressed deterministic immutable path scoped by tenant and project
         rel_path = (

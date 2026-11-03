@@ -1,14 +1,22 @@
-"""SQLAlchemy repositories enforcing tenant and project scoping."""
+"""SQLAlchemy repositories — the only layer that issues SQL.
+
+Conventions:
+- Repositories ``add``/``flush``/query but never ``commit``. The calling service owns the
+  transaction (one commit per use case), so multi-row changes stay atomic.
+- Lookups that must be tenant-scoped take an ``org_id`` and raise ``NotFoundError`` when the
+  object is missing *or* belongs to another organization (no existence oracle).
+"""
 
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
-import uuid
-from sqlalchemy.orm import Session
-from sqlalchemy import select, and_
+from typing import Any, Dict, Iterable, List, Optional
 
-from packages.domain.invariants import TenantAccessViolation, VersionConflictError
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from packages.domain.enums import ApprovalStatus, AuditAction, OutboxStatus
+from packages.domain.errors import NotFoundError
 from packages.persistence.models import (
     ApprovalRequestModel,
     AssetModel,
@@ -30,406 +38,284 @@ def utc_now() -> datetime:
     return datetime.now(timezone.utc)
 
 
-class ProjectRepository:
+class _Repository:
     def __init__(self, db: Session):
         self.db = db
 
-    def create_organization(self, name: str, slug: str) -> OrganizationModel:
-        org = OrganizationModel(name=name, slug=slug)
-        self.db.add(org)
-        self.db.commit()
-        self.db.refresh(org)
-        return org
+    def _add(self, obj):
+        self.db.add(obj)
+        self.db.flush()  # assign primary keys so callers can reference them immediately
+        return obj
 
-    def create_user(self, org_id: str, email: str, full_name: str, role: str = "creator") -> UserModel:
-        user = UserModel(organization_id=org_id, email=email, full_name=full_name, role=role)
-        self.db.add(user)
-        self.db.commit()
-        self.db.refresh(user)
+
+class UserRepository(_Repository):
+    DEFAULT_ORG_SLUG = "default-studio"
+
+    def get(self, user_id: str) -> Optional[UserModel]:
+        return self.db.get(UserModel, user_id)
+
+    def get_or_create_default_actor(self) -> UserModel:
+        """Development bootstrap identity: the default studio org and its first user."""
+        org = self.db.scalars(
+            select(OrganizationModel).where(OrganizationModel.slug == self.DEFAULT_ORG_SLUG)
+        ).first() or self.db.scalars(select(OrganizationModel)).first()
+        if org is None:
+            org = self._add(OrganizationModel(name="Default Studio Org", slug=self.DEFAULT_ORG_SLUG))
+
+        user = self.db.scalars(
+            select(UserModel).where(UserModel.organization_id == org.id).order_by(UserModel.created_at)
+        ).first()
+        if user is None:
+            user = self._add(
+                UserModel(
+                    organization_id=org.id,
+                    email="director@tattvaco.com",
+                    full_name="Lead Film Director",
+                    role="director",
+                )
+            )
         return user
 
-    def create_project(
-        self,
-        org_id: str,
-        actor_id: str,
-        title: str,
-        logline: Optional[str] = None,
-        genre: Optional[str] = None,
-    ) -> ProjectModel:
-        project = ProjectModel(
-            organization_id=org_id,
-            created_by=actor_id,
-            title=title,
-            logline=logline,
-            genre=genre,
-            current_version=1,
-            status="active",
-        )
-        self.db.add(project)
-        self.db.flush()
 
-        # Create initial Version 1 snapshot
-        initial_version = ProjectVersionModel(
-            project_id=project.id,
-            version_number=1,
-            branch_name="main",
-            commit_message="Initial project creation",
-            committed_by=actor_id,
-            snapshot_data={"title": title, "logline": logline, "genre": genre},
-        )
-        self.db.add(initial_version)
+class ProjectRepository(_Repository):
+    def add(self, project: ProjectModel) -> ProjectModel:
+        return self._add(project)
 
-        # Audit event
-        audit = AuditEventModel(
-            project_id=project.id,
-            organization_id=org_id,
-            actor_id=actor_id,
-            action="project.created",
-            target_type="project",
-            target_id=project.id,
-            details={"title": title, "genre": genre},
-        )
-        self.db.add(audit)
-
-        self.db.commit()
-        self.db.refresh(project)
-        return project
-
-    def get_project_scoped(self, project_id: str, org_id: str) -> ProjectModel:
+    def get_scoped(self, project_id: str, org_id: str, *, for_update: bool = False) -> ProjectModel:
         stmt = select(ProjectModel).where(
-            and_(ProjectModel.id == project_id, ProjectModel.organization_id == org_id)
+            ProjectModel.id == project_id, ProjectModel.organization_id == org_id
         )
+        if for_update:
+            stmt = stmt.with_for_update()
         project = self.db.scalars(stmt).first()
-        if not project:
-            raise TenantAccessViolation(f"Project '{project_id}' not found or access denied for org '{org_id}'.")
+        if project is None:
+            raise NotFoundError(f"Project '{project_id}' not found.")
         return project
 
-    def list_projects_for_org(self, org_id: str) -> List[ProjectModel]:
-        stmt = select(ProjectModel).where(ProjectModel.organization_id == org_id).order_by(ProjectModel.created_at.desc())
-        return list(self.db.scalars(stmt).all())
-
-    def commit_new_version(
-        self,
-        project_id: str,
-        org_id: str,
-        actor_id: str,
-        expected_version: int,
-        commit_message: str,
-        snapshot_data: Dict[str, Any],
-    ) -> ProjectVersionModel:
-        project = self.get_project_scoped(project_id, org_id)
-        if project.current_version != expected_version:
-            raise VersionConflictError(
-                f"Version conflict on project '{project_id}': expected {expected_version}, found {project.current_version}."
-            )
-
-        new_version_num = project.current_version + 1
-        project.current_version = new_version_num
-        project.updated_at = utc_now()
-
-        version_record = ProjectVersionModel(
-            project_id=project_id,
-            version_number=new_version_num,
-            branch_name="main",
-            commit_message=commit_message,
-            committed_by=actor_id,
-            snapshot_data=snapshot_data,
+    def list_for_org(self, org_id: str) -> List[ProjectModel]:
+        stmt = (
+            select(ProjectModel)
+            .where(ProjectModel.organization_id == org_id)
+            .order_by(ProjectModel.created_at.desc())
         )
-        self.db.add(version_record)
-        self.db.flush()  # assign version_record.id before the audit row references it
+        return list(self.db.scalars(stmt))
 
-        audit = AuditEventModel(
-            project_id=project_id,
-            organization_id=org_id,
-            actor_id=actor_id,
-            action="project.version_committed",
-            target_type="project_version",
-            target_id=version_record.id,
-            details={"version_number": new_version_num, "commit_message": commit_message},
+    def add_version(self, version: ProjectVersionModel) -> ProjectVersionModel:
+        return self._add(version)
+
+    def list_versions(self, project_id: str) -> List[ProjectVersionModel]:
+        stmt = (
+            select(ProjectVersionModel)
+            .where(ProjectVersionModel.project_id == project_id)
+            .order_by(ProjectVersionModel.version_number.desc())
         )
-        self.db.add(audit)
-
-        self.db.commit()
-        self.db.refresh(version_record)
-        return version_record
+        return list(self.db.scalars(stmt))
 
 
-class AssetRepository:
-    def __init__(self, db: Session):
-        self.db = db
+class AssetRepository(_Repository):
+    def add(self, asset: AssetModel) -> AssetModel:
+        return self._add(asset)
 
-    def create_asset(
-        self,
-        project_id: str,
-        org_id: str,
-        actor_id: str,
-        filename: str,
-        mime_type: str,
-        size_bytes: int,
-        checksum_sha256: str,
-        storage_path: str,
-        asset_type: str = "script",
-        is_original: bool = True,
-        parent_asset_id: Optional[str] = None,
-        metadata: Optional[Dict[str, Any]] = None,
-    ) -> AssetModel:
-        asset = AssetModel(
-            project_id=project_id,
-            organization_id=org_id,
-            uploaded_by=actor_id,
-            filename=filename,
-            mime_type=mime_type,
-            size_bytes=size_bytes,
-            checksum_sha256=checksum_sha256,
-            storage_path=storage_path,
-            asset_type=asset_type,
-            is_original=is_original,
-            parent_asset_id=parent_asset_id,
-            asset_metadata=metadata or {},
-        )
-        self.db.add(asset)
-        self.db.flush()  # assign asset.id before the audit row references it
-
-        audit = AuditEventModel(
-            project_id=project_id,
-            organization_id=org_id,
-            actor_id=actor_id,
-            action="asset.uploaded",
-            target_type="asset",
-            target_id=asset.id,
-            details={"filename": filename, "checksum": checksum_sha256, "size_bytes": size_bytes},
-        )
-        self.db.add(audit)
-
-        self.db.commit()
-        self.db.refresh(asset)
-        return asset
-
-    def get_asset_scoped(self, asset_id: str, project_id: str, org_id: str) -> AssetModel:
-        stmt = select(AssetModel).where(
-            and_(
-                AssetModel.id == asset_id,
-                AssetModel.project_id == project_id,
-                AssetModel.organization_id == org_id,
-            )
-        )
+    def get_for_project(self, asset_id: str, project_id: str) -> AssetModel:
+        stmt = select(AssetModel).where(AssetModel.id == asset_id, AssetModel.project_id == project_id)
         asset = self.db.scalars(stmt).first()
-        if not asset:
-            raise TenantAccessViolation(f"Asset '{asset_id}' not found or access denied.")
+        if asset is None:
+            raise NotFoundError(f"Asset '{asset_id}' not found in project.")
         return asset
 
-    def list_assets_for_project(self, project_id: str, org_id: str) -> List[AssetModel]:
-        stmt = select(AssetModel).where(
-            and_(AssetModel.project_id == project_id, AssetModel.organization_id == org_id)
-        ).order_by(AssetModel.created_at.desc())
-        return list(self.db.scalars(stmt).all())
+    def get(self, asset_id: str) -> Optional[AssetModel]:
+        return self.db.get(AssetModel, asset_id)
 
-
-class WorkflowRunRepository:
-    def __init__(self, db: Session):
-        self.db = db
-
-    def create_run(
-        self,
-        graph_id: str,
-        graph_version: str,
-        project_id: str,
-        org_id: str,
-        actor_id: str,
-        expected_project_version: int,
-        input_asset_ids: List[str],
-    ) -> WorkflowRunModel:
-        run = WorkflowRunModel(
-            graph_id=graph_id,
-            graph_version=graph_version,
-            project_id=project_id,
-            organization_id=org_id,
-            actor_id=actor_id,
-            expected_project_version=expected_project_version,
-            status="queued",
-            input_asset_ids=input_asset_ids,
+    def list_for_project(self, project_id: str) -> List[AssetModel]:
+        stmt = (
+            select(AssetModel)
+            .where(AssetModel.project_id == project_id)
+            .order_by(AssetModel.created_at.desc())
         )
-        self.db.add(run)
-        self.db.flush()
+        return list(self.db.scalars(stmt))
 
-        # Enqueue durable outbox task
-        outbox = OutboxTaskModel(
-            workflow_run_id=run.id,
-            task_type=f"execute_{graph_id}",
-            payload={"run_id": run.id, "project_id": project_id, "org_id": org_id},
-            status="pending",
-        )
-        self.db.add(outbox)
 
-        audit = AuditEventModel(
-            project_id=project_id,
-            organization_id=org_id,
-            actor_id=actor_id,
-            action="workflow.run.queued",
-            target_type="workflow_run",
-            target_id=run.id,
-            details={"graph_id": graph_id, "graph_version": graph_version},
-        )
-        self.db.add(audit)
+class WorkflowRunRepository(_Repository):
+    def add(self, run: WorkflowRunModel) -> WorkflowRunModel:
+        return self._add(run)
 
-        self.db.commit()
-        self.db.refresh(run)
+    def get(self, run_id: str) -> Optional[WorkflowRunModel]:
+        return self.db.get(WorkflowRunModel, run_id)
+
+    def get_scoped(self, run_id: str, org_id: str) -> WorkflowRunModel:
+        run = self.get(run_id)
+        if run is None or run.organization_id != org_id:
+            raise NotFoundError(f"Workflow run '{run_id}' not found.")
         return run
 
-    def get_run_scoped(self, run_id: str, org_id: str) -> WorkflowRunModel:
-        stmt = select(WorkflowRunModel).where(
-            and_(WorkflowRunModel.id == run_id, WorkflowRunModel.organization_id == org_id)
-        )
-        run = self.db.scalars(stmt).first()
-        if not run:
-            raise TenantAccessViolation(f"Workflow run '{run_id}' not found or access denied.")
-        return run
-
-    def update_status(
+    def set_status(
         self,
         run_id: str,
         status: str,
+        *,
         output_refs: Optional[Dict[str, Any]] = None,
         error_message: Optional[str] = None,
     ) -> None:
-        run = self.db.get(WorkflowRunModel, run_id)
-        if run:
-            run.status = status
-            if output_refs:
-                run.output_refs = output_refs
-            if error_message:
-                run.error_message = error_message
-            run.updated_at = utc_now()
-            self.db.commit()
+        run = self.get(run_id)
+        if run is None:
+            return
+        run.status = status
+        if output_refs is not None:
+            run.output_refs = output_refs
+        if error_message is not None:
+            run.error_message = error_message
+        run.updated_at = utc_now()
 
 
-class ApprovalRepository:
-    def __init__(self, db: Session):
-        self.db = db
-
-    def create_approval_request(
-        self,
-        workflow_run_id: str,
-        project_id: str,
-        org_id: str,
-        scope: str,
-        candidate_summary: Dict[str, Any],
-    ) -> ApprovalRequestModel:
-        approval = ApprovalRequestModel(
-            workflow_run_id=workflow_run_id,
-            project_id=project_id,
-            organization_id=org_id,
-            scope=scope,
-            candidate_summary=candidate_summary,
-            status="pending",
+class OutboxRepository(_Repository):
+    def enqueue(self, workflow_run_id: str, task_type: str, payload: Dict[str, Any]) -> OutboxTaskModel:
+        return self._add(
+            OutboxTaskModel(
+                workflow_run_id=workflow_run_id,
+                task_type=task_type,
+                payload=payload,
+                status=OutboxStatus.PENDING.value,
+            )
         )
-        self.db.add(approval)
-        self.db.commit()
-        self.db.refresh(approval)
-        return approval
 
-    def get_approval_scoped(self, approval_id: str, org_id: str) -> ApprovalRequestModel:
+    def claim_next(self, worker_id: str) -> Optional[OutboxTaskModel]:
+        """Atomically claim the oldest pending task (``FOR UPDATE SKIP LOCKED``)."""
+        stmt = (
+            select(OutboxTaskModel)
+            .where(OutboxTaskModel.status == OutboxStatus.PENDING.value)
+            .order_by(OutboxTaskModel.created_at)
+            .limit(1)
+            .with_for_update(skip_locked=True)
+        )
+        task = self.db.scalars(stmt).first()
+        if task is None:
+            return None
+        task.status = OutboxStatus.CLAIMED.value
+        task.claimed_by = worker_id
+        task.claimed_at = utc_now()
+        task.attempts += 1
+        return task
+
+
+class ApprovalRepository(_Repository):
+    def add(self, approval: ApprovalRequestModel) -> ApprovalRequestModel:
+        return self._add(approval)
+
+    def get_scoped(self, approval_id: str, org_id: str, *, for_update: bool = False) -> ApprovalRequestModel:
         stmt = select(ApprovalRequestModel).where(
-            and_(ApprovalRequestModel.id == approval_id, ApprovalRequestModel.organization_id == org_id)
+            ApprovalRequestModel.id == approval_id, ApprovalRequestModel.organization_id == org_id
         )
+        if for_update:
+            stmt = stmt.with_for_update()
         approval = self.db.scalars(stmt).first()
-        if not approval:
-            raise TenantAccessViolation(f"Approval '{approval_id}' not found or access denied.")
+        if approval is None:
+            raise NotFoundError(f"Approval request '{approval_id}' not found.")
         return approval
 
-    def record_decision(
-        self,
-        approval_id: str,
-        org_id: str,
-        actor_id: str,
-        decision: str,
-        decision_notes: Optional[str] = None,
-    ) -> ApprovalRequestModel:
-        approval = self.get_approval_scoped(approval_id, org_id)
-        approval.status = "decided"
-        approval.decision = decision
-        approval.decision_notes = decision_notes
-        approval.decided_by = actor_id
-        approval.decided_at = utc_now()
-
-        audit = AuditEventModel(
-            project_id=approval.project_id,
-            organization_id=org_id,
-            actor_id=actor_id,
-            action=f"approval.{decision}",
-            target_type="approval_request",
-            target_id=approval_id,
-            details={"decision": decision, "notes": decision_notes},
+    def get_pending_for_run(self, run_id: str) -> Optional[ApprovalRequestModel]:
+        stmt = select(ApprovalRequestModel).where(
+            ApprovalRequestModel.workflow_run_id == run_id,
+            ApprovalRequestModel.status == ApprovalStatus.PENDING.value,
         )
-        self.db.add(audit)
+        return self.db.scalars(stmt).first()
 
-        self.db.commit()
-        self.db.refresh(approval)
-        return approval
+    def list_for_project(self, project_id: str) -> List[ApprovalRequestModel]:
+        stmt = (
+            select(ApprovalRequestModel)
+            .where(ApprovalRequestModel.project_id == project_id)
+            .order_by(ApprovalRequestModel.created_at.desc())
+        )
+        return list(self.db.scalars(stmt))
 
 
-class CandidateRepository:
-    def __init__(self, db: Session):
-        self.db = db
+class CandidateRepository(_Repository):
+    def add_scene(self, candidate: SceneCandidateModel) -> SceneCandidateModel:
+        return self._add(candidate)
 
-    def save_scene_candidates(self, candidates: List[SceneCandidateModel]) -> None:
-        self.db.add_all(candidates)
-        self.db.commit()
+    def add_entity(self, candidate: EntityCandidateModel) -> EntityCandidateModel:
+        return self._add(candidate)
 
-    def save_entity_candidates(self, candidates: List[EntityCandidateModel]) -> None:
-        self.db.add_all(candidates)
-        self.db.commit()
+    def scenes_for_run(self, run_id: str) -> List[SceneCandidateModel]:
+        stmt = (
+            select(SceneCandidateModel)
+            .where(SceneCandidateModel.workflow_run_id == run_id)
+            .order_by(SceneCandidateModel.scene_number)
+        )
+        return list(self.db.scalars(stmt))
 
-    def list_scene_candidates(self, run_id: str, project_id: str) -> List[SceneCandidateModel]:
-        stmt = select(SceneCandidateModel).where(
-            and_(SceneCandidateModel.workflow_run_id == run_id, SceneCandidateModel.project_id == project_id)
-        ).order_by(SceneCandidateModel.scene_number.asc())
-        return list(self.db.scalars(stmt).all())
+    def entities_for_run(self, run_id: str) -> List[EntityCandidateModel]:
+        stmt = (
+            select(EntityCandidateModel)
+            .where(EntityCandidateModel.workflow_run_id == run_id)
+            .order_by(EntityCandidateModel.category, EntityCandidateModel.name)
+        )
+        return list(self.db.scalars(stmt))
 
-    def list_entity_candidates(self, run_id: str, project_id: str) -> List[EntityCandidateModel]:
-        stmt = select(EntityCandidateModel).where(
-            and_(EntityCandidateModel.workflow_run_id == run_id, EntityCandidateModel.project_id == project_id)
-        ).order_by(EntityCandidateModel.category.asc(), EntityCandidateModel.name.asc())
-        return list(self.db.scalars(stmt).all())
+    def scenes_for_project(self, project_id: str) -> List[SceneCandidateModel]:
+        stmt = (
+            select(SceneCandidateModel)
+            .where(SceneCandidateModel.project_id == project_id)
+            .order_by(SceneCandidateModel.created_at, SceneCandidateModel.scene_number)
+        )
+        return list(self.db.scalars(stmt))
 
-    def commit_approved_candidates(
+    def entities_for_project(self, project_id: str) -> List[EntityCandidateModel]:
+        stmt = (
+            select(EntityCandidateModel)
+            .where(EntityCandidateModel.project_id == project_id)
+            .order_by(EntityCandidateModel.category, EntityCandidateModel.name)
+        )
+        return list(self.db.scalars(stmt))
+
+
+class CanonicalRepository(_Repository):
+    def add_scenes(self, scenes: Iterable[SceneModel]) -> None:
+        self.db.add_all(list(scenes))
+
+    def add_entities(self, entities: Iterable[EntityModel]) -> None:
+        self.db.add_all(list(entities))
+
+    def scenes_for_project(self, project_id: str) -> List[SceneModel]:
+        stmt = select(SceneModel).where(SceneModel.project_id == project_id).order_by(SceneModel.scene_number)
+        return list(self.db.scalars(stmt))
+
+    def entities_for_project(self, project_id: str) -> List[EntityModel]:
+        stmt = (
+            select(EntityModel)
+            .where(EntityModel.project_id == project_id)
+            .order_by(EntityModel.category, EntityModel.name)
+        )
+        return list(self.db.scalars(stmt))
+
+
+class AuditRepository(_Repository):
+    def record(
         self,
-        run_id: str,
+        *,
         project_id: str,
-        new_project_version: int,
-    ) -> None:
-        # Commit scene candidates to canonical scenes table
-        scene_candidates = self.list_scene_candidates(run_id, project_id)
-        for sc in scene_candidates:
-            if sc.status in ("proposed", "approved"):
-                sc.status = "approved"
-                scene = SceneModel(
-                    project_id=project_id,
-                    scene_number=sc.scene_number,
-                    heading=sc.heading,
-                    setting=sc.setting,
-                    location_name=sc.location_name,
-                    time_of_day=sc.time_of_day,
-                    summary=sc.summary,
-                    source_locator=sc.source_locator,
-                    characters_present=sc.characters_present,
-                    project_version=new_project_version,
-                )
-                self.db.add(scene)
+        organization_id: str,
+        actor_id: str,
+        action: AuditAction,
+        target_type: str,
+        target_id: str,
+        details: Optional[Dict[str, Any]] = None,
+    ) -> AuditEventModel:
+        return self._add(
+            AuditEventModel(
+                project_id=project_id,
+                organization_id=organization_id,
+                actor_id=actor_id,
+                action=action.value,
+                target_type=target_type,
+                target_id=target_id,
+                details=details or {},
+            )
+        )
 
-        # Commit entity candidates to canonical entities table
-        entity_candidates = self.list_entity_candidates(run_id, project_id)
-        for ec in entity_candidates:
-            if ec.status in ("proposed", "approved"):
-                ec.status = "approved"
-                entity = EntityModel(
-                    project_id=project_id,
-                    name=ec.name,
-                    category=ec.category,
-                    description=ec.description,
-                    source_locator=ec.source_locator,
-                    project_version=new_project_version,
-                )
-                self.db.add(entity)
-
-        self.db.commit()
+    def list_for_project(self, project_id: str) -> List[AuditEventModel]:
+        stmt = (
+            select(AuditEventModel)
+            .where(AuditEventModel.project_id == project_id)
+            .order_by(AuditEventModel.created_at.desc())
+        )
+        return list(self.db.scalars(stmt))

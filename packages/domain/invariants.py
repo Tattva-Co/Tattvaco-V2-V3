@@ -3,22 +3,20 @@
 from __future__ import annotations
 
 from typing import Optional
-from packages.domain.entities import Project, WorkflowRun, ApprovalRequest, ApprovalStatus
 
+from packages.domain.errors import (
+    DomainInvariantError,
+    TenantAccessViolation,
+    VersionConflictError,
+)
 
-class DomainInvariantError(Exception):
-    """Raised when a core domain invariant is violated."""
-    pass
-
-
-class TenantAccessViolation(DomainInvariantError):
-    """Raised when cross-tenant or cross-project access is attempted."""
-    pass
-
-
-class VersionConflictError(DomainInvariantError):
-    """Raised when an operation encounters an unexpected project version."""
-    pass
+__all__ = [
+    "DomainInvariantError",
+    "TenantAccessViolation",
+    "VersionConflictError",
+    "assert_project_scope",
+    "assert_expected_version",
+]
 
 
 def assert_project_scope(
@@ -43,18 +41,3 @@ def assert_expected_version(current_version: int, expected_version: int) -> None
             f"Stale project version conflict: expected version {expected_version}, "
             f"but current project version is {current_version}."
         )
-
-
-def assert_can_resume(
-    approval: ApprovalRequest,
-    run: WorkflowRun,
-    actor_id: str,
-    actor_org_id: str,
-) -> None:
-    """Ensure an interrupted workflow run meets all preconditions to resume."""
-    if approval.workflow_run_id != run.id:
-        raise DomainInvariantError("Approval request does not match workflow run ID.")
-    if approval.organization_id != actor_org_id:
-        raise TenantAccessViolation("Reviewer does not belong to the approval organization.")
-    if approval.status != ApprovalStatus.DECIDED:
-        raise DomainInvariantError(f"Cannot resume run: approval status is {approval.status.value}, expected decided.")

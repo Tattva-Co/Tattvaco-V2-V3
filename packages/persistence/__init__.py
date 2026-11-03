@@ -1,4 +1,4 @@
-from packages.persistence.database import Base, SessionLocal, engine, get_db
+from packages.persistence.database import Base, SessionLocal, engine, get_db, session_scope
 from packages.persistence.models import (
     ApprovalRequestModel,
     AssetModel,
@@ -17,8 +17,12 @@ from packages.persistence.models import (
 from packages.persistence.repositories import (
     ApprovalRepository,
     AssetRepository,
+    AuditRepository,
     CandidateRepository,
+    CanonicalRepository,
+    OutboxRepository,
     ProjectRepository,
+    UserRepository,
     WorkflowRunRepository,
 )
 
@@ -27,6 +31,7 @@ __all__ = [
     "engine",
     "SessionLocal",
     "get_db",
+    "session_scope",
     "OrganizationModel",
     "UserModel",
     "ProjectModel",
@@ -40,9 +45,13 @@ __all__ = [
     "EntityCandidateModel",
     "SceneModel",
     "EntityModel",
+    "UserRepository",
     "ProjectRepository",
     "AssetRepository",
     "WorkflowRunRepository",
+    "OutboxRepository",
     "ApprovalRepository",
     "CandidateRepository",
+    "CanonicalRepository",
+    "AuditRepository",
 ]

@@ -1,25 +1,24 @@
 """SQLAlchemy database engine, session factory, and Base declarative model."""
 
-import os
-from typing import Generator
+from contextlib import contextmanager
+from typing import Generator, Iterator
+
 from sqlalchemy import create_engine
-from sqlalchemy.orm import declarative_base, sessionmaker, Session
+from sqlalchemy.orm import Session, declarative_base, sessionmaker
 
-# Default to the dedicated Tattva PostgreSQL container on port 55432
-DEFAULT_DB_URL = "postgresql+psycopg://postgres:postgres@localhost:55432/tattva_film_director"
-DATABASE_URL = os.getenv("DATABASE_URL", DEFAULT_DB_URL)
+from packages.core.config import get_settings
 
-# Configure engine with reasonable pooling
-connect_args = {}
+_settings = get_settings()
+DATABASE_URL = _settings.database_url
+
+_engine_kwargs: dict = {"echo": _settings.db_echo, "pool_pre_ping": True}
 if DATABASE_URL.startswith("sqlite"):
-    connect_args["check_same_thread"] = False
+    _engine_kwargs["connect_args"] = {"check_same_thread": False}
+else:
+    _engine_kwargs["pool_size"] = _settings.db_pool_size
+    _engine_kwargs["max_overflow"] = _settings.db_max_overflow
 
-engine = create_engine(
-    DATABASE_URL,
-    echo=os.getenv("DB_ECHO", "false").lower() == "true",
-    connect_args=connect_args,
-    pool_pre_ping=True,
-)
+engine = create_engine(DATABASE_URL, **_engine_kwargs)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
@@ -30,5 +29,21 @@ def get_db() -> Generator[Session, None, None]:
     db = SessionLocal()
     try:
         yield db
+    finally:
+        db.close()
+
+
+@contextmanager
+def session_scope() -> Iterator[Session]:
+    """Session for code outside a request (graph nodes, worker). Rolls back on error.
+
+    Committing remains the job of the service that owns the use case.
+    """
+    db = SessionLocal()
+    try:
+        yield db
+    except Exception:
+        db.rollback()
+        raise
     finally:
         db.close()

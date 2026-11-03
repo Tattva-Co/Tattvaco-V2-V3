@@ -1,15 +1,15 @@
+from packages.storage.factory import get_storage
 from packages.storage.service import (
     LocalFileSystemStorageService,
     StorageService,
     StoredAssetMetadata,
+    detect_mime_type,
 )
-
-# Alias for convenience
-LocalStorageService = LocalFileSystemStorageService
 
 __all__ = [
     "StorageService",
     "LocalFileSystemStorageService",
-    "LocalStorageService",
     "StoredAssetMetadata",
+    "detect_mime_type",
+    "get_storage",
 ]

@@ -4,6 +4,7 @@ from packages.workflows.script_intelligence.graph import (
     generate_candidates_node,
     human_approval_interrupt_node,
     parse_script_node,
+    record_rejection_node,
 )
 from packages.workflows.script_intelligence.parser import ScreenplayParser
 from packages.workflows.script_intelligence.state import ScriptIntelligenceState
@@ -16,4 +17,5 @@ __all__ = [
     "generate_candidates_node",
     "human_approval_interrupt_node",
     "commit_canonical_node",
+    "record_rejection_node",
 ]
