@@ -24,6 +24,8 @@ dependencies = [
     "langchain-core>=0.2.0",
     "httpx>=0.27.0",
     "python-multipart>=0.0.9",
+    "requests>=2.31.0",
+    "langgraph-checkpoint-postgres>=2.0.0",
 ]
 
 [project.optional-dependencies]
@@ -45,11 +47,30 @@ addopts = "-ra -q --tb=short"
 testpaths = ["tests"]
 pythonpath = ["."]
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 
 [tool.ruff]
-line-length = 100
+line-length = 110
 target-version = "py311"
+extend-exclude = ["packages/persistence/migrations/versions"]
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "W"]
-ignore = ["E501"]
+select = ["E", "F", "I", "W", "B", "UP", "S", "SIM"]
+ignore = [
+    "E501",   # line length is handled by the formatter
+    "B008",   # FastAPI's Depends()/File() defaults are idiomatic
+    "S101",   # assert is fine in tests
+    "UP007",  # keep Optional[...] where it reads better
+    "UP006", "UP035",  # allow typing.List/Dict during gradual migration
+    "UP042",  # StrEnum is Python 3.11+, keep str, Enum for broader compatibility
+    "S104",   # 0.0.0.0 default host for containers
+    "SIM102", # allow nested if statements where clearer
+    "B905",   # zip without explicit strict parameter
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S", "B"]
+"packages/persistence/migrations/env.py" = ["E402"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["apps", "packages", "tests"]

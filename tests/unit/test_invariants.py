@@ -1,11 +1,12 @@
 """Tests enforcing strict tenant and project isolation invariants."""
 
 import pytest
+
 from packages.domain.invariants import (
-    assert_expected_version,
-    assert_project_scope,
     TenantAccessViolation,
     VersionConflictError,
+    assert_expected_version,
+    assert_project_scope,
 )
 
 

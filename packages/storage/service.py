@@ -1,12 +1,12 @@
 """Storage service interfaces and local filesystem implementation for immutable assets."""
 
-from abc import ABC, abstractmethod
-from dataclasses import dataclass
 import hashlib
 import mimetypes
 import re
+from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from pathlib import Path
-from typing import BinaryIO, Optional, Tuple
+from typing import BinaryIO, Tuple
 
 _UNSAFE_FILENAME_CHARS = re.compile(r"[^A-Za-z0-9._ -]")
 
@@ -14,7 +14,7 @@ _UNSAFE_FILENAME_CHARS = re.compile(r"[^A-Za-z0-9._ -]")
 mimetypes.add_type("text/plain", ".fountain")
 
 
-def detect_mime_type(filename: str, declared_mime: Optional[str] = None) -> str:
+def detect_mime_type(filename: str, declared_mime: str | None = None) -> str:
     """Prefer a specific client-declared type; otherwise infer from the extension."""
     if declared_mime and declared_mime != "application/octet-stream":
         return declared_mime
@@ -41,7 +41,7 @@ class StorageService(ABC):
         filename: str,
         project_id: str,
         organization_id: str,
-        mime_type: Optional[str] = None,
+        mime_type: str | None = None,
     ) -> StoredAssetMetadata:
         """Store an immutable asset stream and return its metadata."""
         pass
@@ -53,7 +53,7 @@ class StorageService(ABC):
         filename: str,
         project_id: str,
         organization_id: str,
-        mime_type: Optional[str] = None,
+        mime_type: str | None = None,
     ) -> StoredAssetMetadata:
         """Store bytes and return asset metadata."""
         pass
@@ -105,7 +105,7 @@ class LocalFileSystemStorageService(StorageService):
         filename: str,
         project_id: str,
         organization_id: str,
-        mime_type: Optional[str] = None,
+        mime_type: str | None = None,
     ) -> StoredAssetMetadata:
         filename = self._safe_filename(filename)
         checksum, size = self._compute_checksum_and_size(content)
@@ -137,7 +137,7 @@ class LocalFileSystemStorageService(StorageService):
         filename: str,
         project_id: str,
         organization_id: str,
-        mime_type: Optional[str] = None,
+        mime_type: str | None = None,
     ) -> StoredAssetMetadata:
         content = stream.read()
         return self.store_bytes(

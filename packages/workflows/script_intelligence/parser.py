@@ -1,7 +1,7 @@
 """Screenplay parser extracting structured scenes and entities from script text."""
 
 import re
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 
 class ScreenplayParser:
@@ -19,7 +19,7 @@ class ScreenplayParser:
         scenes: List[Dict[str, Any]] = []
         entities: Dict[str, Dict[str, Any]] = {}
 
-        current_scene: Optional[Dict[str, Any]] = None
+        current_scene: Dict[str, Any] | None = None
         current_scene_lines: List[str] = []
         current_characters: set = set()
         scene_counter = 0
@@ -111,7 +111,7 @@ class ScreenplayParser:
         return scenes, list(entities.values())
 
     def _generate_summary(self, lines: List[str]) -> str:
-        action_lines = [l for l in lines if not l.isupper() and len(l) > 10]
+        action_lines = [line for line in lines if not line.isupper() and len(line) > 10]
         if action_lines:
             summary = " ".join(action_lines[:3])
             return summary[:300] + ("..." if len(summary) > 300 else "")

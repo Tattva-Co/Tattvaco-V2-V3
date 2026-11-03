@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import List
 
 from sqlalchemy.orm import Session
 
@@ -24,7 +24,7 @@ class AssetService:
         self.projects = ProjectRepository(db)
         self.audit = AuditRepository(db)
 
-    def validate_upload(self, filename: str, size_bytes: int, declared_mime: Optional[str]) -> str:
+    def validate_upload(self, filename: str, size_bytes: int, declared_mime: str | None) -> str:
         """Apply upload policy; returns the effective MIME type."""
         if size_bytes == 0:
             raise ValidationFailure("Uploaded file is empty.")
@@ -44,7 +44,7 @@ class AssetService:
         *,
         filename: str,
         content: bytes,
-        declared_mime: Optional[str] = None,
+        declared_mime: str | None = None,
         asset_type: AssetType = AssetType.SCRIPT,
     ) -> AssetModel:
         project = self.projects.get_scoped(project_id, actor.org_id)

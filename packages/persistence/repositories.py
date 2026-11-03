@@ -9,8 +9,8 @@ Conventions:
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
-from typing import Any, Dict, Iterable, List, Optional
+from datetime import UTC, datetime
+from typing import Any, Dict, Iterable, List
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -35,7 +35,7 @@ from packages.persistence.models import (
 
 
 def utc_now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 class _Repository:
@@ -51,7 +51,7 @@ class _Repository:
 class UserRepository(_Repository):
     DEFAULT_ORG_SLUG = "default-studio"
 
-    def get(self, user_id: str) -> Optional[UserModel]:
+    def get(self, user_id: str) -> UserModel | None:
         return self.db.get(UserModel, user_id)
 
     def get_or_create_default_actor(self) -> UserModel:
@@ -123,7 +123,7 @@ class AssetRepository(_Repository):
             raise NotFoundError(f"Asset '{asset_id}' not found in project.")
         return asset
 
-    def get(self, asset_id: str) -> Optional[AssetModel]:
+    def get(self, asset_id: str) -> AssetModel | None:
         return self.db.get(AssetModel, asset_id)
 
     def list_for_project(self, project_id: str) -> List[AssetModel]:
@@ -139,7 +139,7 @@ class WorkflowRunRepository(_Repository):
     def add(self, run: WorkflowRunModel) -> WorkflowRunModel:
         return self._add(run)
 
-    def get(self, run_id: str) -> Optional[WorkflowRunModel]:
+    def get(self, run_id: str) -> WorkflowRunModel | None:
         return self.db.get(WorkflowRunModel, run_id)
 
     def get_scoped(self, run_id: str, org_id: str) -> WorkflowRunModel:
@@ -153,8 +153,8 @@ class WorkflowRunRepository(_Repository):
         run_id: str,
         status: str,
         *,
-        output_refs: Optional[Dict[str, Any]] = None,
-        error_message: Optional[str] = None,
+        output_refs: Dict[str, Any] | None = None,
+        error_message: str | None = None,
     ) -> None:
         run = self.get(run_id)
         if run is None:
@@ -178,7 +178,7 @@ class OutboxRepository(_Repository):
             )
         )
 
-    def claim_next(self, worker_id: str) -> Optional[OutboxTaskModel]:
+    def claim_next(self, worker_id: str) -> OutboxTaskModel | None:
         """Atomically claim the oldest pending task (``FOR UPDATE SKIP LOCKED``)."""
         stmt = (
             select(OutboxTaskModel)
@@ -212,7 +212,7 @@ class ApprovalRepository(_Repository):
             raise NotFoundError(f"Approval request '{approval_id}' not found.")
         return approval
 
-    def get_pending_for_run(self, run_id: str) -> Optional[ApprovalRequestModel]:
+    def get_pending_for_run(self, run_id: str) -> ApprovalRequestModel | None:
         stmt = select(ApprovalRequestModel).where(
             ApprovalRequestModel.workflow_run_id == run_id,
             ApprovalRequestModel.status == ApprovalStatus.PENDING.value,
@@ -298,7 +298,7 @@ class AuditRepository(_Repository):
         action: AuditAction,
         target_type: str,
         target_id: str,
-        details: Optional[Dict[str, Any]] = None,
+        details: Dict[str, Any] | None = None,
     ) -> AuditEventModel:
         return self._add(
             AuditEventModel(

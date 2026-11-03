@@ -8,7 +8,7 @@ decision is persisted *before* the graph is resumed (ADR-001 invariant 4).
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional, Sequence
+from typing import Sequence
 
 from langgraph.types import Command
 from sqlalchemy.orm import Session
@@ -132,9 +132,9 @@ class ScriptIntelligenceService:
         approval_id: str,
         decision: ApprovalDecision,
         *,
-        notes: Optional[str] = None,
-        approved_scene_ids: Optional[Sequence[str]] = None,
-        approved_entity_ids: Optional[Sequence[str]] = None,
+        notes: str | None = None,
+        approved_scene_ids: Sequence[str] | None = None,
+        approved_entity_ids: Sequence[str] | None = None,
     ) -> DecisionResult:
         approval: ApprovalRequestModel = self.approvals.get_scoped(
             approval_id, actor.org_id, for_update=True

@@ -1,6 +1,5 @@
 """FastAPI dependency providers: settings, DB session, storage, actor identity."""
 
-from typing import Optional
 
 from fastapi import Depends, Header
 from sqlalchemy.orm import Session
@@ -17,7 +16,7 @@ DEV_FALLBACK_ENVIRONMENTS = {"development", "test"}
 
 
 def get_actor(
-    x_actor_id: Optional[str] = Header(default=None, alias="X-Actor-ID"),
+    x_actor_id: str | None = Header(default=None, alias="X-Actor-ID"),
     db: Session = Depends(get_db),
     settings: Settings = Depends(get_settings),
 ) -> ActorContext:

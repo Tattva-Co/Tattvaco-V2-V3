@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import List
 
 from sqlalchemy.orm import Session
 
@@ -46,8 +46,8 @@ class ProjectService:
         actor: ActorContext,
         *,
         title: str,
-        logline: Optional[str] = None,
-        genre: Optional[str] = None,
+        logline: str | None = None,
+        genre: str | None = None,
     ) -> ProjectModel:
         project = self.projects.add(
             ProjectModel(

@@ -7,8 +7,8 @@ LangGraph nodes orchestrate; these methods own every write to canonical tables
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Sequence
+from datetime import UTC, datetime
+from typing import Any, Dict, List, Sequence
 
 from sqlalchemy.orm import Session
 
@@ -61,13 +61,13 @@ class ProposedCandidates:
 
 
 def record_decision(
-    approval: ApprovalRequestModel, decision: ApprovalDecision, actor_id: str, notes: Optional[str]
+    approval: ApprovalRequestModel, decision: ApprovalDecision, actor_id: str, notes: str | None
 ) -> None:
     approval.status = ApprovalStatus.DECIDED.value
     approval.decision = decision.value
     approval.decision_notes = notes
     approval.decided_by = actor_id
-    approval.decided_at = datetime.now(timezone.utc)
+    approval.decided_at = datetime.now(UTC)
 
 
 class ScriptReviewService:
@@ -181,7 +181,7 @@ class ScriptReviewService:
     # -- decide --------------------------------------------------------------
 
     def _ensure_decision_recorded(
-        self, scope: RunScope, decision: ApprovalDecision, actor_id: str, notes: Optional[str]
+        self, scope: RunScope, decision: ApprovalDecision, actor_id: str, notes: str | None
     ) -> None:
         """The API records decisions before resuming (invariant 4). This covers direct resumes."""
         approval = self.approvals.get_pending_for_run(scope.run_id)
@@ -193,9 +193,9 @@ class ScriptReviewService:
         scope: RunScope,
         actor_id: str,
         expected_version: int,
-        approved_scene_ids: Optional[Sequence[str]],
-        approved_entity_ids: Optional[Sequence[str]],
-        notes: Optional[str] = None,
+        approved_scene_ids: Sequence[str] | None,
+        approved_entity_ids: Sequence[str] | None,
+        notes: str | None = None,
     ) -> int:
         """Promote selected candidates to canonical state and advance the project version.
 
@@ -207,7 +207,7 @@ class ScriptReviewService:
         assert_expected_version(project.current_version, expected_version)
         next_version = project.current_version + 1
 
-        def selected(candidate_id: str, chosen: Optional[Sequence[str]]) -> bool:
+        def selected(candidate_id: str, chosen: Sequence[str] | None) -> bool:
             return chosen is None or candidate_id in set(chosen)
 
         promoted_scenes: List[SceneModel] = []
@@ -297,7 +297,7 @@ class ScriptReviewService:
         self.db.commit()
         return next_version
 
-    def close_rejected(self, scope: RunScope, actor_id: str, notes: Optional[str] = None) -> None:
+    def close_rejected(self, scope: RunScope, actor_id: str, notes: str | None = None) -> None:
         """Reject every candidate of the run; canonical project state is untouched."""
         for candidate in [*self.candidates.scenes_for_run(scope.run_id), *self.candidates.entities_for_run(scope.run_id)]:
             candidate.status = CandidateStatus.REJECTED.value

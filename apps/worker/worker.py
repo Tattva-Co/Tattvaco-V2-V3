@@ -6,7 +6,7 @@ Run with: ``python -m apps.worker.worker``
 from __future__ import annotations
 
 import time
-from typing import Callable, Dict, Optional
+from typing import Callable, Dict
 
 from packages.core.config import get_settings
 from packages.core.logging import configure_logging, get_logger
@@ -37,7 +37,7 @@ def _finish_task(task_id: str, status: OutboxStatus) -> None:
             db.commit()
 
 
-def process_one_task(worker_id: Optional[str] = None) -> bool:
+def process_one_task(worker_id: str | None = None) -> bool:
     """Claim and process a single outbox task. Returns True if a task was claimed."""
     worker_id = worker_id or get_settings().worker_id
     with session_scope() as db:
@@ -67,7 +67,7 @@ def process_one_task(worker_id: Optional[str] = None) -> bool:
     return True
 
 
-def run_worker_loop(poll_interval: Optional[float] = None, max_iterations: Optional[int] = None) -> None:
+def run_worker_loop(poll_interval: float | None = None, max_iterations: int | None = None) -> None:
     settings = get_settings()
     poll_interval = settings.worker_poll_interval_seconds if poll_interval is None else poll_interval
     logger.info("Starting Tattva worker %s (poll interval %.1fs)", settings.worker_id, poll_interval)

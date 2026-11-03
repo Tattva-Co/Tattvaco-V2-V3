@@ -10,7 +10,6 @@ without login; in staging/production a missing header is rejected.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 
 from sqlalchemy.orm import Session
 
@@ -33,7 +32,7 @@ class IdentityService:
         self.db = db
         self.users = UserRepository(db)
 
-    def resolve(self, actor_id: Optional[str], *, allow_dev_fallback: bool) -> ActorContext:
+    def resolve(self, actor_id: str | None, *, allow_dev_fallback: bool) -> ActorContext:
         if actor_id:
             user = self.users.get(actor_id)
             if user is None:

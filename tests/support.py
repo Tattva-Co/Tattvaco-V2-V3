@@ -3,9 +3,9 @@
 
 from __future__ import annotations
 
+import io
 import uuid
 from dataclasses import dataclass
-import io
 from typing import List
 
 from packages.persistence.database import SessionLocal

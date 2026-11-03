@@ -1,8 +1,5 @@
 from logging.config import fileConfig
 
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
-
 from alembic import context
 
 # this is the Alembic Config object, which provides
@@ -14,8 +11,8 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-from packages.persistence.database import Base, DATABASE_URL
 import packages.persistence.models  # noqa: F401  ensure models are registered
+from packages.persistence.database import DATABASE_URL, Base
 from packages.persistence.migration_filters import include_object
 
 target_metadata = Base.metadata

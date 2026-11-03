@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Optional
-
 from packages.domain.errors import (
     DomainInvariantError,
     TenantAccessViolation,
@@ -22,7 +20,7 @@ __all__ = [
 def assert_project_scope(
     actor_org_id: str,
     project_org_id: str,
-    actor_id: Optional[str] = None,
+    actor_id: str | None = None,
 ) -> None:
     """Enforce strict organization-level project scoping."""
     if not actor_org_id or not project_org_id:

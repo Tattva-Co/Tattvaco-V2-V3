@@ -1,7 +1,7 @@
 """Request/response contracts for the public API (``/api/v1``)."""
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -17,16 +17,16 @@ class _ORM(BaseModel):
 
 class ProjectCreateRequest(BaseModel):
     title: str = Field(..., min_length=1, max_length=255)
-    logline: Optional[str] = None
-    genre: Optional[str] = Field(default=None, max_length=100)
+    logline: str | None = None
+    genre: str | None = Field(default=None, max_length=100)
 
 
 class ProjectResponse(_ORM):
     id: str
     organization_id: str
     title: str
-    logline: Optional[str]
-    genre: Optional[str]
+    logline: str | None
+    genre: str | None
     status: str
     current_version: int
     created_by: str
@@ -99,7 +99,7 @@ class WorkflowRunResponse(_ORM):
     expected_project_version: int
     input_asset_ids: List[str]
     output_refs: Dict[str, Any]
-    error_message: Optional[str]
+    error_message: str | None
     created_at: datetime
     updated_at: datetime
 
@@ -107,7 +107,7 @@ class WorkflowRunResponse(_ORM):
 class WorkflowTriggerResponse(BaseModel):
     workflow_run_id: str
     status: str
-    approval_request_id: Optional[str] = None
+    approval_request_id: str | None = None
     candidate_summary: Dict[str, Any] = Field(default_factory=dict)
 
 
@@ -132,7 +132,7 @@ class EntityCandidateResponse(_ORM):
     workflow_run_id: str
     name: str
     category: str
-    description: Optional[str]
+    description: str | None
     confidence: float
     status: str
 
@@ -142,9 +142,9 @@ class ApprovalResponse(_ORM):
     workflow_run_id: str
     scope: str
     status: str
-    decision: Optional[str]
-    decided_by: Optional[str]
-    decided_at: Optional[datetime]
+    decision: str | None
+    decided_by: str | None
+    decided_at: datetime | None
     candidate_summary: Dict[str, Any]
 
 
@@ -156,11 +156,11 @@ class CandidatesResponse(BaseModel):
 
 class ApprovalDecisionRequest(BaseModel):
     decision: ApprovalDecision
-    notes: Optional[str] = None
+    notes: str | None = None
     # Omit (null) to approve every candidate; send a list (possibly empty) to approve
     # exactly those candidates. Ignored for rejections.
-    approved_scene_ids: Optional[List[str]] = None
-    approved_entity_ids: Optional[List[str]] = None
+    approved_scene_ids: List[str] | None = None
+    approved_entity_ids: List[str] | None = None
 
 
 class ApprovalDecisionResponse(BaseModel):
@@ -191,7 +191,7 @@ class EntityResponse(_ORM):
     id: str
     name: str
     category: str
-    description: Optional[str]
+    description: str | None
     source_locator: str
     project_version: int
 
