@@ -1,9 +1,9 @@
 """Integration tests for the immutable storage service."""
 
 import hashlib
-import io
 import tempfile
-import pytest
+from pathlib import Path
+
 from packages.storage.service import LocalFileSystemStorageService
 
 
@@ -51,3 +51,34 @@ def test_storage_service_immutability():
 
         assert stored1.checksum_sha256 == stored2.checksum_sha256
         assert stored1.storage_path == stored2.storage_path
+
+
+def test_storage_service_neutralises_path_traversal_in_filename():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        root = Path(tmpdir) / "storage"
+        storage = LocalFileSystemStorageService(root_dir=str(root))
+
+        stored = storage.store_bytes(
+            content=b"payload",
+            filename="../../../escaped.txt",
+            project_id="proj-1",
+            organization_id="org-1",
+        )
+
+        written = (root / stored.storage_path).resolve()
+        assert written.is_relative_to(root.resolve())
+        assert not (Path(tmpdir) / "escaped.txt").exists()
+        assert stored.filename == "escaped.txt"
+
+
+def test_storage_service_rejects_read_outside_root():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        storage = LocalFileSystemStorageService(root_dir=str(Path(tmpdir) / "storage"))
+        (Path(tmpdir) / "secret.txt").write_text("nope")
+
+        try:
+            storage.get_bytes("../secret.txt")
+        except (PermissionError, FileNotFoundError):
+            pass
+        else:
+            raise AssertionError("Reading outside the storage root must be refused")

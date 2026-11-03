@@ -4,8 +4,10 @@ Implements parsing, candidate generation, human approval interruption,
 and canonical domain state promotion with versioning and audit trails.
 """
 
-from typing import Any, Dict, List, Literal
-from langgraph.graph import StateGraph, START, END
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Literal, Optional
+
+from langgraph.graph import END, START, StateGraph
 from langgraph.types import interrupt
 
 from packages.domain.invariants import (
@@ -185,11 +187,63 @@ def human_approval_interrupt_node(state: ScriptIntelligenceState) -> Dict[str, A
     return {}
 
 
-def should_commit(state: ScriptIntelligenceState) -> Literal["commit_canonical_node", "__end__"]:
-    """Conditional edge deciding whether to commit canonical state or end."""
+def should_commit(
+    state: ScriptIntelligenceState,
+) -> Literal["commit_canonical_node", "record_rejection_node"]:
+    """Conditional edge: approved candidates are committed, anything else is a rejection."""
     if state.get("approval_status") == "approved":
         return "commit_canonical_node"
-    return END
+    return "record_rejection_node"
+
+
+def _record_decision(
+    db, workflow_run_id: str, decision: str, actor_id: str, notes: Optional[str]
+) -> None:
+    approval = (
+        db.query(ApprovalRequestModel)
+        .filter_by(workflow_run_id=workflow_run_id, status="pending")
+        .first()
+    )
+    if approval:
+        approval.status = "decided"
+        approval.decision = decision
+        approval.decision_notes = notes
+        approval.decided_by = actor_id
+        approval.decided_at = datetime.now(timezone.utc)
+
+
+def record_rejection_node(state: ScriptIntelligenceState) -> Dict[str, Any]:
+    """Close a rejected review: candidates rejected, run rejected, project untouched."""
+    db = SessionLocal()
+    try:
+        workflow_run_id = state["workflow_run_id"]
+        actor_id = state.get("decided_by") or state["actor_id"]
+
+        _record_decision(db, workflow_run_id, "rejected", actor_id, state.get("decision_notes"))
+        for model in (SceneCandidateModel, EntityCandidateModel):
+            db.query(model).filter(model.workflow_run_id == workflow_run_id).update(
+                {"status": "rejected"}, synchronize_session=False
+            )
+
+        run = db.query(WorkflowRunModel).filter_by(id=workflow_run_id).first()
+        if run:
+            run.status = "rejected"
+
+        db.add(
+            AuditEventModel(
+                project_id=state["project_id"],
+                organization_id=state["organization_id"],
+                actor_id=actor_id,
+                action="script_intelligence_rejected",
+                target_type="workflow_run",
+                target_id=workflow_run_id,
+                details={"notes": state.get("decision_notes")},
+            )
+        )
+        db.commit()
+        return {"completed": True}
+    finally:
+        db.close()
 
 
 def commit_canonical_node(state: ScriptIntelligenceState) -> Dict[str, Any]:
@@ -274,16 +328,10 @@ def commit_canonical_node(state: ScriptIntelligenceState) -> Dict[str, Any]:
             },
         )
         db.add(version_record)
+        db.flush()  # assign version_record.id before the audit row references it
 
-        # 4. Mark ApprovalRequest as approved
-        approval = db.query(ApprovalRequestModel).filter_by(
-            workflow_run_id=workflow_run_id, status="pending"
-        ).first()
-        if approval:
-            approval.status = "approved"
-            approval.decision = "approved"
-            approval.decision_notes = state.get("decision_notes")
-            approval.decided_by = actor_id
+        # 4. Record the approval decision
+        _record_decision(db, workflow_run_id, "approved", actor_id, state.get("decision_notes"))
 
         # 5. Record Audit Event
         audit = AuditEventModel(
@@ -330,6 +378,7 @@ def build_script_intelligence_graph() -> StateGraph:
     workflow.add_node("generate_candidates_node", generate_candidates_node)
     workflow.add_node("human_approval_interrupt_node", human_approval_interrupt_node)
     workflow.add_node("commit_canonical_node", commit_canonical_node)
+    workflow.add_node("record_rejection_node", record_rejection_node)
 
     workflow.add_edge(START, "parse_script_node")
     workflow.add_edge("parse_script_node", "generate_candidates_node")
@@ -339,9 +388,10 @@ def build_script_intelligence_graph() -> StateGraph:
         should_commit,
         {
             "commit_canonical_node": "commit_canonical_node",
-            END: END,
+            "record_rejection_node": "record_rejection_node",
         },
     )
     workflow.add_edge("commit_canonical_node", END)
+    workflow.add_edge("record_rejection_node", END)
 
     return workflow

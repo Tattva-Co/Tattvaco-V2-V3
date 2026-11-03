@@ -136,6 +136,7 @@ class ProjectRepository:
             snapshot_data=snapshot_data,
         )
         self.db.add(version_record)
+        self.db.flush()  # assign version_record.id before the audit row references it
 
         audit = AuditEventModel(
             project_id=project_id,
@@ -187,6 +188,7 @@ class AssetRepository:
             asset_metadata=metadata or {},
         )
         self.db.add(asset)
+        self.db.flush()  # assign asset.id before the audit row references it
 
         audit = AuditEventModel(
             project_id=project_id,

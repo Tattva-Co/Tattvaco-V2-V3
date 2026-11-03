@@ -85,6 +85,7 @@ class ProjectResponse(BaseModel):
     genre: Optional[str]
     status: str
     current_version: int
+    created_by: str
     created_at: datetime
     updated_at: datetime
     model_config = ConfigDict(from_attributes=True)
@@ -409,7 +410,11 @@ def decide_approval(
         raise HTTPException(status_code=404, detail="Approval request not found")
 
     if approval.status != "pending":
-        raise HTTPException(status_code=400, detail=f"Approval request already {approval.status}")
+        raise HTTPException(status_code=409, detail=f"Approval request already {approval.status}")
+
+    reviewer = db.query(UserModel).filter_by(id=req.actor_id).first()
+    if not reviewer or reviewer.organization_id != approval.organization_id:
+        raise HTTPException(status_code=403, detail="Reviewer is not a member of this organization")
 
     # Resume the LangGraph workflow using the thread_id
     with get_checkpointer() as checkpointer:

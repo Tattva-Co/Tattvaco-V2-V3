@@ -1,128 +1,91 @@
 """Tests verifying LangGraph checkpointing, pause/interrupt, and crash resumption."""
 
 import uuid
+
 import pytest
 from langgraph.types import Command
 
 from packages.persistence.database import SessionLocal
 from packages.persistence.models import (
-    OrganizationModel,
+    ApprovalRequestModel,
+    AuditEventModel,
     ProjectModel,
-    UserModel,
     WorkflowRunModel,
 )
 from packages.workflows.checkpointer import get_checkpointer
 from packages.workflows.script_intelligence.graph import build_script_intelligence_graph
-
-SAMPLE_SCRIPT = """
-EXT. RAJPUT FORTRESS - DAY
-
-A fierce dust storm sweeps across the high ramparts.
-RANA VEER (30s), clad in weathered armor, watches the distant valley.
-
-RANA VEER
-They arrive before dusk. Prepare the cavalry.
-
-INT. WAR COUNCIL CHAMBER - NIGHT
-
-Torches flicker against ancient stone walls.
-BHAVANI (20s) unrolls a strategic parchment on the iron table.
-
-BHAVANI
-The northern pass is compromised. We hold the bridge.
-"""
+from tests.conftest import SAMPLE_SCRIPT
 
 
 @pytest.fixture
-def test_setup():
-    db = SessionLocal()
-    org_id = str(uuid.uuid4())
-    user_id = str(uuid.uuid4())
+def run_context(tenant):
     proj_id = str(uuid.uuid4())
     run_id = str(uuid.uuid4())
-
-    org = OrganizationModel(id=org_id, name="Test Studio", slug=f"test-{org_id[:8]}")
-    user = UserModel(id=user_id, organization_id=org_id, email=f"{user_id[:8]}@test.com", full_name="Tester")
-    proj = ProjectModel(id=proj_id, organization_id=org_id, title="Test Film", current_version=1, created_by=user_id)
-    run = WorkflowRunModel(
-        id=run_id,
-        graph_id="script_intelligence",
-        graph_version="1.0",
-        project_id=proj_id,
-        organization_id=org_id,
-        actor_id=user_id,
-        expected_project_version=1,
-        status="running",
+    db = SessionLocal()
+    db.add(
+        ProjectModel(
+            id=proj_id,
+            organization_id=tenant.org_id,
+            title="Test Film",
+            current_version=1,
+            created_by=tenant.user_id,
+        )
     )
-    db.add(org)
     db.flush()
-    db.add(user)
-    db.flush()
-    db.add(proj)
-    db.flush()
-    db.add(run)
+    db.add(
+        WorkflowRunModel(
+            id=run_id,
+            graph_id="script_intelligence",
+            graph_version="1.0",
+            project_id=proj_id,
+            organization_id=tenant.org_id,
+            actor_id=tenant.user_id,
+            expected_project_version=1,
+            status="running",
+        )
+    )
     db.commit()
     db.close()
+    return {"org_id": tenant.org_id, "user_id": tenant.user_id, "proj_id": proj_id, "run_id": run_id}
 
-    yield {
-        "org_id": org_id,
-        "user_id": user_id,
-        "proj_id": proj_id,
-        "run_id": run_id,
+
+def _initial_state(ctx):
+    return {
+        "workflow_run_id": ctx["run_id"],
+        "project_id": ctx["proj_id"],
+        "organization_id": ctx["org_id"],
+        "actor_id": ctx["user_id"],
+        "expected_project_version": 1,
+        "script_asset_id": "asset-test",
+        "raw_script_text": SAMPLE_SCRIPT,
+        "approval_status": "pending",
     }
 
-    # Cleanup
-    db = SessionLocal()
-    db.query(WorkflowRunModel).filter_by(id=run_id).delete()
-    db.query(ProjectModel).filter_by(id=proj_id).delete()
-    db.query(UserModel).filter_by(id=user_id).delete()
-    db.query(OrganizationModel).filter_by(id=org_id).delete()
-    db.commit()
-    db.close()
 
-
-def test_langgraph_checkpoint_interrupt_and_resume(test_setup):
-    data = test_setup
-    thread_id = data["run_id"]
-    config = {"configurable": {"thread_id": thread_id}}
+def test_langgraph_checkpoint_interrupt_and_resume(run_context):
+    ctx = run_context
+    config = {"configurable": {"thread_id": ctx["run_id"]}}
 
     # Phase 1: Run graph up to the human approval interrupt
     with get_checkpointer() as checkpointer:
         graph = build_script_intelligence_graph().compile(checkpointer=checkpointer)
-
-        initial_state = {
-            "workflow_run_id": data["run_id"],
-            "project_id": data["proj_id"],
-            "organization_id": data["org_id"],
-            "actor_id": data["user_id"],
-            "expected_project_version": 1,
-            "script_asset_id": "asset-test",
-            "raw_script_text": SAMPLE_SCRIPT,
-            "approval_status": "pending",
-        }
-
-        # Invocation pauses at human_approval_interrupt_node
-        res1 = graph.invoke(initial_state, config=config)
+        graph.invoke(_initial_state(ctx), config=config)
         state_after_interrupt = graph.get_state(config)
-        assert len(state_after_interrupt.tasks) > 0  # Task is paused on interrupt
-        assert state_after_interrupt.values["extracted_scenes"]
+        assert len(state_after_interrupt.tasks) > 0  # paused on interrupt
         assert len(state_after_interrupt.values["extracted_scenes"]) == 2
 
-    # Phase 2: Simulate process shutdown/restart and resume with human approval decision
+    # Phase 2: Simulate process restart and resume with a human decision
     with get_checkpointer() as fresh_checkpointer:
         fresh_graph = build_script_intelligence_graph().compile(checkpointer=fresh_checkpointer)
-
-        # Check that state was durably persisted in PostgreSQL
         recovered_state = fresh_graph.get_state(config)
-        assert recovered_state.values["workflow_run_id"] == data["run_id"]
+        assert recovered_state.values["workflow_run_id"] == ctx["run_id"]
 
-        # Resume execution with human decision
         resume_command = Command(
             resume={
                 "decision": "approved",
                 "notes": "Verified historical accuracy",
-                "actor_id": data["user_id"],
-                "approved_scene_ids": [],  # Empty signifies approve all
+                "actor_id": ctx["user_id"],
+                "approved_scene_ids": [],  # empty signifies approve all
                 "approved_entity_ids": [],
             }
         )
@@ -132,6 +95,40 @@ def test_langgraph_checkpoint_interrupt_and_resume(test_setup):
 
     # Phase 3: Verify canonical database state
     db = SessionLocal()
-    proj = db.query(ProjectModel).filter_by(id=data["proj_id"]).first()
-    assert proj.current_version == 2
-    db.close()
+    try:
+        proj = db.query(ProjectModel).filter_by(id=ctx["proj_id"]).one()
+        assert proj.current_version == 2
+        commit_audit = db.query(AuditEventModel).filter_by(
+            project_id=ctx["proj_id"], action="script_intelligence_committed"
+        ).one()
+        assert commit_audit.target_id  # audit must reference the new version row
+    finally:
+        db.close()
+
+
+def test_rejection_closes_approval_and_run_without_mutating_project(run_context):
+    ctx = run_context
+    config = {"configurable": {"thread_id": ctx["run_id"]}}
+
+    with get_checkpointer() as checkpointer:
+        graph = build_script_intelligence_graph().compile(checkpointer=checkpointer)
+        graph.invoke(_initial_state(ctx), config=config)
+        graph.invoke(
+            Command(resume={"decision": "rejected", "notes": "Wrong draft", "actor_id": ctx["user_id"]}),
+            config=config,
+        )
+
+    db = SessionLocal()
+    try:
+        approval = db.query(ApprovalRequestModel).filter_by(workflow_run_id=ctx["run_id"]).one()
+        assert approval.status == "decided"
+        assert approval.decision == "rejected"
+        assert approval.decided_by == ctx["user_id"]
+
+        run = db.query(WorkflowRunModel).filter_by(id=ctx["run_id"]).one()
+        assert run.status == "rejected"
+
+        proj = db.query(ProjectModel).filter_by(id=ctx["proj_id"]).one()
+        assert proj.current_version == 1
+    finally:
+        db.close()

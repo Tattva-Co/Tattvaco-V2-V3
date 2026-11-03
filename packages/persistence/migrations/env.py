@@ -15,7 +15,8 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 from packages.persistence.database import Base, DATABASE_URL
-import packages.persistence.models  # ensure models are registered
+import packages.persistence.models  # noqa: F401  ensure models are registered
+from packages.persistence.migration_filters import include_object
 
 target_metadata = Base.metadata
 
@@ -36,6 +37,7 @@ def run_migrations_offline() -> None:
     context.configure(
         url=url,
         target_metadata=target_metadata,
+        include_object=include_object,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
     )
@@ -56,7 +58,9 @@ def run_migrations_online() -> None:
 
     with connectable.connect() as connection:
         context.configure(
-            connection=connection, target_metadata=target_metadata
+            connection=connection,
+            target_metadata=target_metadata,
+            include_object=include_object,
         )
 
         with context.begin_transaction():
