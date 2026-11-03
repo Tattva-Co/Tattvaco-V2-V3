@@ -1,0 +1,53 @@
+"""Integration tests for the immutable storage service."""
+
+import hashlib
+import io
+import tempfile
+import pytest
+from packages.storage.service import LocalFileSystemStorageService
+
+
+def test_storage_service_stores_and_retrieves_asset():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        storage = LocalFileSystemStorageService(root_dir=tmpdir)
+        content = b"EXT. FORT COURTYARD - DAY\nWarrior stands tall.\n"
+        expected_sha = hashlib.sha256(content).hexdigest()
+
+        stored = storage.store_bytes(
+            content=content,
+            filename="test_script.fountain",
+            project_id="proj-123",
+            organization_id="org-abc",
+            mime_type="text/plain",
+        )
+
+        assert stored.checksum_sha256 == expected_sha
+        assert stored.size_bytes == len(content)
+        assert storage.exists(stored.storage_path)
+
+        retrieved = storage.get_bytes(stored.storage_path)
+        assert retrieved == content
+
+
+def test_storage_service_immutability():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        storage = LocalFileSystemStorageService(root_dir=tmpdir)
+        content = b"INT. THRONE ROOM - NIGHT\n"
+
+        stored1 = storage.store_bytes(
+            content=content,
+            filename="scene.fountain",
+            project_id="proj-1",
+            organization_id="org-1",
+        )
+
+        # Storing identical content yields identical checksum and path
+        stored2 = storage.store_bytes(
+            content=content,
+            filename="scene.fountain",
+            project_id="proj-1",
+            organization_id="org-1",
+        )
+
+        assert stored1.checksum_sha256 == stored2.checksum_sha256
+        assert stored1.storage_path == stored2.storage_path

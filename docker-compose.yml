@@ -1,0 +1,21 @@
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: tattva-postgres
+    restart: always
+    ports:
+      - "55432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: tattva_film_director
+    volumes:
+      - tattva_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d tattva_film_director"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  tattva_pgdata:
