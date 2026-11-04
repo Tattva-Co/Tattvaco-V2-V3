@@ -223,3 +223,106 @@ class EntityModel(Base):
     source_locator = Column(String(100), nullable=False)
     project_version = Column(Integer, default=1, nullable=False)
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+
+class ResearchQuestionModel(Base):
+    """Canonical open questions guiding historical and cultural research."""
+    __tablename__ = "research_questions"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id"), nullable=False)
+    project_version = Column(Integer, default=1, nullable=False)
+    text = Column(Text, nullable=False)
+    category = Column(String(50), default="general", nullable=False)
+    status = Column(String(50), default="open", nullable=False)  # open, investigating, resolved, deferred
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+
+
+class ResearchSourceModel(Base):
+    """Canonical bibliographic/archival source references with tier classification."""
+    __tablename__ = "research_sources"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id"), nullable=False)
+    project_version = Column(Integer, default=1, nullable=False)
+    title = Column(String(255), nullable=False)
+    tier = Column(String(50), default="tier_2_scholarly", nullable=False)
+    author = Column(String(255), nullable=True)
+    publication_year = Column(Integer, nullable=True)
+    locator = Column(String(255), nullable=True)
+    url = Column(String(500), nullable=True)
+    asset_id = Column(String(36), ForeignKey("assets.id"), nullable=True)
+    reliability_notes = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+
+class ResearchClaimModel(Base):
+    """Canonical evidence-backed claims and interpretations committed to project version."""
+    __tablename__ = "research_claims"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id"), nullable=False)
+    project_version = Column(Integer, default=1, nullable=False)
+    claim_class = Column(String(50), default="historical_fact", nullable=False)
+    statement = Column(Text, nullable=False)
+    era_or_date = Column(String(100), nullable=True)
+    location = Column(String(255), nullable=True)
+    confidence = Column(Float, default=1.0, nullable=False)
+    source_id = Column(String(36), ForeignKey("research_sources.id"), nullable=True)
+    question_id = Column(String(36), ForeignKey("research_questions.id"), nullable=True)
+    status = Column(String(50), default="approved", nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+
+class ResearchConflictModel(Base):
+    """Contradictions or contested evidence between two claims."""
+    __tablename__ = "research_conflicts"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id"), nullable=False)
+    project_version = Column(Integer, default=1, nullable=False)
+    claim_id_a = Column(String(36), ForeignKey("research_claims.id"), nullable=False)
+    claim_id_b = Column(String(36), ForeignKey("research_claims.id"), nullable=False)
+    description = Column(Text, nullable=False)
+    status = Column(String(50), default="open", nullable=False)
+    resolution_notes = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+
+class ResearchClaimCandidateModel(Base):
+    """AI-proposed research claims awaiting human review."""
+    __tablename__ = "research_claim_candidates"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    workflow_run_id = Column(String(36), ForeignKey("workflow_runs.id"), nullable=False, index=True)
+    project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id"), nullable=False)
+    claim_class = Column(String(50), default="historical_fact", nullable=False)
+    statement = Column(Text, nullable=False)
+    era_or_date = Column(String(100), nullable=True)
+    location = Column(String(255), nullable=True)
+    confidence = Column(Float, default=0.9, nullable=False)
+    source_title = Column(String(255), nullable=False)
+    source_tier = Column(String(50), default="tier_2_scholarly", nullable=False)
+    source_locator = Column(String(255), nullable=True)
+    status = Column(String(50), default="proposed", nullable=False)  # proposed, approved, rejected
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+
+class ResearchQuestionCandidateModel(Base):
+    """AI-proposed open questions awaiting human review."""
+    __tablename__ = "research_question_candidates"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    workflow_run_id = Column(String(36), ForeignKey("workflow_runs.id"), nullable=False, index=True)
+    project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id"), nullable=False)
+    text = Column(Text, nullable=False)
+    category = Column(String(50), default="general", nullable=False)
+    status = Column(String(50), default="proposed", nullable=False)  # proposed, approved, rejected
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)

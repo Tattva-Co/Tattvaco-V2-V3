@@ -56,8 +56,20 @@ FAKE_RESPONSES = {
     "/projects/p1/candidates": {
         "scenes": [SCENE_CANDIDATE],
         "entities": [ENTITY_CANDIDATE],
+        "research_claims": [],
+        "research_questions": [],
         "approvals": [{"id": "ap1", "workflow_run_id": "r1", "scope": "s", "status": "pending", "candidate_summary": {}}],
     },
+    "/projects/p1/research/questions": [
+        {"id": "rq1", "project_id": "p1", "project_version": 2, "text": "Armor?", "category": "military", "status": "open", "created_at": "x", "updated_at": "x"}
+    ],
+    "/projects/p1/research/sources": [
+        {"id": "rs1", "project_id": "p1", "project_version": 2, "title": "History", "tier": "tier_1_primary", "author": "A", "publication_year": 2000, "locator": "p.1", "url": None, "asset_id": None, "reliability_notes": None, "created_at": "x"}
+    ],
+    "/projects/p1/research/claims": [
+        {"id": "rc1", "project_id": "p1", "project_version": 2, "claim_class": "historical_fact", "statement": "Fact", "era_or_date": "200 BCE", "location": "Kalinga", "confidence": 0.9, "source_id": "rs1", "question_id": None, "status": "approved", "created_at": "x"}
+    ],
+    "/projects/p1/research/conflicts": [],
 }
 
 

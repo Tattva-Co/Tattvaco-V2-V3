@@ -6,11 +6,7 @@ from apps.ui.api_client import TattvaApiClient
 from apps.ui.components import safe_call
 
 
-def _render_approval_form(client: TattvaApiClient, approval: dict, scenes: list, entities: list) -> None:
-    st.subheader(f"Pending Request: `{approval['id']}`")
-    st.caption(f"Workflow Run: `{approval['workflow_run_id']}` | Scope: {approval['scope']}")
-
-    # Only show candidates produced by this approval's workflow run.
+def _render_script_approval(client: TattvaApiClient, approval: dict, scenes: list, entities: list) -> None:
     run_id = approval["workflow_run_id"]
     run_scenes = [s for s in scenes if s["workflow_run_id"] == run_id and s["status"] == "proposed"]
     run_entities = [e for e in entities if e["workflow_run_id"] == run_id and e["status"] == "proposed"]
@@ -52,7 +48,12 @@ def _render_approval_form(client: TattvaApiClient, approval: dict, scenes: list,
         if approve_btn:
             with st.spinner("Applying approval and advancing canonical project version..."):
                 res = safe_call(
-                    client.decide_approval, approval["id"], "approved", notes, selected_scenes, selected_entities
+                    client.decide_approval,
+                    approval["id"],
+                    "approved",
+                    notes,
+                    scene_ids=selected_scenes,
+                    entity_ids=selected_entities,
                 )
                 if res:
                     st.success(f"Approved! Project advanced to Version v{res['new_project_version']}")
@@ -64,6 +65,83 @@ def _render_approval_form(client: TattvaApiClient, approval: dict, scenes: list,
                 if res:
                     st.warning("Candidates rejected.")
                     st.rerun()
+
+
+def _render_research_approval(client: TattvaApiClient, approval: dict, claims: list, questions: list) -> None:
+    run_id = approval["workflow_run_id"]
+    run_claims = [c for c in claims if c["workflow_run_id"] == run_id and c["status"] == "proposed"]
+    run_questions = [q for q in questions if q["workflow_run_id"] == run_id and q["status"] == "proposed"]
+
+    with st.form(f"research_approval_form_{approval['id']}"):
+        st.markdown("### Proposed Historical Claims")
+        selected_claims = []
+        for c in run_claims:
+            checked = st.checkbox(
+                f"[{c['claim_class'].upper()}] {c['statement']}",
+                value=True,
+                key=f"claim_{c['id']}",
+            )
+            st.caption(
+                f"Era: `{c.get('era_or_date') or 'Unspecified'}` | Source: `{c['source_title']}` ({c['source_tier']}) | Confidence: {int(c['confidence'] * 100)}%"
+            )
+            if checked:
+                selected_claims.append(c["id"])
+
+        st.markdown("### Proposed Open Questions")
+        selected_questions = []
+        for q in run_questions:
+            checked = st.checkbox(
+                f"[{q['category'].upper()}] {q['text']}",
+                value=True,
+                key=f"question_{q['id']}",
+            )
+            if checked:
+                selected_questions.append(q["id"])
+
+        notes = st.text_input("Reviewer Notes", placeholder="Approved historical claims and questions")
+        col_approve, col_reject = st.columns(2)
+        with col_approve:
+            approve_btn = st.form_submit_button("✅ Approve Selected Research")
+        with col_reject:
+            reject_btn = st.form_submit_button("❌ Reject All")
+
+        if approve_btn:
+            with st.spinner("Applying approval and advancing canonical project version..."):
+                res = safe_call(
+                    client.decide_approval,
+                    approval["id"],
+                    "approved",
+                    notes,
+                    claim_ids=selected_claims,
+                    question_ids=selected_questions,
+                )
+                if res:
+                    st.success(f"Approved! Project advanced to Version v{res['new_project_version']}")
+                    st.rerun()
+
+        if reject_btn:
+            with st.spinner("Rejecting research candidates..."):
+                res = safe_call(client.decide_approval, approval["id"], "rejected", notes)
+                if res:
+                    st.warning("Research candidates rejected.")
+                    st.rerun()
+
+
+def _render_approval_form(
+    client: TattvaApiClient,
+    approval: dict,
+    scenes: list,
+    entities: list,
+    claims: list,
+    questions: list,
+) -> None:
+    st.subheader(f"Pending Request: `{approval['id']}`")
+    st.caption(f"Workflow Run: `{approval['workflow_run_id']}` | Scope: {approval['scope']}")
+
+    if approval.get("scope") == "historical_research_candidates":
+        _render_research_approval(client, approval, claims, questions)
+    else:
+        _render_script_approval(client, approval, scenes, entities)
 
 
 def render(client: TattvaApiClient, project: dict) -> None:
@@ -79,4 +157,11 @@ def render(client: TattvaApiClient, project: dict) -> None:
         st.success("✅ No pending approval requests. All candidates have either been reviewed or none are pending.")
         return
     for approval in pending:
-        _render_approval_form(client, approval, data.get("scenes", []), data.get("entities", []))
+        _render_approval_form(
+            client,
+            approval,
+            data.get("scenes", []),
+            data.get("entities", []),
+            data.get("research_claims", []),
+            data.get("research_questions", []),
+        )

@@ -63,8 +63,45 @@ class AuditAction(str, Enum):
     APPROVAL_DECIDED = "approval_decided"
     SCRIPT_INTELLIGENCE_COMMITTED = "script_intelligence_committed"
     SCRIPT_INTELLIGENCE_REJECTED = "script_intelligence_rejected"
+    RESEARCH_QUESTION_CREATED = "research_question_created"
+    RESEARCH_SOURCE_RECORDED = "research_source_recorded"
+    RESEARCH_COMMITTED = "research_committed"
+    RESEARCH_REJECTED = "research_rejected"
+
+
+class SourceTier(str, Enum):
+    TIER_0 = "tier_0_project"
+    TIER_1 = "tier_1_primary"
+    TIER_2 = "tier_2_scholarly"
+    TIER_3 = "tier_3_discovery"
+
+
+class ClaimClass(str, Enum):
+    FACT = "historical_fact"
+    INTERPRETATION = "historical_interpretation"
+    CONTESTED = "contested_claim"
+    CREATIVE_DRAMATIZATION = "creative_dramatization"
+    USER_ASSERTION = "user_assertion"
+    UNVERIFIED = "unverified"
+
+
+class QuestionStatus(str, Enum):
+    OPEN = "open"
+    INVESTIGATING = "investigating"
+    RESOLVED = "resolved"
+    DEFERRED = "deferred"
+
+
+class ConflictStatus(str, Enum):
+    OPEN = "open"
+    RESOLVED = "resolved"
+    DISMISSED = "dismissed"
 
 
 SCRIPT_INTELLIGENCE_GRAPH_ID = "script_intelligence"
 SCRIPT_INTELLIGENCE_GRAPH_VERSION = "1.0"
 SCRIPT_INTELLIGENCE_APPROVAL_SCOPE = "script_intelligence_candidates"
+
+HISTORICAL_RESEARCH_GRAPH_ID = "historical_research"
+HISTORICAL_RESEARCH_GRAPH_VERSION = "1.0"
+HISTORICAL_RESEARCH_APPROVAL_SCOPE = "historical_research_candidates"

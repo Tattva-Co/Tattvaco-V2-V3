@@ -85,11 +85,19 @@ class TattvaApiClient:
         notes: str = "",
         scene_ids: list | None = None,
         entity_ids: list | None = None,
+        claim_ids: list | None = None,
+        question_ids: list | None = None,
     ):
         payload: Dict[str, Any] = {"decision": decision, "notes": notes}
         if decision == "approved":
-            payload["approved_scene_ids"] = scene_ids or []
-            payload["approved_entity_ids"] = entity_ids or []
+            if scene_ids is not None:
+                payload["approved_scene_ids"] = scene_ids
+            if entity_ids is not None:
+                payload["approved_entity_ids"] = entity_ids
+            if claim_ids is not None:
+                payload["approved_claim_ids"] = claim_ids
+            if question_ids is not None:
+                payload["approved_question_ids"] = question_ids
         return self.post(f"/approvals/{approval_id}/decide", payload)
 
     def list_scenes(self, project_id: str):
@@ -103,3 +111,50 @@ class TattvaApiClient:
 
     def audit_log(self, project_id: str):
         return self.get(f"/projects/{project_id}/audit-log")
+
+    # -- historical research -------------------------------------------------
+
+    def list_research_questions(self, project_id: str, status: str | None = None):
+        endpoint = f"/projects/{project_id}/research/questions"
+        if status:
+            endpoint += f"?status={status}"
+        return self.get(endpoint)
+
+    def create_research_question(self, project_id: str, text: str, category: str = "general"):
+        return self.post(
+            f"/projects/{project_id}/research/questions",
+            {"text": text, "category": category},
+        )
+
+    def list_research_sources(self, project_id: str):
+        return self.get(f"/projects/{project_id}/research/sources")
+
+    def create_research_source(
+        self,
+        project_id: str,
+        title: str,
+        tier: str = "tier_2_scholarly",
+        author: str | None = None,
+        locator: str | None = None,
+    ):
+        return self.post(
+            f"/projects/{project_id}/research/sources",
+            {"title": title, "tier": tier, "author": author, "locator": locator},
+        )
+
+    def list_research_claims(self, project_id: str, claim_class: str | None = None):
+        endpoint = f"/projects/{project_id}/research/claims"
+        if claim_class:
+            endpoint += f"?claim_class={claim_class}"
+        return self.get(endpoint)
+
+    def list_research_conflicts(self, project_id: str):
+        return self.get(f"/projects/{project_id}/research/conflicts")
+
+    def run_historical_research(
+        self, project_id: str, topic: str, seed_text: str | None = None, sync: bool = True
+    ):
+        return self.post(
+            f"/projects/{project_id}/workflows/historical-research",
+            {"topic": topic, "seed_text": seed_text, "sync_execution": sync},
+        )

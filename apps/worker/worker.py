@@ -10,10 +10,15 @@ from typing import Callable, Dict
 
 from packages.core.config import get_settings
 from packages.core.logging import configure_logging, get_logger
-from packages.domain.enums import SCRIPT_INTELLIGENCE_GRAPH_ID, OutboxStatus
+from packages.domain.enums import (
+    HISTORICAL_RESEARCH_GRAPH_ID,
+    SCRIPT_INTELLIGENCE_GRAPH_ID,
+    OutboxStatus,
+)
 from packages.persistence.database import session_scope
 from packages.persistence.models import OutboxTaskModel
 from packages.persistence.repositories import OutboxRepository
+from packages.services.historical_research import HistoricalResearchService
 from packages.services.script_intelligence import ScriptIntelligenceService
 
 logger = get_logger("worker")
@@ -24,8 +29,14 @@ def _run_script_intelligence(workflow_run_id: str) -> None:
         ScriptIntelligenceService(db).execute(workflow_run_id)
 
 
+def _run_historical_research(workflow_run_id: str) -> None:
+    with session_scope() as db:
+        HistoricalResearchService(db).execute(workflow_run_id)
+
+
 TASK_HANDLERS: Dict[str, Callable[[str], None]] = {
     SCRIPT_INTELLIGENCE_GRAPH_ID: _run_script_intelligence,
+    HISTORICAL_RESEARCH_GRAPH_ID: _run_historical_research,
 }
 
 

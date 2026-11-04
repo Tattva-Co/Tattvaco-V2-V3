@@ -27,6 +27,12 @@ from packages.persistence.models import (
     OutboxTaskModel,
     ProjectModel,
     ProjectVersionModel,
+    ResearchClaimCandidateModel,
+    ResearchClaimModel,
+    ResearchConflictModel,
+    ResearchQuestionCandidateModel,
+    ResearchQuestionModel,
+    ResearchSourceModel,
     SceneCandidateModel,
     SceneModel,
     UserModel,
@@ -219,6 +225,14 @@ class ApprovalRepository(_Repository):
         )
         return self.db.scalars(stmt).first()
 
+    def get_for_run(self, run_id: str) -> ApprovalRequestModel | None:
+        stmt = (
+            select(ApprovalRequestModel)
+            .where(ApprovalRequestModel.workflow_run_id == run_id)
+            .order_by(ApprovalRequestModel.created_at.desc())
+        )
+        return self.db.scalars(stmt).first()
+
     def list_for_project(self, project_id: str) -> List[ApprovalRequestModel]:
         stmt = (
             select(ApprovalRequestModel)
@@ -264,6 +278,44 @@ class CandidateRepository(_Repository):
             select(EntityCandidateModel)
             .where(EntityCandidateModel.project_id == project_id)
             .order_by(EntityCandidateModel.category, EntityCandidateModel.name)
+        )
+        return list(self.db.scalars(stmt))
+
+    def add_claim(self, candidate: ResearchClaimCandidateModel) -> ResearchClaimCandidateModel:
+        return self._add(candidate)
+
+    def add_question(self, candidate: ResearchQuestionCandidateModel) -> ResearchQuestionCandidateModel:
+        return self._add(candidate)
+
+    def claims_for_run(self, run_id: str) -> List[ResearchClaimCandidateModel]:
+        stmt = (
+            select(ResearchClaimCandidateModel)
+            .where(ResearchClaimCandidateModel.workflow_run_id == run_id)
+            .order_by(ResearchClaimCandidateModel.created_at)
+        )
+        return list(self.db.scalars(stmt))
+
+    def questions_for_run(self, run_id: str) -> List[ResearchQuestionCandidateModel]:
+        stmt = (
+            select(ResearchQuestionCandidateModel)
+            .where(ResearchQuestionCandidateModel.workflow_run_id == run_id)
+            .order_by(ResearchQuestionCandidateModel.created_at)
+        )
+        return list(self.db.scalars(stmt))
+
+    def claims_for_project(self, project_id: str) -> List[ResearchClaimCandidateModel]:
+        stmt = (
+            select(ResearchClaimCandidateModel)
+            .where(ResearchClaimCandidateModel.project_id == project_id)
+            .order_by(ResearchClaimCandidateModel.created_at)
+        )
+        return list(self.db.scalars(stmt))
+
+    def questions_for_project(self, project_id: str) -> List[ResearchQuestionCandidateModel]:
+        stmt = (
+            select(ResearchQuestionCandidateModel)
+            .where(ResearchQuestionCandidateModel.project_id == project_id)
+            .order_by(ResearchQuestionCandidateModel.created_at)
         )
         return list(self.db.scalars(stmt))
 
@@ -317,5 +369,55 @@ class AuditRepository(_Repository):
             select(AuditEventModel)
             .where(AuditEventModel.project_id == project_id)
             .order_by(AuditEventModel.created_at.desc())
+        )
+        return list(self.db.scalars(stmt))
+
+
+class ResearchRepository(_Repository):
+    def add_question(self, question: ResearchQuestionModel) -> ResearchQuestionModel:
+        return self._add(question)
+
+    def list_questions(self, project_id: str, status: str | None = None) -> List[ResearchQuestionModel]:
+        stmt = select(ResearchQuestionModel).where(ResearchQuestionModel.project_id == project_id)
+        if status:
+            stmt = stmt.where(ResearchQuestionModel.status == status)
+        stmt = stmt.order_by(ResearchQuestionModel.created_at.desc())
+        return list(self.db.scalars(stmt))
+
+    def get_question(self, question_id: str) -> ResearchQuestionModel | None:
+        return self.db.get(ResearchQuestionModel, question_id)
+
+    def add_source(self, source: ResearchSourceModel) -> ResearchSourceModel:
+        return self._add(source)
+
+    def list_sources(self, project_id: str) -> List[ResearchSourceModel]:
+        stmt = (
+            select(ResearchSourceModel)
+            .where(ResearchSourceModel.project_id == project_id)
+            .order_by(ResearchSourceModel.created_at.desc())
+        )
+        return list(self.db.scalars(stmt))
+
+    def get_source(self, source_id: str) -> ResearchSourceModel | None:
+        return self.db.get(ResearchSourceModel, source_id)
+
+    def add_claim(self, claim: ResearchClaimModel) -> ResearchClaimModel:
+        return self._add(claim)
+
+    def list_claims(self, project_id: str, claim_class: str | None = None) -> List[ResearchClaimModel]:
+        stmt = select(ResearchClaimModel).where(ResearchClaimModel.project_id == project_id)
+        if claim_class:
+            stmt = stmt.where(ResearchClaimModel.claim_class == claim_class)
+        stmt = stmt.order_by(ResearchClaimModel.created_at.desc())
+        return list(self.db.scalars(stmt))
+
+    def add_conflict(self, conflict: ResearchConflictModel) -> ResearchConflictModel:
+        return self._add(conflict)
+
+    def list_conflicts(self, project_id: str) -> List[ResearchConflictModel]:
+        stmt = (
+            select(ResearchConflictModel)
+            .where(ResearchConflictModel.project_id == project_id)
+            .order_by(ResearchConflictModel.created_at.desc())
         )
         return list(self.db.scalars(stmt))

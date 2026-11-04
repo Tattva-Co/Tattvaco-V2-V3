@@ -137,6 +137,28 @@ class EntityCandidateResponse(_ORM):
     status: str
 
 
+class ResearchClaimCandidateResponse(_ORM):
+    id: str
+    workflow_run_id: str
+    claim_class: str
+    statement: str
+    era_or_date: str | None
+    location: str | None
+    confidence: float
+    source_title: str
+    source_tier: str
+    source_locator: str | None
+    status: str
+
+
+class ResearchQuestionCandidateResponse(_ORM):
+    id: str
+    workflow_run_id: str
+    text: str
+    category: str
+    status: str
+
+
 class ApprovalResponse(_ORM):
     id: str
     workflow_run_id: str
@@ -151,6 +173,8 @@ class ApprovalResponse(_ORM):
 class CandidatesResponse(BaseModel):
     scenes: List[SceneCandidateResponse]
     entities: List[EntityCandidateResponse]
+    research_claims: List[ResearchClaimCandidateResponse] = Field(default_factory=list)
+    research_questions: List[ResearchQuestionCandidateResponse] = Field(default_factory=list)
     approvals: List[ApprovalResponse]
 
 
@@ -161,6 +185,83 @@ class ApprovalDecisionRequest(BaseModel):
     # exactly those candidates. Ignored for rejections.
     approved_scene_ids: List[str] | None = None
     approved_entity_ids: List[str] | None = None
+    approved_claim_ids: List[str] | None = None
+    approved_question_ids: List[str] | None = None
+
+
+class ResearchQuestionCreateRequest(BaseModel):
+    text: str = Field(..., min_length=1)
+    category: str = Field(default="general", max_length=50)
+
+
+class ResearchQuestionResponse(_ORM):
+    id: str
+    project_id: str
+    project_version: int
+    text: str
+    category: str
+    status: str
+    created_at: datetime
+    updated_at: datetime
+
+
+class ResearchSourceCreateRequest(BaseModel):
+    title: str = Field(..., min_length=1, max_length=255)
+    tier: str = Field(default="tier_2_scholarly", max_length=50)
+    author: str | None = None
+    publication_year: int | None = None
+    locator: str | None = None
+    url: str | None = None
+    asset_id: str | None = None
+    reliability_notes: str | None = None
+
+
+class ResearchSourceResponse(_ORM):
+    id: str
+    project_id: str
+    project_version: int
+    title: str
+    tier: str
+    author: str | None
+    publication_year: int | None
+    locator: str | None
+    url: str | None
+    asset_id: str | None
+    reliability_notes: str | None
+    created_at: datetime
+
+
+class ResearchClaimResponse(_ORM):
+    id: str
+    project_id: str
+    project_version: int
+    claim_class: str
+    statement: str
+    era_or_date: str | None
+    location: str | None
+    confidence: float
+    source_id: str | None
+    question_id: str | None
+    status: str
+    created_at: datetime
+
+
+class ResearchConflictResponse(_ORM):
+    id: str
+    project_id: str
+    project_version: int
+    claim_id_a: str
+    claim_id_b: str
+    description: str
+    status: str
+    resolution_notes: str | None
+    created_at: datetime
+
+
+class HistoricalResearchTriggerRequest(BaseModel):
+    topic: str = Field(..., min_length=1)
+    seed_text: str | None = None
+    sync_execution: bool = True
 
 
 class ApprovalDecisionResponse(BaseModel):

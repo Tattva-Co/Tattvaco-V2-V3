@@ -56,7 +56,11 @@ def get_audit_log(project_id: str, actor: ActorContext = Depends(get_actor), db:
 def get_candidates(project_id: str, actor: ActorContext = Depends(get_actor), db: Session = Depends(get_db)):
     overview = ProjectService(db).candidates(actor, project_id)
     return CandidatesResponse(
-        scenes=overview.scenes, entities=overview.entities, approvals=overview.approvals
+        scenes=overview.scenes,
+        entities=overview.entities,
+        research_claims=overview.research_claims,
+        research_questions=overview.research_questions,
+        approvals=overview.approvals,
     )
 
 

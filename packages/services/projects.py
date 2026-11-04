@@ -15,6 +15,8 @@ from packages.persistence.models import (
     EntityModel,
     ProjectModel,
     ProjectVersionModel,
+    ResearchClaimCandidateModel,
+    ResearchQuestionCandidateModel,
     SceneCandidateModel,
     SceneModel,
 )
@@ -32,6 +34,8 @@ from packages.services.identity import ActorContext
 class CandidateOverview:
     scenes: List[SceneCandidateModel]
     entities: List[EntityCandidateModel]
+    research_claims: List[ResearchClaimCandidateModel]
+    research_questions: List[ResearchQuestionCandidateModel]
     approvals: List[ApprovalRequestModel]
 
 
@@ -111,5 +115,7 @@ class ProjectService:
         return CandidateOverview(
             scenes=candidates.scenes_for_project(project_id),
             entities=candidates.entities_for_project(project_id),
+            research_claims=candidates.claims_for_project(project_id),
+            research_questions=candidates.questions_for_project(project_id),
             approvals=ApprovalRepository(self.db).list_for_project(project_id),
         )
