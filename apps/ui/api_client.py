@@ -87,6 +87,7 @@ class TattvaApiClient:
         entity_ids: list | None = None,
         claim_ids: list | None = None,
         question_ids: list | None = None,
+        panel_ids: list | None = None,
     ):
         payload: Dict[str, Any] = {"decision": decision, "notes": notes}
         if decision == "approved":
@@ -98,6 +99,8 @@ class TattvaApiClient:
                 payload["approved_claim_ids"] = claim_ids
             if question_ids is not None:
                 payload["approved_question_ids"] = question_ids
+            if panel_ids is not None:
+                payload["approved_panel_ids"] = panel_ids
         return self.post(f"/approvals/{approval_id}/decide", payload)
 
     def list_scenes(self, project_id: str):
@@ -157,4 +160,17 @@ class TattvaApiClient:
         return self.post(
             f"/projects/{project_id}/workflows/historical-research",
             {"topic": topic, "seed_text": seed_text, "sync_execution": sync},
+        )
+
+    # -- storyboard intelligence ----------------------------------------------
+
+    def list_storyboard_panels(self, project_id: str):
+        return self.get(f"/projects/{project_id}/storyboard/panels")
+
+    def run_storyboard_intelligence(
+        self, project_id: str, brief: str | None = None, sync: bool = True
+    ):
+        return self.post(
+            f"/projects/{project_id}/workflows/storyboard-intelligence",
+            {"brief": brief, "sync_execution": sync},
         )

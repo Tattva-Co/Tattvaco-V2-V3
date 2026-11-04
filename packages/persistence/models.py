@@ -326,3 +326,41 @@ class ResearchQuestionCandidateModel(Base):
     category = Column(String(50), default="general", nullable=False)
     status = Column(String(50), default="proposed", nullable=False)  # proposed, approved, rejected
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+
+class StoryboardPanelModel(Base):
+    """Canonical approved storyboard panels aligned to scenes."""
+    __tablename__ = "storyboard_panels"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id"), nullable=False)
+    project_version = Column(Integer, default=1, nullable=False)
+    panel_number = Column(Integer, nullable=False)
+    scene_id = Column(String(36), ForeignKey("scenes.id"), nullable=True, index=True)
+    shot_type = Column(String(50), default="wide", nullable=False)
+    description = Column(Text, nullable=False)
+    visual_notes = Column(Text, nullable=True)
+    dialogue_snippet = Column(Text, nullable=True)
+    frame_asset_id = Column(String(36), ForeignKey("assets.id"), nullable=True)
+    aspect_ratio = Column(String(20), default="16:9", nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+
+class StoryboardPanelCandidateModel(Base):
+    """AI-proposed storyboard panels awaiting director approval."""
+    __tablename__ = "storyboard_panel_candidates"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    workflow_run_id = Column(String(36), ForeignKey("workflow_runs.id"), nullable=False, index=True)
+    project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id"), nullable=False)
+    panel_number = Column(Integer, nullable=False)
+    suggested_scene_number = Column(Integer, nullable=True)
+    shot_type = Column(String(50), default="wide", nullable=False)
+    description = Column(Text, nullable=False)
+    visual_notes = Column(Text, nullable=True)
+    dialogue_snippet = Column(Text, nullable=True)
+    confidence = Column(Float, default=0.9, nullable=False)
+    status = Column(String(50), default="proposed", nullable=False)  # proposed, approved, rejected
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)

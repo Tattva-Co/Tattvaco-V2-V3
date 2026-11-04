@@ -17,6 +17,8 @@ from packages.persistence.models import (
     ResearchSourceModel,
     SceneCandidateModel,
     SceneModel,
+    StoryboardPanelCandidateModel,
+    StoryboardPanelModel,
     UserModel,
     WorkflowRunModel,
 )
@@ -29,6 +31,7 @@ from packages.persistence.repositories import (
     OutboxRepository,
     ProjectRepository,
     ResearchRepository,
+    StoryboardRepository,
     UserRepository,
     WorkflowRunRepository,
 )
@@ -58,6 +61,8 @@ __all__ = [
     "ResearchConflictModel",
     "ResearchClaimCandidateModel",
     "ResearchQuestionCandidateModel",
+    "StoryboardPanelModel",
+    "StoryboardPanelCandidateModel",
     "UserRepository",
     "ProjectRepository",
     "AssetRepository",
@@ -68,4 +73,5 @@ __all__ = [
     "CanonicalRepository",
     "AuditRepository",
     "ResearchRepository",
+    "StoryboardRepository",
 ]

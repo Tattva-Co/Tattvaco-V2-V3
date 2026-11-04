@@ -8,6 +8,7 @@ from apps.ui.views import (
     overview,
     review,
     script_intelligence,
+    storyboard,
 )
 
 # Navigation label -> view module, in sidebar order.
@@ -16,6 +17,7 @@ NAVIGATION = {
     "📄 Script Ingestion & Assets": assets,
     "⚡ Script Intelligence (G-01)": script_intelligence,
     "🏛️ Historical Research (G-02)": historical_research,
+    "🎨 Storyboard Studio (G-03)": storyboard,
     "🔍 Candidate Review & Approvals": review,
     "📖 Canonical Film Bible": film_bible,
     "🛡️ Audit Trail & History": audit,

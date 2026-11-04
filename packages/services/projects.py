@@ -19,6 +19,7 @@ from packages.persistence.models import (
     ResearchQuestionCandidateModel,
     SceneCandidateModel,
     SceneModel,
+    StoryboardPanelCandidateModel,
 )
 from packages.persistence.repositories import (
     ApprovalRepository,
@@ -36,6 +37,7 @@ class CandidateOverview:
     entities: List[EntityCandidateModel]
     research_claims: List[ResearchClaimCandidateModel]
     research_questions: List[ResearchQuestionCandidateModel]
+    storyboard_panels: List[StoryboardPanelCandidateModel]
     approvals: List[ApprovalRequestModel]
 
 
@@ -117,5 +119,6 @@ class ProjectService:
             entities=candidates.entities_for_project(project_id),
             research_claims=candidates.claims_for_project(project_id),
             research_questions=candidates.questions_for_project(project_id),
+            storyboard_panels=candidates.storyboard_panels_for_project(project_id),
             approvals=ApprovalRepository(self.db).list_for_project(project_id),
         )

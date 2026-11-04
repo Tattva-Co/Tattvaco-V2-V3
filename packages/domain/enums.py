@@ -67,6 +67,18 @@ class AuditAction(str, Enum):
     RESEARCH_SOURCE_RECORDED = "research_source_recorded"
     RESEARCH_COMMITTED = "research_committed"
     RESEARCH_REJECTED = "research_rejected"
+    STORYBOARD_COMMITTED = "storyboard_committed"
+    STORYBOARD_REJECTED = "storyboard_rejected"
+
+
+class ShotType(str, Enum):
+    ESTABLISHING = "establishing"
+    WIDE = "wide"
+    MEDIUM = "medium"
+    CLOSE_UP = "close_up"
+    EXTREME_CLOSE_UP = "extreme_close_up"
+    OVER_THE_SHOULDER = "over_the_shoulder"
+    POV = "pov"
 
 
 class SourceTier(str, Enum):
@@ -105,3 +117,7 @@ SCRIPT_INTELLIGENCE_APPROVAL_SCOPE = "script_intelligence_candidates"
 HISTORICAL_RESEARCH_GRAPH_ID = "historical_research"
 HISTORICAL_RESEARCH_GRAPH_VERSION = "1.0"
 HISTORICAL_RESEARCH_APPROVAL_SCOPE = "historical_research_candidates"
+
+STORYBOARD_INTELLIGENCE_GRAPH_ID = "storyboard_intelligence"
+STORYBOARD_INTELLIGENCE_GRAPH_VERSION = "1.0"
+STORYBOARD_INTELLIGENCE_APPROVAL_SCOPE = "storyboard_candidates"

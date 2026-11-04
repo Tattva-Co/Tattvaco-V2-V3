@@ -35,6 +35,8 @@ from packages.persistence.models import (
     ResearchSourceModel,
     SceneCandidateModel,
     SceneModel,
+    StoryboardPanelCandidateModel,
+    StoryboardPanelModel,
     UserModel,
     WorkflowRunModel,
 )
@@ -319,6 +321,25 @@ class CandidateRepository(_Repository):
         )
         return list(self.db.scalars(stmt))
 
+    def add_storyboard_panel(self, candidate: StoryboardPanelCandidateModel) -> StoryboardPanelCandidateModel:
+        return self._add(candidate)
+
+    def storyboard_panels_for_run(self, run_id: str) -> List[StoryboardPanelCandidateModel]:
+        stmt = (
+            select(StoryboardPanelCandidateModel)
+            .where(StoryboardPanelCandidateModel.workflow_run_id == run_id)
+            .order_by(StoryboardPanelCandidateModel.panel_number)
+        )
+        return list(self.db.scalars(stmt))
+
+    def storyboard_panels_for_project(self, project_id: str) -> List[StoryboardPanelCandidateModel]:
+        stmt = (
+            select(StoryboardPanelCandidateModel)
+            .where(StoryboardPanelCandidateModel.project_id == project_id)
+            .order_by(StoryboardPanelCandidateModel.panel_number)
+        )
+        return list(self.db.scalars(stmt))
+
 
 class CanonicalRepository(_Repository):
     def add_scenes(self, scenes: Iterable[SceneModel]) -> None:
@@ -419,5 +440,26 @@ class ResearchRepository(_Repository):
             select(ResearchConflictModel)
             .where(ResearchConflictModel.project_id == project_id)
             .order_by(ResearchConflictModel.created_at.desc())
+        )
+        return list(self.db.scalars(stmt))
+
+
+class StoryboardRepository(_Repository):
+    def add_panel(self, panel: StoryboardPanelModel) -> StoryboardPanelModel:
+        return self._add(panel)
+
+    def list_panels_for_project(self, project_id: str) -> List[StoryboardPanelModel]:
+        stmt = (
+            select(StoryboardPanelModel)
+            .where(StoryboardPanelModel.project_id == project_id)
+            .order_by(StoryboardPanelModel.panel_number)
+        )
+        return list(self.db.scalars(stmt))
+
+    def list_panels_for_scene(self, scene_id: str) -> List[StoryboardPanelModel]:
+        stmt = (
+            select(StoryboardPanelModel)
+            .where(StoryboardPanelModel.scene_id == scene_id)
+            .order_by(StoryboardPanelModel.panel_number)
         )
         return list(self.db.scalars(stmt))

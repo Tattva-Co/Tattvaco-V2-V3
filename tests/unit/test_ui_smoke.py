@@ -58,8 +58,26 @@ FAKE_RESPONSES = {
         "entities": [ENTITY_CANDIDATE],
         "research_claims": [],
         "research_questions": [],
+        "storyboard_panels": [],
         "approvals": [{"id": "ap1", "workflow_run_id": "r1", "scope": "s", "status": "pending", "candidate_summary": {}}],
     },
+    "/projects/p1/storyboard/panels": [
+        {
+            "id": "sb1",
+            "project_id": "p1",
+            "project_version": 2,
+            "panel_number": 1,
+            "scene_id": "s1",
+            "suggested_scene_number": 1,
+            "shot_type": "wide_establishing",
+            "description": "The fort stands high.",
+            "visual_notes": "Warm sunrise",
+            "dialogue_snippet": None,
+            "frame_asset_id": None,
+            "aspect_ratio": "16:9",
+            "created_at": "2026-11-01T00:00:00Z",
+        }
+    ],
     "/projects/p1/research/questions": [
         {"id": "rq1", "project_id": "p1", "project_version": 2, "text": "Armor?", "category": "military", "status": "open", "created_at": "x", "updated_at": "x"}
     ],

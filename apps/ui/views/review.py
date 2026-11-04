@@ -127,6 +127,56 @@ def _render_research_approval(client: TattvaApiClient, approval: dict, claims: l
                     st.rerun()
 
 
+def _render_storyboard_approval(client: TattvaApiClient, approval: dict, panels: list) -> None:
+    run_id = approval["workflow_run_id"]
+    run_panels = [p for p in panels if p["workflow_run_id"] == run_id and p["status"] == "proposed"]
+
+    with st.form(f"storyboard_approval_form_{approval['id']}"):
+        st.markdown("### Proposed Storyboard Panels")
+        selected_panels = []
+        for p in run_panels:
+            scene_str = f"Scene {p['suggested_scene_number']}" if p.get("suggested_scene_number") else "Sequence"
+            checked = st.checkbox(
+                f"Panel #{p['panel_number']} · [{p['shot_type'].upper()}] ({scene_str})",
+                value=True,
+                key=f"panel_{p['id']}",
+            )
+            st.caption(f"**Visual:** {p['description']}")
+            if p.get("visual_notes"):
+                st.caption(f"🎥 **Notes:** {p['visual_notes']}")
+            if p.get("dialogue_snippet"):
+                st.caption(f"💬 *\"{p['dialogue_snippet']}\"*")
+            if checked:
+                selected_panels.append(p["id"])
+
+        notes = st.text_input("Reviewer Notes", placeholder="Approved storyboard panels for shot planning")
+        col_approve, col_reject = st.columns(2)
+        with col_approve:
+            approve_btn = st.form_submit_button("✅ Approve Selected Panels")
+        with col_reject:
+            reject_btn = st.form_submit_button("❌ Reject All")
+
+        if approve_btn:
+            with st.spinner("Applying approval and advancing canonical project version..."):
+                res = safe_call(
+                    client.decide_approval,
+                    approval["id"],
+                    "approved",
+                    notes,
+                    panel_ids=selected_panels,
+                )
+                if res:
+                    st.success(f"Approved! Project advanced to Version v{res['new_project_version']}")
+                    st.rerun()
+
+        if reject_btn:
+            with st.spinner("Rejecting storyboard candidates..."):
+                res = safe_call(client.decide_approval, approval["id"], "rejected", notes)
+                if res:
+                    st.warning("Storyboard candidates rejected.")
+                    st.rerun()
+
+
 def _render_approval_form(
     client: TattvaApiClient,
     approval: dict,
@@ -134,12 +184,15 @@ def _render_approval_form(
     entities: list,
     claims: list,
     questions: list,
+    panels: list,
 ) -> None:
     st.subheader(f"Pending Request: `{approval['id']}`")
     st.caption(f"Workflow Run: `{approval['workflow_run_id']}` | Scope: {approval['scope']}")
 
     if approval.get("scope") == "historical_research_candidates":
         _render_research_approval(client, approval, claims, questions)
+    elif approval.get("scope") == "storyboard_candidates":
+        _render_storyboard_approval(client, approval, panels)
     else:
         _render_script_approval(client, approval, scenes, entities)
 
@@ -164,4 +217,5 @@ def render(client: TattvaApiClient, project: dict) -> None:
             data.get("entities", []),
             data.get("research_claims", []),
             data.get("research_questions", []),
+            data.get("storyboard_panels", []),
         )

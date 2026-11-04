@@ -159,6 +159,19 @@ class ResearchQuestionCandidateResponse(_ORM):
     status: str
 
 
+class StoryboardPanelCandidateResponse(_ORM):
+    id: str
+    workflow_run_id: str
+    panel_number: int
+    suggested_scene_number: int | None
+    shot_type: str
+    description: str
+    visual_notes: str | None
+    dialogue_snippet: str | None
+    confidence: float
+    status: str
+
+
 class ApprovalResponse(_ORM):
     id: str
     workflow_run_id: str
@@ -175,6 +188,7 @@ class CandidatesResponse(BaseModel):
     entities: List[EntityCandidateResponse]
     research_claims: List[ResearchClaimCandidateResponse] = Field(default_factory=list)
     research_questions: List[ResearchQuestionCandidateResponse] = Field(default_factory=list)
+    storyboard_panels: List[StoryboardPanelCandidateResponse] = Field(default_factory=list)
     approvals: List[ApprovalResponse]
 
 
@@ -187,6 +201,27 @@ class ApprovalDecisionRequest(BaseModel):
     approved_entity_ids: List[str] | None = None
     approved_claim_ids: List[str] | None = None
     approved_question_ids: List[str] | None = None
+    approved_panel_ids: List[str] | None = None
+
+
+class StoryboardPanelResponse(_ORM):
+    id: str
+    project_id: str
+    project_version: int
+    panel_number: int
+    scene_id: str | None
+    shot_type: str
+    description: str
+    visual_notes: str | None
+    dialogue_snippet: str | None
+    frame_asset_id: str | None
+    aspect_ratio: str
+    created_at: datetime
+
+
+class StoryboardTriggerRequest(BaseModel):
+    brief: str | None = None
+    sync_execution: bool = True
 
 
 class ResearchQuestionCreateRequest(BaseModel):

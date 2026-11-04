@@ -13,6 +13,7 @@ from packages.core.logging import configure_logging, get_logger
 from packages.domain.enums import (
     HISTORICAL_RESEARCH_GRAPH_ID,
     SCRIPT_INTELLIGENCE_GRAPH_ID,
+    STORYBOARD_INTELLIGENCE_GRAPH_ID,
     OutboxStatus,
 )
 from packages.persistence.database import session_scope
@@ -20,6 +21,7 @@ from packages.persistence.models import OutboxTaskModel
 from packages.persistence.repositories import OutboxRepository
 from packages.services.historical_research import HistoricalResearchService
 from packages.services.script_intelligence import ScriptIntelligenceService
+from packages.services.storyboard import StoryboardIntelligenceService
 
 logger = get_logger("worker")
 
@@ -34,9 +36,15 @@ def _run_historical_research(workflow_run_id: str) -> None:
         HistoricalResearchService(db).execute(workflow_run_id)
 
 
+def _run_storyboard_intelligence(workflow_run_id: str) -> None:
+    with session_scope() as db:
+        StoryboardIntelligenceService(db).execute(workflow_run_id)
+
+
 TASK_HANDLERS: Dict[str, Callable[[str], None]] = {
     SCRIPT_INTELLIGENCE_GRAPH_ID: _run_script_intelligence,
     HISTORICAL_RESEARCH_GRAPH_ID: _run_historical_research,
+    STORYBOARD_INTELLIGENCE_GRAPH_ID: _run_storyboard_intelligence,
 }
 
 

@@ -27,6 +27,8 @@ from packages.persistence.models import (
     ResearchSourceModel,
     SceneCandidateModel,
     SceneModel,
+    StoryboardPanelCandidateModel,
+    StoryboardPanelModel,
     UserModel,
     WorkflowRunModel,
 )
@@ -80,6 +82,8 @@ def purge_organization(org_id: str) -> None:
                 ResearchSourceModel,
                 ResearchClaimCandidateModel,
                 ResearchQuestionCandidateModel,
+                StoryboardPanelCandidateModel,
+                StoryboardPanelModel,
                 SceneCandidateModel,
                 EntityCandidateModel,
                 SceneModel,
