@@ -20,3 +20,4 @@ def list_panels(
     db: Session = Depends(get_db),
 ):
     return StoryboardService(db).list_panels(actor, project_id)
+

@@ -172,6 +172,20 @@ class StoryboardPanelCandidateResponse(_ORM):
     status: str
 
 
+class FilmBibleRuleCandidateResponse(_ORM):
+    id: str
+    workflow_run_id: str
+    category: str
+    title: str
+    rule_text: str
+    negative_prompt_guidance: str | None
+    strictness: str
+    suggested_claim_statement: str | None
+    confidence: float
+    conflict_warning: str | None
+    status: str
+
+
 class ApprovalResponse(_ORM):
     id: str
     workflow_run_id: str
@@ -189,6 +203,7 @@ class CandidatesResponse(BaseModel):
     research_claims: List[ResearchClaimCandidateResponse] = Field(default_factory=list)
     research_questions: List[ResearchQuestionCandidateResponse] = Field(default_factory=list)
     storyboard_panels: List[StoryboardPanelCandidateResponse] = Field(default_factory=list)
+    film_bible_rules: List[FilmBibleRuleCandidateResponse] = Field(default_factory=list)
     approvals: List[ApprovalResponse]
 
 
@@ -202,6 +217,7 @@ class ApprovalDecisionRequest(BaseModel):
     approved_claim_ids: List[str] | None = None
     approved_question_ids: List[str] | None = None
     approved_panel_ids: List[str] | None = None
+    approved_rule_ids: List[str] | None = None
 
 
 class StoryboardPanelResponse(_ORM):
@@ -221,6 +237,36 @@ class StoryboardPanelResponse(_ORM):
 
 class StoryboardTriggerRequest(BaseModel):
     brief: str | None = None
+    sync_execution: bool = True
+
+
+class FilmBibleRuleResponse(_ORM):
+    id: str
+    project_id: str
+    project_version: int
+    category: str
+    title: str
+    rule_text: str
+    negative_prompt_guidance: str | None
+    strictness: str
+    historical_claim_id: str | None
+    rationale: str | None
+    created_at: datetime
+    updated_at: datetime
+
+
+class FilmBibleRuleCreateRequest(BaseModel):
+    category: str = Field(..., max_length=50)
+    title: str = Field(..., min_length=1, max_length=255)
+    rule_text: str = Field(..., min_length=1)
+    negative_prompt_guidance: str | None = None
+    strictness: str = Field(default="guideline", max_length=50)
+    historical_claim_id: str | None = None
+    rationale: str | None = None
+
+
+class FilmBibleTriggerRequest(BaseModel):
+    user_notes: str | None = None
     sync_execution: bool = True
 
 

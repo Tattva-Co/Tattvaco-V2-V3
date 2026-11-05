@@ -35,3 +35,4 @@ class StoryboardIntelligenceState(TypedDict, total=False):
     # Output & completion
     new_project_version: int | None
     completed: bool
+

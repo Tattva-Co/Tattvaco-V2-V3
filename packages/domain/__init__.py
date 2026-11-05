@@ -1,6 +1,9 @@
 """Domain vocabulary, errors and invariants. No I/O lives here."""
 
 from packages.domain.enums import (
+    FILM_BIBLE_APPROVAL_SCOPE,
+    FILM_BIBLE_GRAPH_ID,
+    FILM_BIBLE_GRAPH_VERSION,
     HISTORICAL_RESEARCH_APPROVAL_SCOPE,
     HISTORICAL_RESEARCH_GRAPH_ID,
     HISTORICAL_RESEARCH_GRAPH_VERSION,
@@ -20,8 +23,10 @@ from packages.domain.enums import (
     OutboxStatus,
     ProjectStatus,
     QuestionStatus,
+    RuleStrictness,
     ShotType,
     SourceTier,
+    VisualRuleCategory,
     WorkflowStatus,
 )
 from packages.domain.errors import (
@@ -47,9 +52,14 @@ __all__ = [
     "OutboxStatus",
     "ProjectStatus",
     "QuestionStatus",
+    "RuleStrictness",
     "ShotType",
     "SourceTier",
+    "VisualRuleCategory",
     "WorkflowStatus",
+    "FILM_BIBLE_APPROVAL_SCOPE",
+    "FILM_BIBLE_GRAPH_ID",
+    "FILM_BIBLE_GRAPH_VERSION",
     "HISTORICAL_RESEARCH_APPROVAL_SCOPE",
     "HISTORICAL_RESEARCH_GRAPH_ID",
     "HISTORICAL_RESEARCH_GRAPH_VERSION",

@@ -13,6 +13,7 @@ from packages.persistence.models import (
     AuditEventModel,
     EntityCandidateModel,
     EntityModel,
+    FilmBibleRuleCandidateModel,
     ProjectModel,
     ProjectVersionModel,
     ResearchClaimCandidateModel,
@@ -38,6 +39,7 @@ class CandidateOverview:
     research_claims: List[ResearchClaimCandidateModel]
     research_questions: List[ResearchQuestionCandidateModel]
     storyboard_panels: List[StoryboardPanelCandidateModel]
+    film_bible_rules: List[FilmBibleRuleCandidateModel]
     approvals: List[ApprovalRequestModel]
 
 
@@ -120,5 +122,6 @@ class ProjectService:
             research_claims=candidates.claims_for_project(project_id),
             research_questions=candidates.questions_for_project(project_id),
             storyboard_panels=candidates.storyboard_panels_for_project(project_id),
+            film_bible_rules=candidates.film_bible_rules_for_project(project_id),
             approvals=ApprovalRepository(self.db).list_for_project(project_id),
         )

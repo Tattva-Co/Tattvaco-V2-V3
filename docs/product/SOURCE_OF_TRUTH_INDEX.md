@@ -37,3 +37,32 @@ The following items are external or unprovisioned at this stage:
 - **Hosted Object Storage:** Local private file store / S3-compatible adapter interface implemented; cloud bucket (S3/Supabase Storage) not yet provisioned.
 - **Higgsfield Live API Contract:** Higgsfield is an external environment; manual export/import package format implemented until a verified external integration contract is established.
 - **Managed Production Database:** Dedicated PostgreSQL with pgvector (local container `pgvector/pgvector:pg16` active on port 55432).
+
+---
+
+## Change Note — 2026-11-05 (Product Evolution audit, Phase A/B)
+
+This note **supersedes the precedence above**. The original text is kept for history.
+
+**New precedence (Master Execution Prompt §2.3):**
+1. Explicit decisions in the Master Execution Prompt (2026-11).
+2. `Tattva_AI_Film_Director_Product_Evolution_Implementation_Gap_Report_v1.0.docx` (external; text not in repo).
+3. `docs/product/PRD_v1.0.md` once approved. Until then, PRD v0.9 together with the Master Prompt.
+4. Approved ADRs: `docs/ADRs/` (canonical location; the `docs/product/Tattva_ADR_001…` copy is superseded).
+5. Architecture and engineering docs in `docs/architecture/` and `docs/engineering/`.
+6. Repository implementation, as audited in `docs/audit/`.
+
+**New documents:**
+- `docs/audit/00–10`: audit and decision register.
+- `docs/product/`: PRD_v1.0, PRODUCT_ROADMAP, REVISED_USER_JOURNEYS, INFORMATION_ARCHITECTURE, SCREEN_INVENTORY_AND_BEHAVIOUR, ACCEPTANCE_CRITERIA.
+- `docs/architecture/*`, `docs/engineering/*`, `docs/release/*`.
+- ADR-002 to ADR-008.
+
+**Corrections to statements above (verified against code on 2026-11-05):**
+- "Manual export/import package format implemented": **not implemented**. Higgsfield exists as configuration only (`packages/core/config.py`).
+- "S3-compatible adapter interface implemented": **only** `LocalFileSystemStorageService` exists. An S3-compatible adapter is not implemented.
+- "Provider-neutral auth boundary with project/organization context tokens": the code uses an unauthenticated `X-Actor-ID` header (`packages/services/identity.py`). See `docs/audit/08` SEC-01.
+- Referenced `Tattava_Copilot_Architecture_Blueprint_Revised_v2.0` is not in the repo (CON-07).
+- ID collision: "G-0x" denotes screens in the IA but graphs in the Addendum and the code. New IDs are `S-*` for screens and `WF-*` for workflows (DEC-011).
+
+Full conflict list: `docs/audit/10_DOCUMENT_CONFLICT_AND_DECISION_REGISTER.md`.

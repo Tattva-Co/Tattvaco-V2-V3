@@ -6,10 +6,12 @@ from sqlalchemy.orm import Session
 from apps.api.dependencies import get_actor, get_db
 from apps.api.schemas import ApprovalDecisionRequest, ApprovalDecisionResponse
 from packages.domain.enums import (
+    FILM_BIBLE_APPROVAL_SCOPE,
     HISTORICAL_RESEARCH_APPROVAL_SCOPE,
     STORYBOARD_INTELLIGENCE_APPROVAL_SCOPE,
 )
 from packages.persistence.repositories import ApprovalRepository
+from packages.services.film_bible import FilmBibleSynthesisService
 from packages.services.historical_research import HistoricalResearchService
 from packages.services.identity import ActorContext
 from packages.services.script_intelligence import ScriptIntelligenceService
@@ -42,6 +44,14 @@ def decide_approval(
             req.decision,
             notes=req.notes,
             approved_panel_ids=req.approved_panel_ids,
+        )
+    elif approval.scope == FILM_BIBLE_APPROVAL_SCOPE:
+        result = FilmBibleSynthesisService(db).decide(
+            actor,
+            approval_id,
+            req.decision,
+            notes=req.notes,
+            approved_rule_ids=req.approved_rule_ids,
         )
     else:
         result = ScriptIntelligenceService(db).decide(

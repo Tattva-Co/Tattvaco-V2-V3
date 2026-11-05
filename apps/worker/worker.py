@@ -11,6 +11,7 @@ from typing import Callable, Dict
 from packages.core.config import get_settings
 from packages.core.logging import configure_logging, get_logger
 from packages.domain.enums import (
+    FILM_BIBLE_GRAPH_ID,
     HISTORICAL_RESEARCH_GRAPH_ID,
     SCRIPT_INTELLIGENCE_GRAPH_ID,
     STORYBOARD_INTELLIGENCE_GRAPH_ID,
@@ -19,9 +20,11 @@ from packages.domain.enums import (
 from packages.persistence.database import session_scope
 from packages.persistence.models import OutboxTaskModel
 from packages.persistence.repositories import OutboxRepository
+from packages.services.film_bible import FilmBibleSynthesisService
 from packages.services.historical_research import HistoricalResearchService
 from packages.services.script_intelligence import ScriptIntelligenceService
 from packages.services.storyboard import StoryboardIntelligenceService
+from packages.workflows.checkpointer import setup_checkpointer_schema
 
 logger = get_logger("worker")
 
@@ -41,10 +44,16 @@ def _run_storyboard_intelligence(workflow_run_id: str) -> None:
         StoryboardIntelligenceService(db).execute(workflow_run_id)
 
 
+def _run_film_bible(workflow_run_id: str) -> None:
+    with session_scope() as db:
+        FilmBibleSynthesisService(db).execute(workflow_run_id)
+
+
 TASK_HANDLERS: Dict[str, Callable[[str], None]] = {
     SCRIPT_INTELLIGENCE_GRAPH_ID: _run_script_intelligence,
     HISTORICAL_RESEARCH_GRAPH_ID: _run_historical_research,
     STORYBOARD_INTELLIGENCE_GRAPH_ID: _run_storyboard_intelligence,
+    FILM_BIBLE_GRAPH_ID: _run_film_bible,
 }
 
 
@@ -99,4 +108,5 @@ def run_worker_loop(poll_interval: float | None = None, max_iterations: int | No
 
 if __name__ == "__main__":
     configure_logging(get_settings().log_level)
+    setup_checkpointer_schema()
     run_worker_loop()

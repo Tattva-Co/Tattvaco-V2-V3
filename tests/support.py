@@ -15,6 +15,8 @@ from packages.persistence.models import (
     AuditEventModel,
     EntityCandidateModel,
     EntityModel,
+    FilmBibleRuleCandidateModel,
+    FilmBibleRuleModel,
     OrganizationModel,
     OutboxTaskModel,
     ProjectModel,
@@ -74,6 +76,9 @@ def purge_organization(org_id: str) -> None:
             )
         if project_ids:
             for model in (
+                # Film-bible rows reference research_claims, so they go first.
+                FilmBibleRuleModel,
+                FilmBibleRuleCandidateModel,
                 AuditEventModel,
                 ApprovalRequestModel,
                 ResearchConflictModel,

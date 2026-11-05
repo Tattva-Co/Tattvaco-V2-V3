@@ -61,6 +61,7 @@ def get_candidates(project_id: str, actor: ActorContext = Depends(get_actor), db
         research_claims=overview.research_claims,
         research_questions=overview.research_questions,
         storyboard_panels=overview.storyboard_panels,
+        film_bible_rules=overview.film_bible_rules,
         approvals=overview.approvals,
     )
 

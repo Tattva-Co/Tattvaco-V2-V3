@@ -59,8 +59,25 @@ FAKE_RESPONSES = {
         "research_claims": [],
         "research_questions": [],
         "storyboard_panels": [],
+        "film_bible_rules": [],
         "approvals": [{"id": "ap1", "workflow_run_id": "r1", "scope": "s", "status": "pending", "candidate_summary": {}}],
     },
+    "/projects/p1/film-bible/rules": [
+        {
+            "id": "fbr1",
+            "project_id": "p1",
+            "project_version": 2,
+            "category": "tone_aesthetic",
+            "title": "Historical Realism",
+            "rule_text": "Tactile surfaces, natural dust, and weathered textures.",
+            "negative_prompt_guidance": "cgi sheen, plastic",
+            "strictness": "mandatory",
+            "historical_claim_id": None,
+            "rationale": "Grounded aesthetic",
+            "created_at": "2026-11-01T00:00:00Z",
+            "updated_at": "2026-11-01T00:00:00Z",
+        }
+    ],
     "/projects/p1/storyboard/panels": [
         {
             "id": "sb1",

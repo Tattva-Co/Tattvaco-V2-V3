@@ -49,6 +49,15 @@ pythonpath = ["."]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 
+[tool.mypy]
+python_version = "3.11"
+explicit_package_bases = true
+mypy_path = "."
+# Type-checking debt is tracked in docs/audit/09_TEST_AND_QUALITY_AUDIT.md (321 errors at
+# audit time). Ratchet this down package by package rather than disabling checks globally;
+# CI runs mypy in report-only mode (continue-on-error) until the count reaches zero.
+ignore_missing_imports = true
+
 [tool.ruff]
 line-length = 110
 target-version = "py311"

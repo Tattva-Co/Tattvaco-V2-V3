@@ -3,13 +3,24 @@
 Run with: ``uvicorn apps.api.main:app --reload``
 """
 
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from apps.api.errors import register_exception_handlers
-from apps.api.routers import approvals, assets, health, projects, research, storyboard, workflows
+from apps.api.routers import approvals, assets, film_bible, health, projects, research, storyboard, workflows
 from packages.core.config import Settings, get_settings
 from packages.core.logging import configure_logging
+from packages.workflows.checkpointer import setup_checkpointer_schema
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    # Checkpoint DDL must run before any request opens a transaction (see checkpointer.py).
+    setup_checkpointer_schema()
+    yield
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -22,6 +33,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         description="Tenant-scoped API for projects, assets, Script Intelligence workflows, "
         "human approval gates, canonical versions and audit trails.",
         debug=settings.debug,
+        lifespan=lifespan,
     )
     app.add_middleware(
         CORSMiddleware,
@@ -33,7 +45,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     register_exception_handlers(app)
 
     app.include_router(health.router)
-    for module in (projects, assets, workflows, approvals, research, storyboard):
+    for module in (projects, assets, workflows, approvals, research, storyboard, film_bible):
         app.include_router(module.router, prefix=settings.api_v1_str)
     return app
 

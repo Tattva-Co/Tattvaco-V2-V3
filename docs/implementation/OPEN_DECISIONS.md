@@ -30,3 +30,23 @@ This register tracks all unresolved technology, provider, infrastructure, and go
 1. **No Mock Credential Leakage:** No real or fake secrets are ever stored in source control.
 2. **Provider Independence:** All domain logic and LangGraph state depend strictly on internal abstractions (`StorageService`, `ModelGateway`, `ApprovalService`, `RunDispatcher`), never direct third-party SDK calls.
 3. **No Fake Success:** When a provider is unconfigured or operating in mock mode, the system surfaces this explicitly in metadata, logs, and UI indicators.
+
+---
+
+## Change Note — 2026-11-05
+
+The decision register continues in `docs/audit/10_DOCUMENT_CONFLICT_AND_DECISION_REGISTER.md` §4. That section has updated recommendations for DEC-001 to DEC-008 and adds DEC-009 to DEC-015:
+
+| ID | Topic |
+|---|---|
+| DEC-009 | Frontend |
+| DEC-010 | G-04 WIP |
+| DEC-011 | ID scheme |
+| DEC-012 | Consent policy |
+| DEC-013 | First provider pilot |
+| DEC-014 | Post interchange formats |
+| DEC-015 | Test DB isolation |
+
+**Correction to DEC-002 above:** the code uses only the `X-Actor-ID` header. The organization is derived from the database, and `X-Org-ID`/`X-Project-ID` are not used. The header identity is unauthenticated (see `docs/audit/08` SEC-01/02).
+
+**Correction to invariant 2:** `ModelGateway`, `ApprovalService` and `RunDispatcher` are named here but do not exist in code (`docs/audit/06`).
