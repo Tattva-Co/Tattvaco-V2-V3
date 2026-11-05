@@ -12,6 +12,22 @@ class _ORM(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+# -- Authentication (development-only; see apps/api/routers/auth.py) --------
+
+
+class DevLoginRequest(BaseModel):
+    email: str = Field(..., min_length=3, max_length=255)
+    full_name: str = Field(default="Dev User", max_length=255)
+
+
+class DevLoginResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"  # noqa: S105  OAuth2 token-type field name, not a secret
+    expires_in: int
+    user_id: str
+    organization_id: str
+
+
 # -- Projects ---------------------------------------------------------------
 
 

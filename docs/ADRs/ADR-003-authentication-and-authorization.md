@@ -1,6 +1,6 @@
 # ADR-003 — Authentication and Authorization
 
-**Doc ID:** ADR-003 · **Version:** 1.0-draft · **Date:** 2026-11-05 · **Status:** Phase B design — pending approval
+**Doc ID:** ADR-003 · **Version:** 1.0-draft · **Date:** 2026-11-05 · **Status:** §1 (Authentication) ACCEPTED and implemented (2026-11-06, milestone C3). §2–§3 (Authorization/RBAC) remain proposed, scheduled for milestones C4/C5.
 **Inputs:** Master Prompt §5 (management authority), §6.5, §21 · `docs/audit/03` §3–§5, `08` SEC-01/02/03/04/08 · `apps/api/dependencies.py::get_actor` · `packages/services/identity.py::IdentityService.resolve` · `packages/persistence/repositories.py::UserRepository.get_or_create_default_actor` · DEC-002
 
 **Product:** Tattva AI Film Director
@@ -8,6 +8,22 @@
 **Version:** 1.0-draft
 **Status:** Proposed (approval gate #1, DEC-002)
 **Date:** 5 November 2026
+
+## Implementation note (2026-11-06, milestone C3)
+
+§1 (Authentication) below is implemented as specified, with one simplification: the
+OIDC `(iss, sub) → users` linking is wired (`users.idp_issuer`/`idp_subject`, migration
+`1126e5e1f3a5`, `UserRepository.get_by_idp_identity`), but the "admin-approved invite /
+verified-email linking" *workflow* described at the end of §1 is deferred to the
+team/invite feature in Phase D (no OIDC vendor is connected yet to test it against).
+Until then, an OIDC principal with no matching `(idp_issuer, idp_subject)` row is
+rejected (401) rather than auto-provisioned — provisioning a user from an unverified
+external claim is a product/security decision, not a default a port should make silently.
+
+§2 (Authorization model: memberships, project_memberships, role_templates,
+capabilities, approval levels) is **not yet implemented**; `get_actor` only resolves
+identity, not permissions. See `docs/implementation/FINAL_GRADE_IMPLEMENTATION_PLAN.md`
+milestones C4/C5.
 
 ## Context
 

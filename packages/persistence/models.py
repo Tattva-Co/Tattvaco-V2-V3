@@ -10,6 +10,7 @@ from sqlalchemy import (
     DateTime,
     Float,
     ForeignKey,
+    Index,
     Integer,
     String,
     Text,
@@ -43,7 +44,23 @@ class UserModel(Base):
     email = Column(String(255), unique=True, nullable=False)
     full_name = Column(String(255), nullable=False)
     role = Column(String(50), default="creator", nullable=False)
+    # External identity-provider linkage (ADR-003). Null for every user until an OIDC
+    # login links this row by (idp_issuer, idp_subject) to the token's (iss, sub). Dev
+    # tokens (environment=development) carry this users.id directly as `sub` and never
+    # populate these columns — there is no external identity to record in that mode.
+    idp_issuer = Column(String(255), nullable=True)
+    idp_subject = Column(String(255), nullable=True)
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+    __table_args__ = (
+        Index(
+            "uq_users_idp_identity",
+            "idp_issuer",
+            "idp_subject",
+            unique=True,
+            postgresql_where=idp_issuer.isnot(None),
+        ),
+    )
 
 
 class ProjectModel(Base):

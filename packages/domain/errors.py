@@ -9,6 +9,10 @@ class DomainInvariantError(Exception):
     """Base class: a business rule or core invariant was violated."""
 
 
+class AuthenticationError(DomainInvariantError):
+    """The caller did not present a valid, verifiable identity."""
+
+
 class NotFoundError(DomainInvariantError):
     """The requested object does not exist (or is not visible to the actor)."""
 

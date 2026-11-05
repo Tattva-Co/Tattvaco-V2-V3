@@ -40,3 +40,13 @@
 | PERF-07 | No metrics, tracing or slow-query logging | `core/logging.py` | Cannot measure anything | OpenTelemetry + structured logs + `pg_stat_statements` |
 
 No load, stress or soak tests exist. **No performance figure can be claimed.** Capacity targets are set with documented assumptions in Phase B (`SCALABILITY_PERFORMANCE_CAPACITY_PLAN.md`, `NON_FUNCTIONAL_REQUIREMENTS.md`).
+
+## 3. Resolution log
+
+| ID | Resolved in | How |
+|---|---|---|
+| SEC-01 | C3 (`feat/c1-g04-fix-forward`, 2026-11-06) | `AuthProvider` port + Bearer-token verification outside `test`; see ADR-003 implementation note, DEC-002 in `11_APPROVAL_GATE_DECISIONS.md`. |
+| SEC-02 | C3 | `get_or_create_default_actor()`'s `.first()`-org fallback removed entirely; replaced by `get_or_create_dev_user()`, which only ever resolves `default-studio`, called only from the explicit, dev-only `POST /auth/dev-login`. `environment` defaults to `development`, which now *requires* a valid token (fails closed with a 500 if `SECRET_KEY` is unset) rather than silently admitting any caller. |
+| PERF-02 | C2 (2026-11-06) | Checkpoint `setup()` moved out of the per-invocation hot path into a process-start hook (`setup_checkpointer_schema()`, FastAPI lifespan / worker startup / test bootstrap). This also fixed a `CREATE INDEX CONCURRENTLY` deadlock against the caller's own idle transaction. |
+
+SEC-03/04/08 (authorization, tenant-scoped getters, unknown-scope dispatch) remain open; scheduled for C4/C5.

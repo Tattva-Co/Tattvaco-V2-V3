@@ -64,25 +64,30 @@ class UserRepository(_Repository):
     def get(self, user_id: str) -> UserModel | None:
         return self.db.get(UserModel, user_id)
 
-    def get_or_create_default_actor(self) -> UserModel:
-        """Development bootstrap identity: the default studio org and its first user."""
+    def get_by_idp_identity(self, issuer: str, subject: str) -> UserModel | None:
+        """Look up a user linked to an external OIDC identity (ADR-003)."""
+        return self.db.scalars(
+            select(UserModel).where(UserModel.idp_issuer == issuer, UserModel.idp_subject == subject)
+        ).first()
+
+    def get_or_create_dev_user(self, email: str, full_name: str) -> UserModel:
+        """Explicit local-development identity bootstrap, scoped to ``default-studio`` only.
+
+        Called only by ``POST /api/v1/auth/dev-login`` (environment=development). Fixes
+        the previous silent fallback (SEC-02), which could bind an unauthenticated
+        request to whichever organization the database returned first; this always
+        resolves to the same named organization, never "the first one found".
+        """
         org = self.db.scalars(
             select(OrganizationModel).where(OrganizationModel.slug == self.DEFAULT_ORG_SLUG)
-        ).first() or self.db.scalars(select(OrganizationModel)).first()
+        ).first()
         if org is None:
             org = self._add(OrganizationModel(name="Default Studio Org", slug=self.DEFAULT_ORG_SLUG))
 
-        user = self.db.scalars(
-            select(UserModel).where(UserModel.organization_id == org.id).order_by(UserModel.created_at)
-        ).first()
+        user = self.db.scalars(select(UserModel).where(UserModel.email == email)).first()
         if user is None:
             user = self._add(
-                UserModel(
-                    organization_id=org.id,
-                    email="director@tattvaco.com",
-                    full_name="Lead Film Director",
-                    role="director",
-                )
+                UserModel(organization_id=org.id, email=email, full_name=full_name, role="director")
             )
         return user
 
