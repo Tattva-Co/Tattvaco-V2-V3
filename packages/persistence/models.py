@@ -364,3 +364,42 @@ class StoryboardPanelCandidateModel(Base):
     confidence = Column(Float, default=0.9, nullable=False)
     status = Column(String(50), default="proposed", nullable=False)  # proposed, approved, rejected
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+
+class FilmBibleRuleModel(Base):
+    """Canonical visual world rules and creative guidelines (Workflow G-04)."""
+    __tablename__ = "film_bible_rules"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id"), nullable=False)
+    project_version = Column(Integer, default=1, nullable=False)
+    category = Column(String(50), nullable=False, index=True)
+    title = Column(String(255), nullable=False)
+    rule_text = Column(Text, nullable=False)
+    negative_prompt_guidance = Column(Text, nullable=True)
+    strictness = Column(String(50), default="guideline", nullable=False)
+    historical_claim_id = Column(String(36), ForeignKey("research_claims.id"), nullable=True, index=True)
+    rationale = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+
+
+class FilmBibleRuleCandidateModel(Base):
+    """AI-synthesized visual world rule candidates awaiting director approval."""
+    __tablename__ = "film_bible_rule_candidates"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    workflow_run_id = Column(String(36), ForeignKey("workflow_runs.id"), nullable=False, index=True)
+    project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id"), nullable=False)
+    category = Column(String(50), nullable=False, index=True)
+    title = Column(String(255), nullable=False)
+    rule_text = Column(Text, nullable=False)
+    negative_prompt_guidance = Column(Text, nullable=True)
+    strictness = Column(String(50), default="guideline", nullable=False)
+    suggested_claim_statement = Column(Text, nullable=True)
+    confidence = Column(Float, default=0.9, nullable=False)
+    conflict_warning = Column(Text, nullable=True)
+    status = Column(String(50), default="proposed", nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)

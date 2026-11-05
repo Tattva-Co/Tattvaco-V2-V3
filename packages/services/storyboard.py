@@ -224,3 +224,4 @@ class StoryboardService:
     def list_panels(self, actor: ActorContext, project_id: str) -> list[StoryboardPanelModel]:
         self.projects.get_scoped(project_id, actor.org_id)
         return self.storyboard.list_panels_for_project(project_id)
+

@@ -69,6 +69,9 @@ class AuditAction(str, Enum):
     RESEARCH_REJECTED = "research_rejected"
     STORYBOARD_COMMITTED = "storyboard_committed"
     STORYBOARD_REJECTED = "storyboard_rejected"
+    VISUAL_RULE_CREATED = "visual_rule_created"
+    FILM_BIBLE_COMMITTED = "film_bible_committed"
+    FILM_BIBLE_REJECTED = "film_bible_rejected"
 
 
 class ShotType(str, Enum):
@@ -121,3 +124,23 @@ HISTORICAL_RESEARCH_APPROVAL_SCOPE = "historical_research_candidates"
 STORYBOARD_INTELLIGENCE_GRAPH_ID = "storyboard_intelligence"
 STORYBOARD_INTELLIGENCE_GRAPH_VERSION = "1.0"
 STORYBOARD_INTELLIGENCE_APPROVAL_SCOPE = "storyboard_candidates"
+
+
+class VisualRuleCategory(str, Enum):
+    TONE_AESTHETIC = "tone_aesthetic"
+    COLOR_PALETTE = "color_palette"
+    LIGHTING_ATMOSPHERE = "lighting_atmosphere"
+    ARCHITECTURAL_ENVIRONMENT = "architectural_environment"
+    MATERIAL_CULTURE = "material_culture"
+    CAMERA_LANGUAGE = "camera_language"
+
+
+class RuleStrictness(str, Enum):
+    MANDATORY = "mandatory"
+    GUIDELINE = "guideline"
+    DEVIATION = "deliberate_deviation"
+
+
+FILM_BIBLE_GRAPH_ID = "film_bible_synthesis"
+FILM_BIBLE_GRAPH_VERSION = "1.0"
+FILM_BIBLE_APPROVAL_SCOPE = "film_bible_rules"

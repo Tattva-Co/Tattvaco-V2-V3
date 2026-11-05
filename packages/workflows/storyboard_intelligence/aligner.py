@@ -87,3 +87,4 @@ class StoryboardAligner:
                 panel_counter += 1
 
         return panels
+

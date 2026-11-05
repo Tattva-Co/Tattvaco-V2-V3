@@ -1,10 +1,11 @@
-"""Workflow run endpoints (Script Intelligence G-01)."""
+"""Workflow run endpoints (Script Intelligence, Historical Research, Storyboard, Film Bible)."""
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from apps.api.dependencies import get_actor, get_db
 from apps.api.schemas import (
+    FilmBibleTriggerRequest,
     HistoricalResearchTriggerRequest,
     StoryboardTriggerRequest,
     WorkflowRunResponse,
@@ -12,6 +13,7 @@ from apps.api.schemas import (
     WorkflowTriggerResponse,
 )
 from packages.persistence.repositories import ApprovalRepository, WorkflowRunRepository
+from packages.services.film_bible import FilmBibleSynthesisService
 from packages.services.historical_research import HistoricalResearchService
 from packages.services.identity import ActorContext
 from packages.services.script_intelligence import ScriptIntelligenceService
@@ -76,6 +78,28 @@ def trigger_storyboard_intelligence(
 ):
     run = StoryboardIntelligenceService(db).start(
         actor, project_id, brief=req.brief, sync=req.sync_execution
+    )
+    approval = ApprovalRepository(db).get_pending_for_run(run.id)
+    return WorkflowTriggerResponse(
+        workflow_run_id=run.id,
+        status=run.status,
+        approval_request_id=approval.id if approval else None,
+        candidate_summary=approval.candidate_summary if approval else {},
+    )
+
+
+@router.post(
+    "/projects/{project_id}/workflows/film-bible-synthesis",
+    response_model=WorkflowTriggerResponse,
+)
+def trigger_film_bible_synthesis(
+    project_id: str,
+    req: FilmBibleTriggerRequest,
+    actor: ActorContext = Depends(get_actor),
+    db: Session = Depends(get_db),
+):
+    run = FilmBibleSynthesisService(db).start(
+        actor, project_id, user_notes=req.user_notes, sync=req.sync_execution
     )
     approval = ApprovalRepository(db).get_pending_for_run(run.id)
     return WorkflowTriggerResponse(

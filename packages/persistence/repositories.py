@@ -23,6 +23,8 @@ from packages.persistence.models import (
     AuditEventModel,
     EntityCandidateModel,
     EntityModel,
+    FilmBibleRuleCandidateModel,
+    FilmBibleRuleModel,
     OrganizationModel,
     OutboxTaskModel,
     ProjectModel,
@@ -340,6 +342,25 @@ class CandidateRepository(_Repository):
         )
         return list(self.db.scalars(stmt))
 
+    def add_film_bible_rule(self, candidate: FilmBibleRuleCandidateModel) -> FilmBibleRuleCandidateModel:
+        return self._add(candidate)
+
+    def film_bible_rules_for_run(self, run_id: str) -> List[FilmBibleRuleCandidateModel]:
+        stmt = (
+            select(FilmBibleRuleCandidateModel)
+            .where(FilmBibleRuleCandidateModel.workflow_run_id == run_id)
+            .order_by(FilmBibleRuleCandidateModel.created_at)
+        )
+        return list(self.db.scalars(stmt))
+
+    def film_bible_rules_for_project(self, project_id: str) -> List[FilmBibleRuleCandidateModel]:
+        stmt = (
+            select(FilmBibleRuleCandidateModel)
+            .where(FilmBibleRuleCandidateModel.project_id == project_id)
+            .order_by(FilmBibleRuleCandidateModel.created_at)
+        )
+        return list(self.db.scalars(stmt))
+
 
 class CanonicalRepository(_Repository):
     def add_scenes(self, scenes: Iterable[SceneModel]) -> None:
@@ -462,4 +483,28 @@ class StoryboardRepository(_Repository):
             .where(StoryboardPanelModel.scene_id == scene_id)
             .order_by(StoryboardPanelModel.panel_number)
         )
+        return list(self.db.scalars(stmt))
+
+
+class FilmBibleRepository(_Repository):
+    def add_rule(self, rule: FilmBibleRuleModel) -> FilmBibleRuleModel:
+        return self._add(rule)
+
+    def get_rule(self, rule_id: str) -> FilmBibleRuleModel:
+        stmt = select(FilmBibleRuleModel).where(FilmBibleRuleModel.id == rule_id)
+        rule = self.db.scalars(stmt).first()
+        if rule is None:
+            raise NotFoundError(f"Film Bible rule '{rule_id}' not found.")
+        return rule
+
+    def list_rules_for_project(
+        self, project_id: str, category: str | None = None
+    ) -> List[FilmBibleRuleModel]:
+        stmt = (
+            select(FilmBibleRuleModel)
+            .where(FilmBibleRuleModel.project_id == project_id)
+            .order_by(FilmBibleRuleModel.created_at.asc())
+        )
+        if category:
+            stmt = stmt.where(FilmBibleRuleModel.category == category)
         return list(self.db.scalars(stmt))

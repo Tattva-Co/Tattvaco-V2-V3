@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from apps.api.errors import register_exception_handlers
-from apps.api.routers import approvals, assets, health, projects, research, storyboard, workflows
+from apps.api.routers import approvals, assets, film_bible, health, projects, research, storyboard, workflows
 from packages.core.config import Settings, get_settings
 from packages.core.logging import configure_logging
 
@@ -33,7 +33,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     register_exception_handlers(app)
 
     app.include_router(health.router)
-    for module in (projects, assets, workflows, approvals, research, storyboard):
+    for module in (projects, assets, workflows, approvals, research, storyboard, film_bible):
         app.include_router(module.router, prefix=settings.api_v1_str)
     return app
 

@@ -88,6 +88,7 @@ class TattvaApiClient:
         claim_ids: list | None = None,
         question_ids: list | None = None,
         panel_ids: list | None = None,
+        rule_ids: list | None = None,
     ):
         payload: Dict[str, Any] = {"decision": decision, "notes": notes}
         if decision == "approved":
@@ -101,6 +102,8 @@ class TattvaApiClient:
                 payload["approved_question_ids"] = question_ids
             if panel_ids is not None:
                 payload["approved_panel_ids"] = panel_ids
+            if rule_ids is not None:
+                payload["approved_rule_ids"] = rule_ids
         return self.post(f"/approvals/{approval_id}/decide", payload)
 
     def list_scenes(self, project_id: str):
@@ -173,4 +176,40 @@ class TattvaApiClient:
         return self.post(
             f"/projects/{project_id}/workflows/storyboard-intelligence",
             {"brief": brief, "sync_execution": sync},
+        )
+
+    # -- film bible & visual world --------------------------------------------
+
+    def list_film_bible_rules(self, project_id: str, category: str | None = None):
+        endpoint = f"/projects/{project_id}/film-bible/rules"
+        if category:
+            endpoint += f"?category={category}"
+        return self.get(endpoint)
+
+    def create_film_bible_rule(
+        self,
+        project_id: str,
+        category: str,
+        title: str,
+        rule_text: str,
+        negative_prompt_guidance: str | None = None,
+        strictness: str = "guideline",
+    ):
+        return self.post(
+            f"/projects/{project_id}/film-bible/rules",
+            {
+                "category": category,
+                "title": title,
+                "rule_text": rule_text,
+                "negative_prompt_guidance": negative_prompt_guidance,
+                "strictness": strictness,
+            },
+        )
+
+    def run_film_bible_synthesis(
+        self, project_id: str, user_notes: str | None = None, sync: bool = True
+    ):
+        return self.post(
+            f"/projects/{project_id}/workflows/film-bible-synthesis",
+            {"user_notes": user_notes, "sync_execution": sync},
         )

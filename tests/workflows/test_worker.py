@@ -105,3 +105,27 @@ def test_queued_storyboard_run_is_executed_by_worker(client, tenant):
         task = db.query(OutboxTaskModel).filter_by(workflow_run_id=run_id).one()
         assert task.status == "completed"
         assert task.attempts == 1
+
+
+def test_queued_film_bible_run_is_executed_by_worker(client, tenant):
+    headers = as_actor(tenant.user_id)
+    project = create_project(client, tenant, title="Async Film Bible")
+
+    trigger = client.post(
+        f"/api/v1/projects/{project['id']}/workflows/film-bible-synthesis",
+        json={"user_notes": "Async visual world", "sync_execution": False},
+        headers=headers,
+    )
+    assert trigger.status_code == 200
+    assert trigger.json()["status"] == "queued"
+    run_id = trigger.json()["workflow_run_id"]
+
+    _drain()
+
+    run = client.get(f"/api/v1/workflow-runs/{run_id}", headers=headers).json()
+    assert run["status"] == "awaiting_approval"
+
+    with session_scope() as db:
+        task = db.query(OutboxTaskModel).filter_by(workflow_run_id=run_id).one()
+        assert task.status == "completed"
+        assert task.attempts == 1

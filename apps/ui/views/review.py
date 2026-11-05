@@ -177,6 +177,55 @@ def _render_storyboard_approval(client: TattvaApiClient, approval: dict, panels:
                     st.rerun()
 
 
+def _render_film_bible_approval(client: TattvaApiClient, approval: dict, rules: list) -> None:
+    run_id = approval["workflow_run_id"]
+    run_rules = [r for r in rules if r["workflow_run_id"] == run_id and r["status"] == "proposed"]
+
+    with st.form(f"film_bible_approval_form_{approval['id']}"):
+        st.markdown("### Proposed Visual World Rules")
+        selected_rules = []
+        for r in run_rules:
+            checked = st.checkbox(
+                f"[{r['category'].upper()}] {r['title']} ({r['strictness']})",
+                value=True,
+                key=f"rule_{r['id']}",
+            )
+            st.write(r["rule_text"])
+            if r.get("negative_prompt_guidance"):
+                st.caption(f"🚫 Negative Prompt: `{r['negative_prompt_guidance']}`")
+            if r.get("conflict_warning"):
+                st.warning(f"⚠️ **Conflict Detected:** {r['conflict_warning']}")
+            if checked:
+                selected_rules.append(r["id"])
+
+        notes = st.text_input("Reviewer Notes", placeholder="Approved visual world rules for project canon")
+        col_approve, col_reject = st.columns(2)
+        with col_approve:
+            approve_btn = st.form_submit_button("✅ Approve Selected Rules")
+        with col_reject:
+            reject_btn = st.form_submit_button("❌ Reject All")
+
+        if approve_btn:
+            with st.spinner("Applying approval and advancing canonical project version..."):
+                res = safe_call(
+                    client.decide_approval,
+                    approval["id"],
+                    "approved",
+                    notes,
+                    rule_ids=selected_rules,
+                )
+                if res:
+                    st.success(f"Approved! Project advanced to Version v{res['new_project_version']}")
+                    st.rerun()
+
+        if reject_btn:
+            with st.spinner("Rejecting Film Bible candidates..."):
+                res = safe_call(client.decide_approval, approval["id"], "rejected", notes)
+                if res:
+                    st.warning("Film Bible rules rejected.")
+                    st.rerun()
+
+
 def _render_approval_form(
     client: TattvaApiClient,
     approval: dict,
@@ -185,6 +234,7 @@ def _render_approval_form(
     claims: list,
     questions: list,
     panels: list,
+    rules: list,
 ) -> None:
     st.subheader(f"Pending Request: `{approval['id']}`")
     st.caption(f"Workflow Run: `{approval['workflow_run_id']}` | Scope: {approval['scope']}")
@@ -193,6 +243,8 @@ def _render_approval_form(
         _render_research_approval(client, approval, claims, questions)
     elif approval.get("scope") == "storyboard_candidates":
         _render_storyboard_approval(client, approval, panels)
+    elif approval.get("scope") == "film_bible_rules":
+        _render_film_bible_approval(client, approval, rules)
     else:
         _render_script_approval(client, approval, scenes, entities)
 
@@ -218,4 +270,5 @@ def render(client: TattvaApiClient, project: dict) -> None:
             data.get("research_claims", []),
             data.get("research_questions", []),
             data.get("storyboard_panels", []),
+            data.get("film_bible_rules", []),
         )
