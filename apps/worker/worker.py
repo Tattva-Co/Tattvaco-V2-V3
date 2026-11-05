@@ -24,6 +24,7 @@ from packages.services.film_bible import FilmBibleSynthesisService
 from packages.services.historical_research import HistoricalResearchService
 from packages.services.script_intelligence import ScriptIntelligenceService
 from packages.services.storyboard import StoryboardIntelligenceService
+from packages.workflows.checkpointer import setup_checkpointer_schema
 
 logger = get_logger("worker")
 
@@ -107,4 +108,5 @@ def run_worker_loop(poll_interval: float | None = None, max_iterations: int | No
 
 if __name__ == "__main__":
     configure_logging(get_settings().log_level)
+    setup_checkpointer_schema()
     run_worker_loop()
