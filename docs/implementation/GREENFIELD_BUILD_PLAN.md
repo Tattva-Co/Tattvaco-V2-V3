@@ -60,3 +60,24 @@ flowchart TD
 | Approval Service Lifecycle | Addendum §9, §10 | Unit & API | `tests/api/test_approvals_api.py` |
 | Script Intelligence Slice | PRD §6.1, Wireframe S-02/S-03 | End-to-End | `tests/workflows/test_script_intelligence_slice.py` |
 | Deterministic Model Mocking | Addendum §11.3 | Unit | `tests/unit/test_model_gateway_mock.py` |
+
+---
+
+## Change Note — 2026-11-05: audited milestone status
+
+The milestone statuses in §2 are stale. Audited reality, from git log plus a test run on 2026-11-05:
+
+| Milestone | Recorded status | Audited status | Evidence |
+|---|---|---|---|
+| M0 Baseline | Complete | Complete | `docs/` |
+| M1 Scaffold | In Progress | **Done, with gaps**: no CI, no Dockerfile | `apps/`, `packages/`, `pyproject.toml` |
+| M2 Foundations | Ready to build | **Done, with gaps**: auth is a header stub, no RBAC, version race | 4 Alembic revisions; scoped repositories |
+| M3 LangGraph spike | Ready to build | **Done for G-01** | `tests/workflows/test_graph_recovery.py` (pass) |
+| M4 Script Intelligence | Ready to build | **Done**: deterministic parser | `tests/api/test_script_intelligence_slice.py` (pass) |
+| M5 Studio Expansion | Future | **In progress** | G-02 `a9f8512` and G-03 `b3621cb` are committed and passing. G-04 Film Bible is **uncommitted and broken** (5 failed, 1 error). G-05 to G-11 are not started. |
+
+**Corrections to the test matrix (§4):**
+- `tests/authorization/test_tenant_isolation.py` is now `tests/api/test_tenant_isolation_api.py`.
+- `tests/api/test_approvals_api.py`, `tests/workflows/test_script_intelligence_slice.py` and `tests/unit/test_model_gateway_mock.py` do not exist.
+
+This plan is superseded for forward planning by `docs/product/PRODUCT_ROADMAP.md` and `docs/audit/00_FIRST_RESPONSE_ASSESSMENT.md` §H.

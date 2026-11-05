@@ -1,0 +1,212 @@
+# Final-Grade Implementation Plan — Tattva AI Film Director
+
+**Doc ID:** TFD-ENG-002 · **Version:** 1.0 · **Date:** 2026-11-06 · **Status:** APPROVED 2026-11-06, with an amendment: React replaces Streamlit now (ADR-002). In execution.
+
+**Inputs:**
+- `docs/audit/00–11`, with the gate decisions in `11`.
+- `docs/product/PRD_v1.0.md` and `PRODUCT_ROADMAP.md`.
+- `docs/architecture/*`, `docs/engineering/*` and ADR-002…008.
+- Guided Workspace UX Strategy v1.0 and Wireframe v1.1 (`docs/product/ux/guided-workspace-v1.0/`).
+
+---
+
+## 1. Goal
+
+Take the current foundation through FD-V1 and then FD-V2:
+- **Current:** 3 working deterministic slices and 1 broken slice, header identity, and 8 Streamlit views.
+- **FD-V1:** an approved filmmaking and production blueprint, delivered through the **10-section Guided Workspace**, with manual tool handoff.
+- **FD-V2:** connected and manual generation, plus output inspection.
+
+The work is done as small, verified, reversible increments. Nothing is rebuilt from scratch.
+
+## 2. Working rules (apply to every milestone)
+
+1. **Branches.**
+   - This audit and design work is committed on `docs/product-evolution-audit`.
+   - Implementation happens on `feat/<milestone>` branches cut from it.
+   - `main` changes only when you ask me to merge or open a PR.
+2. **One milestone is one or more reviewable commits**, each with tests. The suite stays green at every commit, from the C1 fix onward.
+3. **Migrations are additive only:** expand → backfill → verify → switch → contract.
+   - Each migration must pass an upgrade/downgrade round-trip test.
+   - No applied revision is ever edited.
+   - No DB reset. `pg_dump` runs before any shared-environment migration.
+4. **No fake success.** Deterministic and mock generators carry a label in the API and UI. Provider states are honest.
+5. **Existing behaviour is protected.** Current routes stay compatible (C1–C9 in `API_AND_EVENT_CONTRACTS.md`), and the G-01, G-02 and G-03 tests must keep passing.
+6. **Definition of Done** is Master Prompt §29, using the checklist in `ACCEPTANCE_CRITERIA.md`. A screen is not a feature.
+7. **Status reports** after each milestone cover what changed, real test output, what is still mocked, and what comes next.
+
+## 3. Sequence overview
+
+```mermaid
+flowchart LR
+  S0[S0 Housekeeping] --> C1[C1 Fix G-04] --> C2[C2 Test DB + CI] --> C3[C3 Auth] --> C45[C4/C5 RBAC + tenant integrity]
+  C45 --> C6[C6 Async + worker hardening] --> GW[GW Guided Workspace foundation]
+  GW --> C7[C7 Media + MinIO] --> C8[C8 Approvals + audit] --> C9[C9 Observability + containers] --> C10[C10 ModelGateway]
+  C10 --> D[D1 to D12: FD-V1 sections 01 to 10] --> F1[F1 FD-V1 pilot gate] --> E[E0 to E9: FD-V2] --> F2[F2 Production readiness]
+```
+
+The Guided Workspace shell (GW) comes right after auth, roles and async, so every later feature lands inside the final navigation rather than the old 8-view prototype.
+
+## 4. Stage S0 — Housekeeping (S)
+
+| Item | Detail |
+|---|---|
+| S0.1 | Commit `docs/` (audit, design docs, UX package, decisions) on `docs/product-evolution-audit`. |
+| S0.2 | Bump `INFORMATION_ARCHITECTURE.md` to v1.1. The 10 journey sections become primary navigation, and the 60 canonical screens and the 36 wireframe screens are mapped beneath them as Studio Tools. No capability is removed. |
+| S0.3 | Add a **Journey manifest** spec (`docs/product/JOURNEY_MANIFEST.md` plus a machine-readable `packages/domain/journey_manifest.yaml`). It defines sections 01–10, accordions and subpoints with stable `JRN-` IDs, required/optional flags, applicability rules (by mode, format and role), completion rules, linked TFD requirements and the Studio Tool for each step. |
+
+**Exit:** docs committed and the manifest reviewed.
+
+## 5. Stage C — Foundation hardening
+
+| # | Milestone | Scope | Key files | Tests / exit criteria | Size |
+|---|---|---|---|---|---|
+| **C1** | Fix G-04 forward | See below | `workflows/film_bible_synthesis/*`, `services/film_bible*.py`, `tests/support.py` | All 6 G-04 tests pass; new regression tests for A, B, C, H and I; **full suite green** | S |
+| **C2** | Test DB isolation + CI | See below | `tests/conftest.py`, `.github/workflows/ci.yml`, `pyproject.toml` | Tests never touch the dev DB. CI green. Mypy runs (errors burned down per package) | M |
+| **C3** | Authentication | See below | `apps/api/dependencies.py`, `services/identity.py` → `packages/iam/`, `core/config.py`, `apps/ui/api_client.py` | Authn negative tests. A forged or absent token gives 401 outside `test`. G-01…G-04 tests pass with tokens | M |
+| **C4/C5** | RBAC + tenant integrity + version safety | See below | new `packages/iam/policy.py`, repositories, `*_review.py`, migrations R-04…R-07 | Negative authZ matrix for every router. Cross-tenant ID tests. Concurrent-approval test gives unique versions | L |
+| **C6** | Async-by-default + worker hardening | See below | `apps/worker`, `outbox_tasks` migration, services, UI task tray | Kill-worker test recovers. Redelivery creates no duplicate approval. Retries respect `max_attempts` | L |
+
+**C1 scope:**
+- Declare `approved_rule_ids` and `decision_notes` in state.
+- Switch the claims call to `list_claims`.
+- Purge the film-bible tables in teardown.
+- Stop the version-field overwrite and preserve the initiator `actor_id`.
+- Add the pending-status guard.
+- Validate category and strictness against the enums.
+- Commit together with the user's WIP.
+
+**C2 scope:**
+- A per-session `tattva_test` DB, created and migrated to head.
+- GitHub Actions: ruff, pytest against a Postgres service, `alembic upgrade head → downgrade -1 → upgrade`.
+- mypy configured (`explicit_package_bases`).
+
+**C3 scope:**
+- An `AuthProvider` port.
+- A dev token issuer (HS256, `/auth/dev-login`, available only in `development`).
+- An OIDC/JWKS verifier for staging/prod (config only until a vendor is chosen).
+- `ENVIRONMENT` fails closed.
+- The dev fallback is removed. Header identity remains in `test` only.
+- The Streamlit login screen sends a Bearer token.
+
+**C4/C5 scope:**
+- Tables: `memberships`, `project_memberships`, `role_templates`, `capabilities`, with a backfill from `users.role` and project creators.
+- A `require(capability)` dependency on every route.
+- Scope the unscoped getters and validate foreign IDs.
+- Add `organization_id` to scenes, entities, candidates and `project_versions` (with backfill).
+- `for_update` on every version bump, plus `uq_project_versions_project_number` after a duplicate pre-check.
+- The unknown approval scope returns 422.
+- `assets.size_bytes` becomes `BigInteger`.
+
+**C6 scope:**
+- `sync_execution` defaults to false (true stays in tests).
+- The outbox gains lease, heartbeat, `next_attempt_at`, `max_attempts`, a dead-letter queue and a stale-claim sweep.
+- Redelivery resumes from the checkpoint.
+- Idempotent `propose_*`.
+- Checkpointer `setup()` runs once.
+- `Idempotency-Key` on POSTs.
+- The outbox `workflow_run_id` uniqueness constraint is relaxed (expand/contract).
+
+## 6. Stage GW — Guided Workspace foundation (UX P0)
+
+| # | Milestone | Scope | Tests / exit criteria | Size |
+|---|---|---|---|---|
+| **GW1** | Journey state engine (server) | See below | Unit tests for every rule in UX §6. Applicability changes with mode (Fully AI / Hybrid / Mixed). Opening an item never completes it | L |
+| **GW2** | Design system + Streamlit shell | See below | UI smoke tests for every state (loading, empty, error, offline, permission-denied). Keyboard-navigable expanders. UX §16 QA list items 1–10 and 13 | L |
+| **GW3** | Studio Tools mapping | See below | Existing slice tests pass. Each tool reachable from its section and permission-aware | M |
+
+**GW1 scope:**
+- Tables: `journey_item_states` (project, `JRN` ID, status, applicability, N/A reason, evidence refs, actor, timestamps), `journey_section_events` (completion transitions) and `journey_staleness` (upstream change → affected items).
+- The applicability resolver driven by the manifest.
+- The 8-state status model and the section completion algorithm (UX §6, steps 1–10).
+- Endpoints:
+  - `GET /projects/{id}/journey`
+  - `POST …/journey/items/{jrn}/{draft|complete|request-review|not-applicable}`
+  - `POST …/journey/sections/{n}/continue`
+
+**GW2 scope (React, amended):**
+- **New app `apps/web`:** Vite + React + TypeScript (strict), React Router, TanStack Query, a typed client generated from OpenAPI, and design tokens from Wireframe v1.1 as CSS custom properties.
+- **Online Workspace:** project cards, action queue, recent activity, create and continue.
+- **Project Workspace:**
+  - a left 10-section journey rail with progress and locks
+  - a header showing mode, screenplay version and next action
+  - numbered, accessible accordions with status chips and subpoint actions
+  - a "Continue to Next Section" gate with summary
+  - breadcrumbs, a Studio Tools menu, a task tray, and toasts
+  - loading, empty, error, offline and permission-denied states
+- **Tests:** Vitest + Testing Library for components, Playwright E2E against the real API.
+
+**GW3 scope:**
+- The current Streamlit views are re-implemented in React as contextual tools:
+  - Assets → 02.1
+  - Script Intelligence and Review → 02.2/02.3
+  - Historical Research → 03.2–03.6
+  - Film Bible → 05.1
+  - Storyboard → 06.5
+  - Audit → cross-stage
+- Every workflow trigger is async, with the task tray.
+- **Exit:** a Playwright parity suite passes. Then delete `apps/ui`, `tests/unit/test_ui_smoke.py` and the `streamlit` dependency.
+
+## 7. Stage C (continued) — remaining hardening
+
+| # | Milestone | Scope | Tests / exit criteria | Size |
+|---|---|---|---|---|
+| **C7** | Secure media | MinIO in compose; S3 adapter behind `StorageService`; streaming and presigned upload; magic-byte validation; `quarantined → clean` scan states (labelled no-op scanner in dev, ClamAV seam); real PDF, DOCX, Fountain and FDX text extraction into `asset_derivatives`; ffprobe metadata for media | A 2 GB streamed upload keeps API memory flat. A signature mismatch is rejected. Parser golden files pass | L |
+| **C8** | Generalised approvals + append-only audit | `approval_requests` gains target, level and required capability (old scope rows kept); manual canon writes go through approval or a capability-gated direct path; DB grants make `audit_events` append-only | Existing approval tests unchanged. A direct canon write without the capability is denied | M |
+| **C9** | Observability + containers | JSON logs with request/run correlation IDs; OpenTelemetry traces API → outbox → worker → graph; `/health/ready`; one Dockerfile per process; compose runs the full stack | One trace spans API → worker. `docker compose up` starts all services | M |
+| **C10** | ModelGateway | `packages/ai/gateway.py` port; the deterministic adapter wraps the existing parser, investigator, aligner and synthesizer; structured-output (Pydantic) validation; generator-mode label on runs and candidates; golden-set skeletons per capability | Every generator goes through the gateway. The mode is visible in the UI. The eval harness runs | L |
+
+## 8. Stage D — FD-V1 product completion, built in journey order
+
+Each section lands as a vertical slice (UI → API → authZ → service → DB → approval → audit/version → tests) inside the Guided Workspace.
+
+| # | Journey section | Roadmap pkg | Highlights | Size |
+|---|---|---|---|---|
+| D1 | **01 Project Workspace & Setup** | D1 | Format templates and output/delivery profiles; production mode with inheritance (project → sequence → scene → character → shot); creative governance policy; team and roles UI; project policies | L |
+| D2 | **02 Screenplay & Governance** | D2 + D3 | `screenplay_versions` with lock by `management_approver`; Suggestions Workspace (WF-15); director revision with diff and justification; management decision; impact analysis (WF-14); verbatim `dialogue_segments`; better parser | XL |
+| D3 | **03 Research & Story Intelligence** | D4 + D8 | Story Brain; research through approval; locators; `timeline_events` with uncertain dates; fact / evidence / interpretation / dramatization labels; Context Resolver | L |
+| D4 | **04 Character & Digital Human** (V1 foundation) | D5 | `characters` (legacy link to `entities`); identity, facial, physical and performance profiles with a provenance envelope; measurements (estimated vs verified); `performers`, `performer_consents` with enforcement points; avatar approach; voice profile record | XL |
+| D5 | **05 Visual World** | D6 + D7 | Costumes and states, props/weapons and states, locations, environments and states; Visual Language Profile (the generalised Film Bible) | L |
+| D6 | **06 Cinematography & Storyboard** | D7 + D9 | Cinematography Bible, camera/lens/lighting profiles, `camera_spec` (physical / virtual, actual / creative target / recommended); AI recommendation with override; storyboard image/PDF ingestion and mapping | XL |
+| D7 | **07 Production Planning** | D9 + D10 | Sequences; shots with `production_method`; capture plan record (V1 manual form; WF-12 automation in V2); continuity rules with the 9 dimensions and 9 states; production readiness check; AI Director review | XL |
+| D8 | **08 Tool Handoff (manual)** | D11 | Provider-neutral Shot Spec; prompt compiler; immutable `production_packages`; copy / JSON / Markdown / ZIP export with manifest and checksum; manual run record; output import mapped to shot; manual-only registry entries | L |
+| D9 | **09/10 V1 foundations** | D11 + D12 | Manual output review and approval; production library with lineage; JSON/CSV handoff manifest | M |
+| D10 | FD-V1 stabilisation | D12 | Pilot on the two DEC-028 productions; golden-set evaluation reports; accessibility pass (WCAG 2.2 AA); UX §16 QA list | L |
+
+**F1 — FD-V1 readiness gate:** `RELEASE_READINESS_CHECKLIST.md` FD-V1 column, all with evidence.
+
+## 9. Stage E — FD-V2, then F2
+
+Follows `PRODUCT_ROADMAP.md`:
+- E0: production-frontend decision and interaction proof (ADR-002).
+- E1/E2: registry, jobs, attempts, cost and budgets.
+- E3: reference and keyframe generation.
+- E4: output inspection and library.
+- E5: video adapters.
+- E6: hybrid capture and footage analysis (WF-12/WF-13).
+- E7: voice, dubbing, lip-sync.
+- E8: digital humans and performance transformation.
+- E9: post handoff.
+
+**F2 (production readiness):** security assessment, load/soak, DR drill, runbooks.
+
+Each connected provider stays behind its terms-review gate (gate 7). Manual parity is always kept.
+
+## 10. External inputs needed from you, and when they block
+
+| Input | Needed by | Without it |
+|---|---|---|
+| OIDC vendor choice + tenant | Staging (after C3) | Local dev uses the built-in dev token issuer; staging is blocked |
+| LLM provider API key + eval budget | After C10, for real AI quality | Deterministic adapter only (labelled); no AI quality claims |
+| Legal consent template + retention schedule | Before any real performer data (D4) | The consent model is built and the gate blocks real likeness/voice data |
+| Cloud bucket + managed Postgres | Staging | MinIO and local Postgres |
+| First provider terms review + account | E1 (FD-V2) | Manual handoff only |
+
+## 11. What starts immediately on approval
+
+1. **S0:** commit the docs, write IA v1.1 and the Journey manifest.
+2. **C1:** branch `feat/c1-g04-fix-forward` and fix G-04 until the full suite is green. You get a report with the real pytest output.
+3. **C2:** test DB isolation and CI.
+4. Continue down the sequence (C3 → C4/C5 → C6 → GW …), with a status report after each milestone.
+
+I pause and ask whenever a step needs a decision not covered by `11_APPROVAL_GATE_DECISIONS.md`, or anything destructive or outward-facing: pushing, opening PRs, merging to `main`.
