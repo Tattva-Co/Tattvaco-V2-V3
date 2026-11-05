@@ -143,7 +143,11 @@ class StoryboardReviewService:
         approved_panel_ids: Sequence[str] | None = None,
     ) -> int:
         scope = self.validate_scope(run_id)
-        project = self.projects.get_scoped(scope.project_id, scope.org_id)
+        # Lock the project row so concurrent approvals cannot produce duplicate versions
+        # (docs/audit/08 PERF-06). validate_scope's own read happened before this lock was
+        # acquired, so the version is re-checked once the lock is held.
+        project = self.projects.get_scoped(scope.project_id, scope.org_id, for_update=True)
+        assert_expected_version(project.current_version, self.runs.get(run_id).expected_project_version)
         panel_rows = self.candidates.storyboard_panels_for_run(run_id)
 
         target_panel_ids = set(approved_panel_ids) if approved_panel_ids is not None else {p.id for p in panel_rows}

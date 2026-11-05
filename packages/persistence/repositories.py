@@ -431,8 +431,18 @@ class ResearchRepository(_Repository):
         stmt = stmt.order_by(ResearchQuestionModel.created_at.desc())
         return list(self.db.scalars(stmt))
 
-    def get_question(self, question_id: str) -> ResearchQuestionModel | None:
-        return self.db.get(ResearchQuestionModel, question_id)
+    def get_question_scoped(self, question_id: str, project_id: str) -> ResearchQuestionModel:
+        """Unscoped lookup by id alone (SEC-04, docs/audit/08) would let a caller who
+        knows a question's id read it regardless of which project, and therefore which
+        tenant, it belongs to. There is no current caller of this method; the scoped
+        signature is intentional so a future one cannot reintroduce that gap."""
+        stmt = select(ResearchQuestionModel).where(
+            ResearchQuestionModel.id == question_id, ResearchQuestionModel.project_id == project_id
+        )
+        question = self.db.scalars(stmt).first()
+        if question is None:
+            raise NotFoundError(f"Research question '{question_id}' not found.")
+        return question
 
     def add_source(self, source: ResearchSourceModel) -> ResearchSourceModel:
         return self._add(source)
@@ -445,8 +455,15 @@ class ResearchRepository(_Repository):
         )
         return list(self.db.scalars(stmt))
 
-    def get_source(self, source_id: str) -> ResearchSourceModel | None:
-        return self.db.get(ResearchSourceModel, source_id)
+    def get_source_scoped(self, source_id: str, project_id: str) -> ResearchSourceModel:
+        """See get_question_scoped: id-only lookup would be a cross-tenant read (SEC-04)."""
+        stmt = select(ResearchSourceModel).where(
+            ResearchSourceModel.id == source_id, ResearchSourceModel.project_id == project_id
+        )
+        source = self.db.scalars(stmt).first()
+        if source is None:
+            raise NotFoundError(f"Research source '{source_id}' not found.")
+        return source
 
     def add_claim(self, claim: ResearchClaimModel) -> ResearchClaimModel:
         return self._add(claim)
@@ -495,8 +512,13 @@ class FilmBibleRepository(_Repository):
     def add_rule(self, rule: FilmBibleRuleModel) -> FilmBibleRuleModel:
         return self._add(rule)
 
-    def get_rule(self, rule_id: str) -> FilmBibleRuleModel:
-        stmt = select(FilmBibleRuleModel).where(FilmBibleRuleModel.id == rule_id)
+    def get_rule_scoped(self, rule_id: str, project_id: str) -> FilmBibleRuleModel:
+        """See ResearchRepository.get_question_scoped: id-only lookup would be a
+        cross-tenant read (SEC-04). Unused today; the scoped signature keeps the first
+        future caller safe by construction instead of by convention."""
+        stmt = select(FilmBibleRuleModel).where(
+            FilmBibleRuleModel.id == rule_id, FilmBibleRuleModel.project_id == project_id
+        )
         rule = self.db.scalars(stmt).first()
         if rule is None:
             raise NotFoundError(f"Film Bible rule '{rule_id}' not found.")

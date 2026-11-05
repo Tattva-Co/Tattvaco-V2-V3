@@ -11,7 +11,12 @@ from packages.persistence.models import (
     ResearchQuestionModel,
     ResearchSourceModel,
 )
-from packages.persistence.repositories import AuditRepository, ProjectRepository, ResearchRepository
+from packages.persistence.repositories import (
+    AssetRepository,
+    AuditRepository,
+    ProjectRepository,
+    ResearchRepository,
+)
 from packages.services.identity import ActorContext
 
 
@@ -20,6 +25,7 @@ class ResearchService:
         self.db = db
         self.projects = ProjectRepository(db)
         self.research = ResearchRepository(db)
+        self.assets = AssetRepository(db)
         self.audit = AuditRepository(db)
 
     def list_questions(self, actor: ActorContext, project_id: str, status: str | None = None) -> list[ResearchQuestionModel]:
@@ -75,6 +81,11 @@ class ResearchService:
         reliability_notes: str | None = None,
     ) -> ResearchSourceModel:
         project = self.projects.get_scoped(project_id, actor.org_id)
+        if asset_id is not None:
+            # Raises NotFoundError (404) if the asset doesn't exist or belongs to a
+            # different project, preventing a source from pointing at another tenant's
+            # asset (SEC-04, docs/audit/08).
+            self.assets.get_for_project(asset_id, project.id)
         source = ResearchSourceModel(
             project_id=project.id,
             organization_id=project.organization_id,

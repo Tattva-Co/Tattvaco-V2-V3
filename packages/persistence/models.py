@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 
 from sqlalchemy import (
     JSON,
+    BigInteger,
     Boolean,
     Column,
     DateTime,
@@ -99,7 +100,9 @@ class AssetModel(Base):
     organization_id = Column(String(36), ForeignKey("organizations.id"), nullable=False, index=True)
     filename = Column(String(255), nullable=False)
     mime_type = Column(String(100), nullable=False)
-    size_bytes = Column(Integer, nullable=False)
+    # BigInteger: a plain Integer overflows at ~2.1 GB, which would reject legitimate
+    # video/footage uploads outright once media ingestion lands (docs/audit/05 §2).
+    size_bytes = Column(BigInteger, nullable=False)
     checksum_sha256 = Column(String(64), nullable=False)
     storage_path = Column(String(512), nullable=False)
     asset_type = Column(String(50), default="script", nullable=False)

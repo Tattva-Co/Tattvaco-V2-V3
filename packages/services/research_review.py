@@ -158,7 +158,11 @@ class ResearchReviewService:
         approved_question_ids: Sequence[str] | None = None,
     ) -> int:
         scope = self.validate_scope(run_id)
-        project = self.projects.get_scoped(scope.project_id, scope.org_id)
+        # Lock the project row so concurrent approvals cannot produce duplicate versions
+        # (docs/audit/08 PERF-06). validate_scope's own read happened before this lock was
+        # acquired, so the version is re-checked once the lock is held.
+        project = self.projects.get_scoped(scope.project_id, scope.org_id, for_update=True)
+        assert_expected_version(project.current_version, self.runs.get(run_id).expected_project_version)
         claim_rows = self.candidates.claims_for_run(run_id)
         question_rows = self.candidates.questions_for_run(run_id)
 

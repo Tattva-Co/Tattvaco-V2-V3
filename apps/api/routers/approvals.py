@@ -8,8 +8,10 @@ from apps.api.schemas import ApprovalDecisionRequest, ApprovalDecisionResponse
 from packages.domain.enums import (
     FILM_BIBLE_APPROVAL_SCOPE,
     HISTORICAL_RESEARCH_APPROVAL_SCOPE,
+    SCRIPT_INTELLIGENCE_APPROVAL_SCOPE,
     STORYBOARD_INTELLIGENCE_APPROVAL_SCOPE,
 )
+from packages.domain.errors import ValidationFailure
 from packages.persistence.repositories import ApprovalRepository
 from packages.services.film_bible import FilmBibleSynthesisService
 from packages.services.historical_research import HistoricalResearchService
@@ -53,7 +55,7 @@ def decide_approval(
             notes=req.notes,
             approved_rule_ids=req.approved_rule_ids,
         )
-    else:
+    elif approval.scope == SCRIPT_INTELLIGENCE_APPROVAL_SCOPE:
         result = ScriptIntelligenceService(db).decide(
             actor,
             approval_id,
@@ -62,6 +64,10 @@ def decide_approval(
             approved_scene_ids=req.approved_scene_ids,
             approved_entity_ids=req.approved_entity_ids,
         )
+    else:
+        # SEC-08 (docs/audit/08): an unrecognised scope must not be silently routed to
+        # whichever service happens to be the fallback branch.
+        raise ValidationFailure(f"Unknown approval scope: {approval.scope!r}")
     return ApprovalDecisionResponse(
         approval_id=result.approval_id,
         decision=result.decision,
