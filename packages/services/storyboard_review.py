@@ -184,6 +184,7 @@ class StoryboardReviewService:
         project.current_version = new_version
         version_row = ProjectVersionModel(
             project_id=project.id,
+            organization_id=project.organization_id,
             version_number=new_version,
             branch_name="main",
             commit_message=f"Storyboard Intelligence committed: {committed_count} panels",

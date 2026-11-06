@@ -97,6 +97,7 @@ class ProjectService:
         self.projects.add_version(
             ProjectVersionModel(
                 project_id=project.id,
+                organization_id=project.organization_id,
                 version_number=1,
                 branch_name="main",
                 commit_message="Initial project baseline creation",

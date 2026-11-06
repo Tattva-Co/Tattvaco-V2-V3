@@ -190,6 +190,7 @@ class FilmBibleReviewService:
         self.projects.add_version(
             ProjectVersionModel(
                 project_id=project.id,
+                organization_id=project.organization_id,
                 version_number=new_version,
                 branch_name="main",
                 commit_message=f"Film Bible visual-world rules approved: {committed_count} rules committed ({decision_notes or 'no notes'})",

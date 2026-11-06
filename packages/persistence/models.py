@@ -90,12 +90,17 @@ class ProjectVersionModel(Base):
 
     id = Column(String(36), primary_key=True, default=generate_uuid)
     project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id"), nullable=False, index=True)
     version_number = Column(Integer, nullable=False)
     branch_name = Column(String(100), default="main", nullable=False)
     commit_message = Column(Text, nullable=False)
     committed_by = Column(String(36), ForeignKey("users.id"), nullable=False)
     snapshot_data = Column(JSON, default=dict, nullable=False)
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+    # TFD-VER-001: one row per (project, version number). The row lock taken before every
+    # version bump (C4) prevents the race; this makes a duplicate impossible at the DB level.
+    __table_args__ = (Index("uq_project_versions_project_number", "project_id", "version_number", unique=True),)
 
 
 class AssetModel(Base):
@@ -207,6 +212,7 @@ class SceneCandidateModel(Base):
     id = Column(String(36), primary_key=True, default=generate_uuid)
     workflow_run_id = Column(String(36), ForeignKey("workflow_runs.id"), nullable=False, index=True)
     project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id"), nullable=False, index=True)
     scene_number = Column(Integer, nullable=False)
     heading = Column(String(255), nullable=False)
     setting = Column(String(10), default="EXT", nullable=False)
@@ -226,6 +232,7 @@ class EntityCandidateModel(Base):
     id = Column(String(36), primary_key=True, default=generate_uuid)
     workflow_run_id = Column(String(36), ForeignKey("workflow_runs.id"), nullable=False, index=True)
     project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id"), nullable=False, index=True)
     name = Column(String(255), nullable=False)
     category = Column(String(50), default="character", nullable=False)
     description = Column(Text, nullable=True)
@@ -241,6 +248,7 @@ class SceneModel(Base):
 
     id = Column(String(36), primary_key=True, default=generate_uuid)
     project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id"), nullable=False, index=True)
     scene_number = Column(Integer, nullable=False)
     heading = Column(String(255), nullable=False)
     setting = Column(String(10), nullable=False)
@@ -259,6 +267,7 @@ class EntityModel(Base):
 
     id = Column(String(36), primary_key=True, default=generate_uuid)
     project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id"), nullable=False, index=True)
     name = Column(String(255), nullable=False)
     category = Column(String(50), nullable=False)
     description = Column(Text, nullable=True)

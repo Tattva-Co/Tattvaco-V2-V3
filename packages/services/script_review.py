@@ -104,6 +104,7 @@ class ScriptReviewService:
                 SceneCandidateModel(
                     workflow_run_id=scope.run_id,
                     project_id=scope.project_id,
+                    organization_id=scope.org_id,
                     scene_number=s["scene_number"],
                     heading=s["heading"],
                     setting=s["setting"],
@@ -122,6 +123,7 @@ class ScriptReviewService:
                 EntityCandidateModel(
                     workflow_run_id=scope.run_id,
                     project_id=scope.project_id,
+                    organization_id=scope.org_id,
                     name=e["name"],
                     category=e["category"],
                     description=e["description"],
@@ -217,6 +219,7 @@ class ScriptReviewService:
                 promoted_scenes.append(
                     SceneModel(
                         project_id=scope.project_id,
+                        organization_id=scope.org_id,
                         scene_number=sc.scene_number,
                         heading=sc.heading,
                         setting=sc.setting,
@@ -238,6 +241,7 @@ class ScriptReviewService:
                 promoted_entities.append(
                     EntityModel(
                         project_id=scope.project_id,
+                        organization_id=scope.org_id,
                         name=ec.name,
                         category=ec.category,
                         description=ec.description,
@@ -256,6 +260,7 @@ class ScriptReviewService:
         version = projects.add_version(
             ProjectVersionModel(
                 project_id=scope.project_id,
+                organization_id=scope.org_id,
                 version_number=next_version,
                 branch_name="main",
                 commit_message=(
