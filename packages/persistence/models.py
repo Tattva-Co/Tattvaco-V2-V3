@@ -13,6 +13,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
+    LargeBinary,
     String,
     Text,
 )
@@ -585,3 +586,30 @@ class JourneyStalenessModel(Base):
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
     resolved_at = Column(DateTime(timezone=True), nullable=True)
     resolved_by = Column(String(36), ForeignKey("users.id"), nullable=True)
+
+
+class IdempotencyKeyModel(Base):
+    """A client-supplied Idempotency-Key and the response it produced (TFD-OPS-004).
+
+    Scoped to the authenticated user: the same key from two users is two records. A
+    record is ``in_progress`` while the first request runs and ``completed`` once its
+    response (any status below 500) is stored for replay.
+    """
+
+    __tablename__ = "idempotency_keys"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    organization_id = Column(String(36), ForeignKey("organizations.id"), nullable=False, index=True)
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=False)
+    key = Column(String(255), nullable=False)
+    method = Column(String(10), nullable=False)
+    path = Column(String(500), nullable=False)
+    request_hash = Column(String(64), nullable=False)
+    status = Column(String(20), nullable=False)  # in_progress, completed
+    response_status = Column(Integer, nullable=True)
+    response_body = Column(LargeBinary, nullable=True)
+    response_content_type = Column(String(255), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    completed_at = Column(DateTime(timezone=True), nullable=True)
+
+    __table_args__ = (Index("uq_idempotency_keys_org_user_key", "organization_id", "user_id", "key", unique=True),)

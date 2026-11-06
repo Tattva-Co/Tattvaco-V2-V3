@@ -9,7 +9,9 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from apps.api.dependencies import resolve_actor
 from apps.api.errors import register_exception_handlers
+from apps.api.idempotency import IdempotencyMiddleware
 from apps.api.routers import (
     approvals,
     assets,
@@ -46,12 +48,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         debug=settings.debug,
         lifespan=lifespan,
     )
+    # Added first so CORS (added next) stays the outermost layer.
+    app.add_middleware(IdempotencyMiddleware, actor_resolver=resolve_actor)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_allow_origins,
         allow_credentials=False,
         allow_methods=["GET", "POST"],
-        allow_headers=["Content-Type", "X-Actor-ID", "Authorization"],
+        allow_headers=["Content-Type", "X-Actor-ID", "Authorization", "Idempotency-Key"],
+        expose_headers=["Idempotent-Replayed"],
     )
     register_exception_handlers(app)
 

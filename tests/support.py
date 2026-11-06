@@ -17,6 +17,7 @@ from packages.persistence.models import (
     EntityModel,
     FilmBibleRuleCandidateModel,
     FilmBibleRuleModel,
+    IdempotencyKeyModel,
     JourneyItemStateModel,
     JourneySectionEventModel,
     JourneyStalenessModel,
@@ -117,6 +118,7 @@ def purge_organization(org_id: str) -> None:
             db.query(RoleTemplateCapabilityModel).filter(
                 RoleTemplateCapabilityModel.role_template_id.in_(role_template_ids)
             ).delete(synchronize_session=False)
+        db.query(IdempotencyKeyModel).filter_by(organization_id=org_id).delete(synchronize_session=False)
         db.query(MembershipModel).filter_by(organization_id=org_id).delete(synchronize_session=False)
         db.query(RoleTemplateModel).filter_by(organization_id=org_id).delete(synchronize_session=False)
         db.query(WorkflowRunModel).filter_by(organization_id=org_id).delete(synchronize_session=False)

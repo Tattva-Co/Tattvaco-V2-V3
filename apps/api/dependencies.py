@@ -14,7 +14,7 @@ from packages.services.identity import ActorContext, AuthenticationError, Identi
 from packages.storage.factory import get_storage
 from packages.storage.service import StorageService
 
-__all__ = ["get_db", "get_settings", "get_storage", "get_actor", "Settings", "StorageService"]
+__all__ = ["get_db", "get_settings", "get_storage", "get_actor", "resolve_actor", "Settings", "StorageService"]
 
 
 @lru_cache
@@ -55,14 +55,21 @@ def get_actor(
     db: Session = Depends(get_db),
     settings: Settings = Depends(get_settings),
 ) -> ActorContext:
-    """Resolve the verified caller identity for this request (ADR-003).
+    """Resolve the verified caller identity for this request (ADR-003). See resolve_actor."""
+    return resolve_actor(authorization, x_actor_id, db, settings)
+
+
+def resolve_actor(
+    authorization: str | None, x_actor_id: str | None, db: Session, settings: Settings
+) -> ActorContext:
+    """Map request credentials to an actor. Shared by ``get_actor`` and the idempotency middleware.
 
     - ``environment == "test"``: the ``X-Actor-ID`` header names an existing user
       directly (no token). A Bearer token is also accepted here so the authentication
       test suite can exercise the real token path without external IdP infrastructure.
     - every other environment: a Bearer token is required and verified by this
       environment's :class:`~packages.services.auth.AuthProvider` (dev-issued HS256 in
-      development, OIDC/JWKS RS256 in staging/production). There is no fallback identity.
+      development, Supabase/OIDC JWKS in staging/production). There is no fallback identity.
     """
     identity = IdentityService(db)
 

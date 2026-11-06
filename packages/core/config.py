@@ -76,6 +76,9 @@ class Settings(BaseSettings):
     #     (server misconfigured) rather than silently accepting unverified identity.
     secret_key: str = ""
     access_token_ttl_seconds: int = 3600
+
+    # Idempotency-Key (TFD-OPS-004): how long a stored response can be replayed.
+    idempotency_ttl_hours: int = 24
     oidc_issuer: str = ""
     oidc_jwks_url: str = ""
     oidc_audience: str = ""
