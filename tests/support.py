@@ -17,6 +17,9 @@ from packages.persistence.models import (
     EntityModel,
     FilmBibleRuleCandidateModel,
     FilmBibleRuleModel,
+    JourneyItemStateModel,
+    JourneySectionEventModel,
+    JourneyStalenessModel,
     MembershipModel,
     OrganizationModel,
     OutboxTaskModel,
@@ -100,6 +103,9 @@ def purge_organization(org_id: str) -> None:
                 EntityModel,
                 ProjectVersionModel,
                 ProjectMembershipModel,
+                JourneyItemStateModel,
+                JourneySectionEventModel,
+                JourneyStalenessModel,
             ):
                 db.query(model).filter(model.project_id.in_(project_ids)).delete(
                     synchronize_session=False

@@ -25,6 +25,9 @@ from packages.persistence.models import (
     EntityModel,
     FilmBibleRuleCandidateModel,
     FilmBibleRuleModel,
+    JourneyItemStateModel,
+    JourneySectionEventModel,
+    JourneyStalenessModel,
     MembershipModel,
     OrganizationModel,
     OutboxTaskModel,
@@ -205,6 +208,16 @@ class WorkflowRunRepository(_Repository):
         if error_message is not None:
             run.error_message = error_message
         run.updated_at = utc_now()
+
+    def exists_completed(self, project_id: str, graph_id: str) -> bool:
+        """Used by the journey engine's `workflow_completed:<graph_id>` system check
+        (GW1; JOURNEY_MANIFEST.md §6)."""
+        stmt = select(WorkflowRunModel.id).where(
+            WorkflowRunModel.project_id == project_id,
+            WorkflowRunModel.graph_id == graph_id,
+            WorkflowRunModel.status == "completed",
+        ).limit(1)
+        return self.db.scalars(stmt).first() is not None
 
 
 class OutboxRepository(_Repository):
@@ -699,3 +712,96 @@ class ProjectMembershipRepository(_Repository):
             ProjectMembershipModel.user_id == user_id, ProjectMembershipModel.project_id == project_id
         )
         return self.db.scalars(stmt).first()
+
+
+class JourneyRepository(_Repository):
+    def get_item_states(self, project_id: str) -> dict[str, JourneyItemStateModel]:
+        """Every persisted subpoint state for a project, keyed by jrn_id. A subpoint
+        with no row yet is implicitly not_started -- callers fill the gap, nothing is
+        pre-created for every project (70 groups x 2 subpoints would be pure overhead
+        for a project that never looks at section 10)."""
+        stmt = select(JourneyItemStateModel).where(JourneyItemStateModel.project_id == project_id)
+        return {row.jrn_id: row for row in self.db.scalars(stmt)}
+
+    def upsert_item_state(
+        self,
+        project_id: str,
+        organization_id: str,
+        jrn_id: str,
+        *,
+        status: str,
+        actor_id: str,
+        not_applicable_reason: str | None = None,
+        evidence_refs: list | None = None,
+        notes: str | None = None,
+    ) -> JourneyItemStateModel:
+        stmt = select(JourneyItemStateModel).where(
+            JourneyItemStateModel.project_id == project_id, JourneyItemStateModel.jrn_id == jrn_id
+        )
+        row = self.db.scalars(stmt).first()
+        if row is None:
+            row = JourneyItemStateModel(project_id=project_id, organization_id=organization_id, jrn_id=jrn_id)
+            self.db.add(row)
+        row.status = status
+        row.not_applicable_reason = not_applicable_reason
+        if evidence_refs is not None:
+            row.evidence_refs = evidence_refs
+        if notes is not None:
+            row.notes = notes
+        row.updated_by = actor_id
+        self.db.flush()
+        return row
+
+    def record_section_continue(
+        self, project_id: str, organization_id: str, section_id: str, actor_id: str, group_statuses: dict
+    ) -> JourneySectionEventModel:
+        event = JourneySectionEventModel(
+            project_id=project_id,
+            organization_id=organization_id,
+            section_id=section_id,
+            actor_id=actor_id,
+            group_statuses_snapshot=group_statuses,
+        )
+        return self._add(event)
+
+    def list_section_events(self, project_id: str, section_id: str) -> List[JourneySectionEventModel]:
+        stmt = (
+            select(JourneySectionEventModel)
+            .where(JourneySectionEventModel.project_id == project_id, JourneySectionEventModel.section_id == section_id)
+            .order_by(JourneySectionEventModel.created_at.desc())
+        )
+        return list(self.db.scalars(stmt))
+
+    def mark_stale(self, project_id: str, organization_id: str, jrn_id: str, *, reason: str, caused_by: str) -> None:
+        """Idempotent: does nothing if this item already has an unresolved staleness row,
+        so an upstream change re-processed twice doesn't pile up duplicate flags."""
+        existing = self.db.scalars(
+            select(JourneyStalenessModel).where(
+                JourneyStalenessModel.project_id == project_id,
+                JourneyStalenessModel.jrn_id == jrn_id,
+                JourneyStalenessModel.resolved_at.is_(None),
+            )
+        ).first()
+        if existing is not None:
+            return
+        self._add(
+            JourneyStalenessModel(
+                project_id=project_id, organization_id=organization_id, jrn_id=jrn_id, reason=reason, caused_by=caused_by
+            )
+        )
+
+    def resolve_stale(self, project_id: str, jrn_id: str, *, actor_id: str) -> None:
+        stmt = select(JourneyStalenessModel).where(
+            JourneyStalenessModel.project_id == project_id,
+            JourneyStalenessModel.jrn_id == jrn_id,
+            JourneyStalenessModel.resolved_at.is_(None),
+        )
+        for row in self.db.scalars(stmt):
+            row.resolved_at = utc_now()
+            row.resolved_by = actor_id
+
+    def stale_jrn_ids(self, project_id: str) -> set[str]:
+        stmt = select(JourneyStalenessModel.jrn_id).where(
+            JourneyStalenessModel.project_id == project_id, JourneyStalenessModel.resolved_at.is_(None)
+        )
+        return set(self.db.scalars(stmt))

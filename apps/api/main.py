@@ -16,6 +16,7 @@ from apps.api.routers import (
     auth,
     film_bible,
     health,
+    journey,
     projects,
     research,
     storyboard,
@@ -55,7 +56,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     register_exception_handlers(app)
 
     app.include_router(health.router)
-    for module in (projects, assets, workflows, approvals, research, storyboard, film_bible):
+    for module in (projects, assets, workflows, approvals, research, storyboard, film_bible, journey):
         app.include_router(module.router, prefix=settings.api_v1_str)
 
     # Dev-only login: never registered outside local development (ADR-003). In every

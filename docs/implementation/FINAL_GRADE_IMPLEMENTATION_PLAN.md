@@ -111,18 +111,18 @@ The Guided Workspace shell (GW) comes right after auth, roles and async, so ever
 
 | # | Milestone | Scope | Tests / exit criteria | Size |
 |---|---|---|---|---|
-| **GW1** | Journey state engine (server) | See below | Unit tests for every rule in UX §6. Applicability changes with mode (Fully AI / Hybrid / Mixed). Opening an item never completes it | L |
+| **GW1** | Journey state engine (server) | **Done, 2026-11-06.** See below | Unit tests for every rule in UX §6. Applicability changes with mode (Fully AI / Hybrid / Mixed), verified against the real JRN-07.4 mode exception. Opening an item never completes it (every status transition requires an explicit `act_on_item` call; GET is read-only) | L |
 | **GW2** | Design system + Streamlit shell | See below | UI smoke tests for every state (loading, empty, error, offline, permission-denied). Keyboard-navigable expanders. UX §16 QA list items 1–10 and 13 | L |
 | **GW3** | Studio Tools mapping | See below | Existing slice tests pass. Each tool reachable from its section and permission-aware | M |
 
-**GW1 scope:**
-- Tables: `journey_item_states` (project, `JRN` ID, status, applicability, N/A reason, evidence refs, actor, timestamps), `journey_section_events` (completion transitions) and `journey_staleness` (upstream change → affected items).
-- The applicability resolver driven by the manifest.
-- The 8-state status model and the section completion algorithm (UX §6, steps 1–10).
-- Endpoints:
-  - `GET /projects/{id}/journey`
-  - `POST …/journey/items/{jrn}/{draft|complete|request-review|not-applicable}`
-  - `POST …/journey/sections/{n}/continue`
+**GW1 scope (implemented as):**
+- `packages/domain/journey.py`: the manifest loader (reads S0's `journey_manifest.yaml`, cached), the applicability resolver (mode + `shot_method_in` exception; shot methods are a stubbed empty set until D7/D9 builds a real `shots` table), and the pure status-derivation functions (subpoint → group → section), all tested with no database (`tests/unit/test_journey_domain.py`).
+- Tables (migration `5915e59b2818`): `journey_item_states` (one row per project+subpoint: status, N/A reason, evidence refs, notes, actor, timestamps), `journey_section_events` (append-only "Continue" transitions with a group-status snapshot) and `journey_staleness` (open/resolved rows; `mark_stale` is idempotent). Also added `projects.production_mode` (minimal pull-forward from D1; the applicability resolver cannot function without it — DEC-021 backfill to `fully_ai`).
+- `packages/services/journey.py` (`JourneyService`): ties the domain logic to persistence and to the 7 `system`-kind completion checks (querying real G-01..G-04 data — script/research/storyboard/film-bible candidates and canon), with `AuthzService.require` gating every write on the group's `act_capability`/`approval_capability` from the manifest, and `can_act`/`can_approve` reported on every read so the (future) UI can grey out what a viewer can't do.
+- Endpoints (`apps/api/routers/journey.py`): `GET /projects/{id}/journey`, `POST .../journey/items/{jrn_subpoint_id}` (`action`: draft/complete/request_review/not_applicable), `POST .../journey/sections/{jrn_section_id}/continue`.
+- 2 bugs found and fixed by the API-level tests (not caught by the pure unit tests): (1) `derive_section_status` read an untouched section as `in_progress` when its only non-`not_started` group was `not_applicable` by mode; (2) a `no_pending_candidates:*` system check was vacuously true before any candidate ever existed, auto-completing a review step that had never actually been reviewed.
+- 35 tests total: `test_journey_domain.py` (12), `test_journey_api.py` (9), `test_journey_authorization.py` (3), `test_journey_staleness.py` (3) plus the pre-existing `test_journey_manifest.py` (S0) and `test_journey_domain.py` additions.
+- Not yet wired: a real trigger calling `mark_stale` from a D-stage domain event (there is no upstream domain event worth going stale over yet); the primitive and its API-observable behaviour are tested and ready.
 
 **GW2 scope (React, amended):**
 - **New app `apps/web`:** Vite + React + TypeScript (strict), React Router, TanStack Query, a typed client generated from OpenAPI, and design tokens from Wireframe v1.1 as CSS custom properties.

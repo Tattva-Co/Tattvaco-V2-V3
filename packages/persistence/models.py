@@ -73,6 +73,12 @@ class ProjectModel(Base):
     logline = Column(Text, nullable=True)
     genre = Column(String(100), nullable=True)
     status = Column(String(50), default="draft", nullable=False)
+    # One of packages.domain.journey_manifest.yaml enums.production_modes
+    # (fully_ai | hybrid_live_action | mixed). Minimal pull-forward of D1's production
+    # mode field (TFD-PRJ-003..006): the journey engine's applicability resolver (GW1)
+    # cannot function without it. DEC-021: existing projects backfill to "fully_ai".
+    # D1 owns the rest of the format/mode UI and any per-sequence/scene/shot override.
+    production_mode = Column(String(50), default="fully_ai", nullable=False)
     current_version = Column(Integer, default=1, nullable=False)
     created_by = Column(String(36), ForeignKey("users.id"), nullable=False)
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
@@ -507,3 +513,66 @@ class ProjectMembershipModel(Base):
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
 
     __table_args__ = (Index("uq_project_memberships_user_project", "user_id", "project_id", unique=True),)
+
+
+# -- Guided Workspace journey engine (GW1; docs/product/JOURNEY_MANIFEST.md) -------
+#
+# One row per (project, subpoint): status is tracked at the subpoint level, and a
+# group's/section's status is DERIVED from its subpoints at read time (packages/domain/
+# journey.py), never stored redundantly. jrn_id values and their shape (JRN-<section>,
+# JRN-<section>.<group>, JRN-<section>.<group>.<subpoint>) come from
+# packages/domain/journey_manifest.yaml, which is the source of truth for which ids
+# exist; this schema does not duplicate that structure or enforce it with a foreign key,
+# since the manifest is a versioned file, not a database table (a manifest change is a
+# code deploy, not a migration).
+
+
+class JourneyItemStateModel(Base):
+    """A subpoint's status for one project (JOURNEY_MANIFEST.md §6)."""
+    __tablename__ = "journey_item_states"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id"), nullable=False, index=True)
+    jrn_id = Column(String(50), nullable=False)  # subpoint id, e.g. "JRN-02.1.1"
+    status = Column(String(50), default="not_started", nullable=False)
+    not_applicable_reason = Column(Text, nullable=True)
+    evidence_refs = Column(JSON, default=list, nullable=False)
+    notes = Column(Text, nullable=True)
+    updated_by = Column(String(36), ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+
+    __table_args__ = (Index("uq_journey_item_states_project_jrn", "project_id", "jrn_id", unique=True),)
+
+
+class JourneySectionEventModel(Base):
+    """An explicit 'Continue to Next Section' transition (JOURNEY_MANIFEST.md §6, step
+    8). Append-only: a section can be re-entered and re-completed, but history is never
+    overwritten (step 9) -- each continue adds a new row."""
+    __tablename__ = "journey_section_events"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id"), nullable=False, index=True)
+    section_id = Column(String(20), nullable=False)  # e.g. "JRN-02"
+    actor_id = Column(String(36), ForeignKey("users.id"), nullable=False)
+    group_statuses_snapshot = Column(JSON, default=dict, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+
+class JourneyStalenessModel(Base):
+    """An item marked stale by an upstream change (JOURNEY_MANIFEST.md §6, step 10).
+    Open (unresolved) rows are what makes journey_item_states.status report "stale" for
+    an otherwise-completed item; resolving one is a re-review action, not a deletion."""
+    __tablename__ = "journey_staleness"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id"), nullable=False, index=True)
+    jrn_id = Column(String(50), nullable=False, index=True)
+    reason = Column(Text, nullable=False)
+    caused_by = Column(String(100), nullable=False)  # e.g. "screenplay_version_approved"
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    resolved_at = Column(DateTime(timezone=True), nullable=True)
+    resolved_by = Column(String(36), ForeignKey("users.id"), nullable=True)

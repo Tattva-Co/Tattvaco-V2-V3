@@ -44,6 +44,10 @@ class ProjectResponse(_ORM):
     logline: str | None
     genre: str | None
     status: str
+    # Read-only here: defaults to "fully_ai" at creation (DEC-021). Setting it is D1
+    # scope (JRN-01.3 Production mode); GW1 only needs to report it so the journey UI
+    # can explain why a mode-excluded group (e.g. JRN-07.4) shows not_applicable.
+    production_mode: str
     current_version: int
     created_by: str
     created_at: datetime
@@ -401,3 +405,60 @@ class HealthResponse(BaseModel):
     status: str
     service: str
     timestamp: datetime
+
+
+# -- Guided Workspace journey (GW1) ------------------------------------------
+
+
+class JourneySubpointResponse(BaseModel):
+    id: str
+    key: str
+    title: str
+    kind: str
+    description: str
+    status: str
+    not_applicable_reason: str | None = None
+    evidence_refs: List[Any] = Field(default_factory=list)
+    notes: str | None = None
+
+
+class JourneyGroupResponse(BaseModel):
+    id: str
+    title: str
+    purpose: str
+    completion_rule: str
+    required: bool
+    na_policy: str
+    release: str
+    status: str
+    applies: bool
+    applicability_reason: str | None = None
+    act_capability: str
+    approval_capability: str | None = None
+    can_act: bool
+    can_approve: bool
+    studio_tools: List[str]
+    requirements: List[str]
+    subpoints: List[JourneySubpointResponse]
+
+
+class JourneySectionResponse(BaseModel):
+    id: str
+    title: str
+    release_label: str
+    status: str
+    can_continue: bool
+    groups: List[JourneyGroupResponse]
+
+
+class JourneyItemActionRequest(BaseModel):
+    action: str = Field(..., description="draft | complete | request_review | not_applicable")
+    not_applicable_reason: str | None = None
+    evidence_refs: List[Any] | None = None
+    notes: str | None = None
+
+
+class JourneySectionContinueResponse(BaseModel):
+    section_id: str
+    status: str
+    group_statuses: Dict[str, str]
