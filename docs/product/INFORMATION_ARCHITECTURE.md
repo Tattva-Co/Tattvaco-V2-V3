@@ -1,8 +1,138 @@
-# Tattva AI Film Director — Information Architecture v2.0
+# Tattva AI Film Director — Information Architecture
 
-**Doc ID:** TFD-PRD-IA-001 · **Version:** 1.0-draft · **Date:** 2026-11-05 · **Status:** Phase B design — pending approval
+**Doc ID:** TFD-PRD-IA-001 · **Version:** 1.1 · **Date:** 2026-11-06 · **Status:** S0.2 deliverable. Supersedes 1.0-draft (2026-11-05). This document replaces the legacy file `Tattva_AI_Film_Director_IA_v1.0.md`; earlier drafts titled it "v2.0", and that label is retired.
+
+## v1.1 change summary
+
+The Guided Workspace UX is the newest product-owner input (CON-04, `docs/audit/11`), so v1.1 makes it the **primary navigation**:
+
+1. **New §0 (primary navigation):**
+   - The Online Workspace is the first screen after login.
+   - Inside a project, a 10-section journey with numbered accordions is the main navigation.
+   - Specialist screens move into a **Studio Tools Index**.
+   - The journey content lives in [`JOURNEY_MANIFEST.md`](JOURNEY_MANIFEST.md) and [`packages/domain/journey_manifest.yaml`](../../packages/domain/journey_manifest.yaml).
+2. **The canonical screen inventory (§3) is kept in full and becomes the Studio Tools catalogue.** Every screen is mapped to its section (§3A). **No capability is removed.**
+3. **The 36 wireframe screens are mapped to `S-` screens (§3A.2).** Wireframe screen 36 (Usage & Cost Overview) had no screen, so **S-USE-01** `[V2]` is added. The canonical inventory goes from 60 to **61 screens**.
+4. **Release corrections that follow the approved implementation plan:** S-CAP-01 moves from `[V2]` to `[V1→V2]` (plan D7) and S-LIB-01 from `[V2]` to `[V1→V2]` (plan D9). See JOURNEY_MANIFEST §9, JM-2 and JM-3.
+5. **Amended rules:**
+   - §4.1: the journey rail is gated but Studio Tools stay open.
+   - §4.2 rule 2: items that don't apply in the project's mode are shown, not hidden.
+   - §4.2 rule 4: release flags apply to journey items as well as screens.
+6. **Shell and visual direction follow Guided Workspace Wireframe v1.1** (§0.3 and §0.4). The frontend is React, not Streamlit (ADR-002 as amended at plan approval, 2026-11-06). §6 is updated to match.
+
+**UX sources (controlling for layout, interaction and visual tokens):** `docs/product/ux/guided-workspace-v1.0/`
+- `Tattva_AI_Film_Director_UX_Strategy_Guided_Workspace_v1.0.md`
+- `Tattva_AI_Film_Director_Guided_Workspace_Wireframe_v1.1.html` (newer, so it wins where the two differ)
+- `tattva_guided_workspace_preview.png`
+
+---
+
+## 0. Guided Workspace navigation (primary, v1.1)
+
+### 0.1 Levels
+
+| Level | Surface | Contents | Screens |
+|---|---|---|---|
+| 0 | **Online Workspace** | The first destination after login. Global header (brand, workspace switcher, search, notifications, help, profile). Welcome with **Create New Project** and **Continue Working**. Project cards (thumbnail, title, format, mode, role, active stage, progress, updated). **My action queue**. **Recent activity**. Workspace administration by permission. | S-GLB-01, S-GLB-02, S-OPS-01, S-APR-01, S-TEAM-01, S-REG-01/02, S-LIB-02 |
+| 1 | **Project Workspace** | Project header: title, **format pill**, **mode pill**, screenplay-version chip, **Studio Tools** and **Project Settings** buttons. Left **journey rail** (10 sections with progress and lock state). **Project progress** (%, sections complete). Breadcrumbs. | S-PRJ-01 (overview panel), S-PRJ-02 |
+| 2 | **Main section** | Eyebrow "MAIN SECTION nn", title, section progress ("x / y required"), **Expand all / Collapse all**, the accordion list, and the **continue gate** | — |
+| 3 | **Accordion group → subpoints** | The header shows number, title, purpose, a status chip and expand state. The body holds subpoints `.1 Review and prepare` and `.2 Validate and approve`, each with its completion rule, primary Studio Tool, and actions **Save as In Progress**, **Mark Complete** and **Not Applicable** (with a reason), plus Request Review and View History | Studio Tools per group (§3A.1) |
+| — | **Studio Tools Index** | A drawer listing every specialist screen by section. Its message: "Specialist screens remain available as contextual tools. Opening a tool does not bypass the guided workflow or approval gates." | All `S-` screens, filtered by capability |
+
+**Workspace navigation (UX §9):**
+
+| Entry | Screens |
+|---|---|
+| Online Workspace | S-GLB-01 |
+| All Projects | S-GLB-01, projects tab |
+| My Action Queue | S-APR-01 and S-OPS-01 |
+| Team & Administration | S-TEAM-01, S-REG-01/02 and workspace settings |
+
+**Breadcrumbs:** Online Workspace / Project / Main Section / Accordion / Subpoint.
+
+**Create Project modal (wireframe v1.1):** title, production format and production mode. Mode is a three-option segmented choice:
+- **Fully AI**: "AI-generated visual production."
+- **Hybrid**: "Real performers combined with AI."
+- **Mixed**: "Choose per sequence or shot."
+
+Detailed setup continues inside section 01. The format list shows all TFD-FMT-001 templates; the wireframe shows a subset of 7.
+
+### 0.2 Journey sections
+
+| # | Section | Release | Groups |
+|---|---|---|---|
+| 01 | Project Workspace & Setup | V1 | 7 |
+| 02 | Screenplay & Governance | V1 | 7 |
+| 03 | Research & Story Intelligence | V1 | 6 |
+| 04 | Character & Digital Human Studio | V1 foundation; V2 production integrations | 8 |
+| 05 | Visual World Development | V1 | 7 |
+| 06 | Cinematography & Storyboard Studio | V1 | 7 |
+| 07 | Production Planning | V1 | 7 |
+| 08 | AI Production & Tool Handoff | V1 manual; V2 connected | 7 |
+| 09 | Output Inspection & Continuity Approval | V1 manual review; V2 assisted inspection | 8 |
+| 10 | Production Library & Delivery | V1 foundation; V2 expanded | 6 |
+
+The groups, IDs, completion rules, applicability, capabilities, Studio Tools and requirements for all 70 groups are in [`JOURNEY_MANIFEST.md`](JOURNEY_MANIFEST.md) §8.
+
+**Gating:**
+- A section opens in the rail once the previous section is ready to continue.
+- Completed sections stay revisitable.
+- The **Continue to Next Section** button appears only when the section is ready, and it moves on only when the user clicks it.
+- Opening a screen never completes a step.
+- Progress, applicability, completion and staleness are server records, never browser storage. The wireframe prototype's `localStorage` is prototype-only.
+
+### 0.3 Shell regions (wireframe v1.1)
+
+| Region | Wireframe element | Notes |
+|---|---|---|
+| Global bar | `header.globalbar` | Brand, current context ("Online Workspace"), notifications, help, avatar |
+| Workspace sidebar | `aside.sidebar` (Online Workspace) | Online Workspace, All Projects, My Action Queue, Team & Administration |
+| Journey rail | `aside.journey` (Project Workspace) | "← Online Workspace", project name and meta (format · mode), **PROJECT PROGRESS** %, "n of 10 sections complete", the stage list (number, title, done/total, ✓ / ● / ○ / 🔒), and the revisit hint "Changes to approved work may require downstream revalidation." |
+| Main canvas | `main.main` | Breadcrumb, release tag ("V1 · …"), project header, section header, accordions, continue gate |
+| Continue gate | Gate panel | Title ("Complete the required work to continue" or "Section nn ready to continue"), hint ("Opening a screen does not count as completion."), the "x completed · y remaining" summary, and the **Continue to Next Section →** button |
+| Overlays | `.modal`, Studio Tools drawer, toasts | The only places blur and glass effects are allowed (UX §8) |
+
+The context inspector, AI Director rail and task/status strip from §2 keep their roles. In the Project Workspace they open as panels or drawers, not as permanent columns, so the canvas stays focused on the active section (UX §3 level 1; §13 responsive strategy).
+
+Required state screens, at every level (UX §16 item 13): **loading**, **empty**, **error**, **offline** and **permission-denied**. Sample data is always labelled illustrative (UX §2; TFD-AID-006).
+
+### 0.4 Visual direction and tokens (wireframe v1.1, which supersedes the UX §8 starting proposal)
+
+Direction (UX §8):
+- A cinematic, professional workspace with restrained dark chrome and a light neutral canvas for reading, forms and tables.
+- Swiss-style grid; editorial type only for film and project titles.
+- Bento layout only on the Online Workspace and Project Overview.
+- Glass effects only on overlays; no neumorphism.
+- Short, purposeful motion that respects reduced-motion settings.
+- Compact and comfortable density options.
+
+| Token | Value | Use |
+|---|---|---|
+| `--bg` | `#0c1118` | App chrome |
+| `--panel` / `--panel2` | `#121a24` / `#182331` | Dark panels (journey rail, sidebar) |
+| `--canvas` | `#f4f5f7` | Content canvas |
+| `--white` | `#ffffff` | Cards |
+| `--ink` | `#192331` | Body text |
+| `--muted` / `--muted2` | `#788493` / `#9aa6b5` | Secondary text |
+| `--line` / `--line-dark` | `#dfe4ea` / `#283342` | Borders on light and dark surfaces |
+| `--accent` / `--accent-dark` / `--accent-soft` | `#b99a66` / `#8c7045` / `#efe7d9` | The single warm brand accent |
+| `--green` / `--green-bg` | `#2e7052` / `#e8f3ed` | Completed, success |
+| `--blue` / `--blue-bg` | `#506b8b` / `#eaf0f7` | In progress, info |
+| `--amber` / `--amber-bg` | `#906e2f` / `#f6f0e3` | Review required, warning |
+| `--red` / `--red-bg` | `#9a4f4f` / `#f7eaea` | Blocked, changes required, error |
+| `--shadow` | `0 12px 38px rgba(12,19,28,.08)` | Single-layer elevation |
+| `--r` | `14px` | Card and overlay radius. Controls use 6–8 px (UX §8) |
+| Font | `Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif` | UI text. Display type 30–36 px for titles, 14–16 px body |
+| Spacing | 4 / 8 / 12 / 16 / 24 / 32 / 40 / 48 px | UX §8 |
+| Breakpoints | ≤1120 px collapse side panels · ≤820 px journey drawer, stacked content · ≤560 px mobile (workspace, approvals and review only) | Wireframe v1.1 media queries; UX §13 |
+
+Where the wireframe differs from the UX §8 proposal, the wireframe wins: chrome `#0c1118` instead of `#0F1721`, accent `#b99a66` instead of `#A98B5B`, and the 1120 / 820 / 560 breakpoints instead of 1200 / 820 / 560. Status is never shown by colour alone; every chip carries its label. Contrast is verified to WCAG 2.2 AA before GW2 adopts the tokens (UX §14).
+
+---
 
 **Inputs:**
+- Guided Workspace UX Strategy v1.0 and Wireframe v1.1 (v1.1 primary-navigation inputs, above)
+- `JOURNEY_MANIFEST.md` (TFD-PRD-JRN-001)
 - Master Execution Prompt §13 (lifecycle) and §25 (25 workspace groups and per-screen fields)
 - PRD v0.9 §11.2 (26 UX-FD screens)
 - IA v1.0 §2–§6 (44 screens: G-01…G-08 and P-01…P-36)
@@ -31,12 +161,15 @@ This resolves conflicts **CON-03** (G-0x collision) and **CON-04** (26 vs 44 vs 
 | IA v1.0 §6 | G-01…08, P-01…36 | 44 screens | `G-0x` collides with graph IDs; same gaps as above; Branch Compare not in Master scope | Every G/P ID becomes an **alias** of an `S-` screen (§5.2); P-34 deferred (DEC-029) |
 | Master §25 | Workspace groups | 25 groups | Groups, not screens | Each group becomes a navigation group containing one or more `S-` screens (§5.3) |
 | Code (`apps/ui/views/__init__.py::NAVIGATION`) | Streamlit views | 8 views | Labelled with graph IDs ("G-01"); no states; raw JSON | Each view maps to its target screen (§5.4) |
+| Guided Workspace Wireframe v1.1 (v1.1 input) | Detailed screens | 36 screens | Uses names, not IDs; screen 36 (Usage & Cost) had no `S-` screen | Each wireframe screen maps to `S-` screens (§3A.2); S-USE-01 added |
 
-**Canonical result:**
-- **60 screens**: 8 global and 52 project-scoped
+**Canonical result (v1.1):**
+- **61 screens**: 8 global and 53 project-scoped
 - **1 deferred screen**: S-APR-04 Branch Compare
-- **52 screens in FD-V1** (some expanded in FD-V2)
-- **8 screens that are FD-V2 only**
+- **54 screens in FD-V1** (some expanded in FD-V2)
+- **7 screens that are FD-V2 only**
+
+(v1.0-draft: 60 screens, 52 in FD-V1 and 8 V2-only. v1.1 adds S-USE-01 `[V2]` and moves S-CAP-01 and S-LIB-01 to `[V1→V2]`.)
 
 The count is higher than IA v1.0's 44 because Master §4–§12 add 15 capability screens that were absent from every earlier document:
 - governance: SCR-01, SCR-03, SCR-04
@@ -63,6 +196,8 @@ To avoid duplication, several IA screens were merged:
 
 ## 2. Global shell (kept from IA v1.0 §2.2, amended)
 
+> **v1.1:** these regions keep their roles inside the Guided Workspace shell in §0.3. The project header also carries the format pill and the Studio Tools button. "Primary navigation" now means the workspace sidebar at level 0 and the journey rail at level 1. The §25 groups become the grouping inside the Studio Tools Index.
+
 | Region | Contents | Amendment in v2.0 |
 |---|---|---|
 | App header | Org/project switcher, global search, task and approval indicators, profile | Project header adds: **canonical screenplay version** (e.g. "Screenplay v3 · locked"), **project mode chip** (`Fully AI` / `Hybrid` / `Mixed`), **episode selector** for episodic formats, and a generator-mode banner when any mock generator is active. The hardcoded "Branch: main" (`apps/ui/app.py`) is removed (DEC-029) |
@@ -74,7 +209,9 @@ To avoid duplication, several IA screens were merged:
 
 ---
 
-## 3. Canonical navigation tree
+## 3. Canonical screen catalogue (Studio Tools)
+
+> **v1.1:** this tree is the complete inventory of canonical screens. It is no longer the primary navigation (§0). Users reach these screens from the journey (each accordion's primary Studio Tool) and from the Studio Tools Index (§3A). The machine-readable copy is `studio_tools` in `packages/domain/journey_manifest.yaml`, and `tests/unit/test_journey_manifest.py` checks the two match.
 
 Legend:
 - `[V1]` = FD-V1
@@ -146,7 +283,7 @@ TATTVA AI FILM DIRECTOR
     ├── 13 Production Method Selector
     │   └── S-MTH-01 Production Mode & Method Map ....... [V1]    (new)
     ├── 14 On-Set Capture Planner
-    │   ├── S-CAP-01 Capture Plan & Manifest ............ [V2]    (new)
+    │   ├── S-CAP-01 Capture Plan & Manifest ............ [V1→V2] (new; v1.1: V1 manual form per plan D7)
     │   └── S-CAP-02 Footage Ingestion & Analysis ....... [V2]    (new)
     ├── 15 AI Production Tool Registry  →  global S-REG-01 (project-filtered view: enabled tools and project data policy)
     ├── 16 Prompt & Handoff Studio
@@ -155,9 +292,10 @@ TATTVA AI FILM DIRECTOR
     │   └── S-PKG-03 Handoff: Manual Export / Connected Submit [V1→V2] (alias: P-29, UX-FD-20)
     ├── 17 External Execution Monitor
     │   ├── S-EXE-01 Execution Monitor .................. [V1→V2] (alias: P-30, UX-FD-22)
-    │   └── S-EXE-02 Output Import & Mapping ............ [V1]    (alias: P-31 import)
+    │   ├── S-EXE-02 Output Import & Mapping ............ [V1]    (alias: P-31 import)
+    │   └── S-USE-01 Usage & Cost Overview .............. [V2]    (new in v1.1; wireframe screen 36; TFD-GEN-004, TFD-IAM-006)
     ├── 18 Production Asset Library
-    │   └── S-LIB-01 Production Asset Library ........... [V2]    (new; Stage 15)
+    │   └── S-LIB-01 Production Asset Library ........... [V1→V2] (new; Stage 15; v1.1: V1 foundation per plan D9)
     ├── 19 Output Inspection Studio
     │   └── S-OUT-01 Output Inspector & Revision ........ [V1→V2] (alias: P-31, P-32, UX-FD-23)
     ├── 20 Continuity & Impact Studio
@@ -188,6 +326,74 @@ TATTVA AI FILM DIRECTOR
 
 ---
 
+## 3A. Guided Workspace placement (v1.1)
+
+### 3A.1 Studio Tools by journey section
+
+*Home* = where the tool is listed in the Studio Tools Index. *Also used* = tools owned elsewhere that a group in this section links to as its primary tool. Generated from `journey_manifest.yaml`.
+
+| Section | Home tools | Also used by this section's groups |
+|---|---|---|
+| Online Workspace (level 0) | S-GLB-01 Online Workspace [V1]; S-GLB-02 Create Project [V1]; S-OPS-01 Task Centre [V1]; S-APR-01 Approvals Inbox [V1]; S-TEAM-01 Organisation Members & Roles [V1]; S-LIB-02 Shared Organisation Library [V2] | — |
+| 01 Project Workspace & Setup | S-PRJ-02 Project Settings & Governance [V1]; S-TEAM-02 Project Members & Roles [V1] | S-GLB-02, S-PRJ-01, S-MTH-01, S-TEAM-01 |
+| 02 Screenplay & Governance | S-AST-01 Intake Inbox [V1]; S-SCR-01 Screenplay Versions & Lock [V1]; S-SCR-02 Script & Scene Breakdown [V1]; S-SCR-03 Revision Workspace [V1]; S-SCR-04 AI Suggestions Workspace [V1] | S-BRN-01, S-APR-02 |
+| 03 Research & Story Intelligence | S-BRN-01 Story Brain [V1]; S-BRN-02 Narrative Timeline [V1]; S-RES-01 Historical Brief [V1]; S-RES-02 Investigation Board [V1]; S-RES-03 Source & Evidence Inspector [V1]; S-RES-04 Historical Timeline [V1]; S-RES-05 Temporal Visual Profile [V1] | S-ENV-01, S-APR-02 |
+| 04 Character & Digital Human Studio | S-CHR-01 Character Studio [V1→V2]; S-CHR-02 Character State Timeline [V1]; S-PHY-01 Physical Identity & Measurements [V1→V2]; S-DH-01 Performers & Consent [V1]; S-DH-02 Digital Human & Avatar Workspace [V2]; S-VOC-01 Dialogue & Voice Studio [V2] | S-CAP-01, S-APR-02 |
+| 05 Visual World Development | S-BIB-01 Film Bible Overview [V1]; S-BIB-02 Visual Language Rules [V1]; S-ENV-01 Locations & Environments [V1→V2]; S-CST-01 Costume Bible [V1→V2]; S-CST-02 Props & Weapons Register [V1→V2] | S-RES-03, S-AST-02, S-AST-03, S-CON-01 |
+| 06 Cinematography & Storyboard Studio | S-CIN-01 Cinematography Bible & Libraries [V1]; S-SB-01 Storyboard Workbench [V1]; S-SB-02 Script & Storyboard Alignment [V1] | S-SEQ-01, S-SHT-01 |
+| 07 Production Planning | S-SEQ-01 Sequence Planner [V1]; S-SEQ-02 Scene Planner [V1]; S-SHT-01 Shot Planner & Shot Spec [V1]; S-MTH-01 Production Mode & Method Map [V1]; S-CAP-01 Capture Plan & Manifest [V1→V2]; S-CAP-02 Footage Ingestion & Analysis [V2]; S-AID-01 AI Director Review [V1] | S-PKG-02, S-CON-01, S-PRJ-01 |
+| 08 AI Production & Tool Handoff | S-REG-01 Production Tool Registry [V1→V2]; S-REG-02 Provider Connections [V2]; S-PKG-01 Master Direction [V1]; S-PKG-02 Shot Package Compiler [V1→V2]; S-PKG-03 Handoff: Manual Export / Connected Submit [V1→V2]; S-EXE-01 Execution Monitor [V1→V2]; S-USE-01 Usage & Cost Overview [V2] | — |
+| 09 Output Inspection & Continuity Approval | S-VOC-02 Localisation & Dubbing [V2]; S-EXE-02 Output Import & Mapping [V1]; S-OUT-01 Output Inspector & Revision [V1→V2]; S-CON-01 Continuity Overview & Rules [V1]; S-CON-02 Continuity Finding Detail [V1] | S-EXE-01, S-VOC-01, S-APR-02 |
+| 10 Production Library & Delivery | S-LIB-01 Production Asset Library [V1→V2]; S-PST-01 Exports & Post-Production Handoff [V1→V2] | S-AST-02, S-APR-03, S-PRJ-02 |
+| Cross-stage (every section, via header and Studio Tools) | S-PRJ-01 Project Overview [V1]; S-AST-02 Asset Library (inputs) [V1]; S-AST-03 Asset Inspector [V1→V2]; S-CON-03 Change Impact Analysis [V1]; S-APR-02 Approval Detail [V1]; S-APR-03 Versions [V1] | — |
+
+Every canonical screen except the deferred S-APR-04 has exactly one home. The test asserts this.
+
+### 3A.2 Wireframe v1.1 screens (36) → canonical screens
+
+| # | Wireframe screen | Canonical screen(s) |
+|---:|---|---|
+| 01 | Studio Home / Online Workspace | S-GLB-01 |
+| 02 | Projects | S-GLB-01 |
+| 03 | Create Project | S-GLB-02 |
+| 04 | Project Overview | S-PRJ-01 |
+| 05 | Team & Permissions | S-TEAM-01, S-TEAM-02 |
+| 06 | Project Settings | S-PRJ-02 |
+| 07 | Screenplay Studio | S-SCR-01, S-SCR-02 |
+| 08 | AI Suggestions Workspace | S-SCR-04 |
+| 09 | Screenplay Revision & Approval | S-SCR-03 |
+| 10 | Story Brain | S-BRN-01 |
+| 11 | Historical Research Board | S-RES-01, S-RES-02 |
+| 12 | Historical Timeline & Visual Evolution | S-RES-04, S-RES-05 |
+| 13 | Evidence & Source Library | S-RES-03 |
+| 14 | Character Studio | S-CHR-01 |
+| 15 | Character Identity Profile | S-CHR-01 |
+| 16 | Digital Human & Avatar Studio | S-DH-02 |
+| 17 | Physical Identity & Measurements | S-PHY-01 |
+| 18 | Costume, Props & Weapons Studio | S-CST-01, S-CST-02 |
+| 19 | Environment & Location Studio | S-ENV-01 |
+| 20 | Storyboard Studio | S-SB-01, S-SB-02 |
+| 21 | Cinematography Bible & Camera Library | S-CIN-01 |
+| 22 | Sequence Planner | S-SEQ-01, S-SEQ-02 |
+| 23 | Shot Director | S-SHT-01 |
+| 24 | Production Method Selector | S-MTH-01 |
+| 25 | On-Set Capture Planner | S-CAP-01, S-CAP-02 |
+| 26 | Production Tool Registry | S-REG-01, S-REG-02 |
+| 27 | Prompt & Production Handoff Studio | S-PKG-01, S-PKG-02, S-PKG-03 |
+| 28 | External Execution Monitor | S-EXE-01, S-EXE-02 |
+| 29 | Production Asset Library | S-LIB-01 |
+| 30 | Output Inspector | S-OUT-01 |
+| 31 | Continuity & Impact Studio | S-CON-01, S-CON-02, S-CON-03 |
+| 32 | Voice & Dialogue Studio | S-VOC-01, S-VOC-02 |
+| 33 | Approvals & Version History | S-APR-01, S-APR-02, S-APR-03 |
+| 34 | Post-Production Handoff | S-PST-01 |
+| 35 | Activity & Audit Trail | S-APR-03 |
+| 36 | Usage & Cost Overview | S-USE-01 |
+
+Screens 15 (Character Identity Profile) and 14 (Character Studio) are both served by S-CHR-01. The identity profile is a deep-linkable facet of it (§1, "Screen ≠ file"). Screen 36 is the new S-USE-01.
+
+---
+
 ## 4. Navigation model
 
 ### 4.1 Lifecycle-to-navigation map (Master §13)
@@ -215,12 +421,14 @@ flowchart LR
 
 The lifecycle **is not a wizard** (Master §13). Every stage is reachable directly. S-PRJ-01 recommends a next action from the actual project state; it never blocks navigation.
 
+> **v1.1 amendment (JOURNEY_MANIFEST §7, JM-6):** this 16-stage map stays the *dependency model* that drives impact and staleness. The *guided* surface is the 10-section journey (§0.2). Its rail is gated: a section opens once the previous one is ready to continue, following wireframe v1.1. Completed sections stay revisitable, and **every screen remains directly reachable from the Studio Tools Index**, subject to permissions. So the product is still not a wizard. Direct access never completes a step or bypasses an approval.
+
 ### 4.2 Visibility and mode rules
 
 1. **Capability filtering.** A navigation item is visible only if the user holds at least one capability that reads that screen. Hidden screens return 404 on direct link, not 403, consistent with the API's no-existence-oracle rule (`docs/audit/03` §5).
-2. **Equal modes, no hiding by mode.** Hybrid-only screens (S-CAP-01/02) and AI-centric screens (S-PKG-02) are always visible. Their empty states explain when they apply, for example "No shots use live_action_chroma or performance_transformation yet". This keeps the two modes equal and lets a mixed project move between them.
+2. **Equal modes, no hiding by mode.** Hybrid-only screens (S-CAP-01/02) and AI-centric screens (S-PKG-02) are always visible. Their empty states explain when they apply, for example "No shots use live_action_chroma or performance_transformation yet". This keeps the two modes equal and lets a mixed project move between them. **v1.1:** journey groups that don't apply in the project's mode (for example `JRN-07.4` in Fully AI) are **shown** with status "Not applicable for the selected production mode" and don't block progress. They are never hidden (wireframe v1.1; JOURNEY_MANIFEST §5).
 3. **Format-aware structure.** Episodic templates add an episode selector to the header. Screens that are episode-scoped filter by it: SCR, SEQ, SHT, CAP, PKG, EXE, OUT and PST. Character, DH, CST, ENV and CIN are series-scoped.
-4. **Release flags.** FD-V2 screens are behind feature flags. In FD-V1 they are absent from navigation, not shown as disabled teasers.
+4. **Release flags.** FD-V2 screens are behind feature flags. In FD-V1 they are absent from navigation, not shown as disabled teasers. **v1.1:** the same rule applies to journey groups with `release: v2`. They are absent in an FD-V1 deployment and never count toward section completion. The Guided Workspace shell itself also sits behind a flag during rollout (UX §15).
 5. **Mock disclosure.** While any generator is `mock` or `deterministic`, every screen that shows AI output carries the generator-mode label (TFD-AID-006).
 
 ### 4.3 Cross-screen links (extends IA v1.0 §7.2)
@@ -372,18 +580,33 @@ All 44 IA IDs and all 26 UX-FD IDs are mapped. No legacy screen is dropped excep
 
 **Preservation:** every current view keeps working until its target screen ships (Master §24). `tests/unit/test_ui_smoke.py` is extended per new screen rather than replaced.
 
+**v1.1 journey placement (plan GW3):** the React re-implementation of each view lands as a Studio Tool in its section:
+
+| Current view | Lands in |
+|---|---|
+| Assets | `JRN-02.1` |
+| Script Intelligence and Review | `JRN-02.2`, `JRN-02.3` |
+| Historical Research | `JRN-03.2` to `JRN-03.6` |
+| Film Bible | `JRN-05.1` |
+| Storyboard | `JRN-06.5` |
+| Audit | Cross-stage (S-APR-03) |
+
+Once the Playwright parity suite passes, `apps/ui`, `test_ui_smoke.py` and the Streamlit dependency are removed (plan GW3 exit).
+
 ---
 
 ## 6. Release view
 
 | Release | Screens |
 |---|---|
-| **FD-V1 (52)** | S-GLB-01, S-GLB-02, S-OPS-01, S-APR-01, S-REG-01 (manual targets), S-TEAM-01; S-PRJ-01, S-PRJ-02; S-BRN-01, S-BRN-02; S-AST-01…03; S-SCR-01…04; S-RES-01…05; S-BIB-01, S-BIB-02; S-CHR-01, S-CHR-02; S-DH-01; S-PHY-01; S-CST-01, S-CST-02; S-ENV-01; S-SB-01, S-SB-02; S-CIN-01; S-SEQ-01, S-SEQ-02; S-SHT-01; S-MTH-01; S-PKG-01…03; S-EXE-01, S-EXE-02; S-OUT-01; S-CON-01…03; S-AID-01; S-APR-02, S-APR-03; S-PST-01 (archive export); S-TEAM-02 |
-| **FD-V1 → expanded in FD-V2** | S-REG-01 (connected snapshots), S-AST-03 (media proxies), S-CHR-01, S-CST-01/02, S-ENV-01 (reference generation), S-PHY-01 (scan import, estimation), S-PKG-02/03 (connected submit, cost), S-EXE-01 (jobs, attempts, unknown outcome), S-OUT-01 (AI-assisted inspection, regeneration), S-PST-01 (post handoff package) |
-| **FD-V2 only (8)** | S-REG-02, S-LIB-02, S-DH-02, S-CAP-01, S-CAP-02, S-LIB-01, S-VOC-01, S-VOC-02 |
+| **FD-V1 (54)** | S-GLB-01, S-GLB-02, S-OPS-01, S-APR-01, S-REG-01 (manual targets), S-TEAM-01; S-PRJ-01, S-PRJ-02; S-BRN-01, S-BRN-02; S-AST-01…03; S-SCR-01…04; S-RES-01…05; S-BIB-01, S-BIB-02; S-CHR-01, S-CHR-02; S-DH-01; S-PHY-01; S-CST-01, S-CST-02; S-ENV-01; S-SB-01, S-SB-02; S-CIN-01; S-SEQ-01, S-SEQ-02; S-SHT-01; S-MTH-01; S-CAP-01 (manual capture-plan form, v1.1); S-PKG-01…03; S-EXE-01, S-EXE-02; S-OUT-01; S-CON-01…03; S-AID-01; S-APR-02, S-APR-03; S-LIB-01 (approved-output library foundation, v1.1); S-PST-01 (archive export); S-TEAM-02 |
+| **FD-V1 → expanded in FD-V2** | S-REG-01 (connected snapshots), S-AST-03 (media proxies), S-CHR-01, S-CST-01/02, S-ENV-01 (reference generation), S-PHY-01 (scan import, estimation), S-CAP-01 (WF-12 capture-plan generation), S-PKG-02/03 (connected submit, cost), S-EXE-01 (jobs, attempts, unknown outcome), S-OUT-01 (AI-assisted inspection, regeneration), S-LIB-01 (full library, TFD-LIB-001/002), S-PST-01 (post handoff package) |
+| **FD-V2 only (7)** | S-REG-02, S-LIB-02, S-DH-02, S-CAP-02, S-VOC-01, S-VOC-02, S-USE-01 |
 | **Deferred** | S-APR-04 Branch Compare (DEC-029) |
 
-**FD-V1 frontend:** Streamlit, as an internal alpha (DEC-009, approval gate #2). These screens are flagged in `docs/audit/04` §3 as poor Streamlit fits and are the inputs to ADR-002:
+**Frontend (v1.1):** React. The plan approval on 2026-11-06 amended ADR-002 so that React replaces Streamlit now. GW2 builds the Guided Workspace shell in `apps/web` (Vite, React, TypeScript), and GW3 re-implements the Streamlit views as Studio Tools. The superseded v1.0-draft statement is kept below for history.
+
+**FD-V1 frontend (v1.0-draft, superseded):** Streamlit, as an internal alpha (DEC-009, approval gate #2). These screens are flagged in `docs/audit/04` §3 as poor Streamlit fits and are the inputs to ADR-002:
 - S-SCR-03 diff/redline
 - S-SB-01 board
 - S-OUT-01 A/B compare

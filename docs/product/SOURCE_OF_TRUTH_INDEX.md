@@ -66,3 +66,22 @@ This note **supersedes the precedence above**. The original text is kept for his
 - ID collision: "G-0x" denotes screens in the IA but graphs in the Addendum and the code. New IDs are `S-*` for screens and `WF-*` for workflows (DEC-011).
 
 Full conflict list: `docs/audit/10_DOCUMENT_CONFLICT_AND_DECISION_REGISTER.md`.
+
+---
+
+## Change Note — 2026-11-06 (S0: IA v1.1 and Journey manifest)
+
+**Controlling UI/UX authority.** For navigation, layout, interaction and visual tokens, the **Guided Workspace UX package** in `docs/product/ux/guided-workspace-v1.0/` replaces Wireframe Spec v1.0, the v1.0 Wireframe Preview and the earlier Streamlit page organisation. The package is:
+- `Tattva_AI_Film_Director_UX_Strategy_Guided_Workspace_v1.0.md` (and `.docx`)
+- `Tattva_AI_Film_Director_Guided_Workspace_Wireframe_v1.1.html`
+- `tattva_guided_workspace_preview.png`
+
+Where the UX strategy and Wireframe v1.1 differ, **Wireframe v1.1 wins** because it is newer.
+
+| Document | File | Version | Role |
+|---|---|---|---|
+| Information Architecture | `docs/product/INFORMATION_ARCHITECTURE.md` | v1.1 | Primary navigation (Online Workspace → 10-section journey), the canonical 61-screen catalogue as Studio Tools, legacy ID aliases, release view, and the shell and token baseline (§0) |
+| Journey Manifest (spec) | `docs/product/JOURNEY_MANIFEST.md` | v1.0 | Identity, applicability, status, completion and gating rules for the journey. Tables are generated from the YAML |
+| Journey Manifest (data) | `packages/domain/journey_manifest.yaml` | v1 | Machine-readable journey content. GW1 and GW2 build from it. `tests/unit/test_journey_manifest.py` checks it against the wireframe, PRD, IA and capability catalogue |
+
+**Frontend:** React replaces Streamlit (ADR-002, amended at plan approval on 2026-11-06). This supersedes the "UI Framework Conflict" resolution in §2 above.

@@ -1,0 +1,1316 @@
+# Tattva AI Film Director: Guided Workspace journey manifest.
+#
+# Machine-readable source of truth for the 10-section guided production journey.
+# Spec and rules: docs/product/JOURNEY_MANIFEST.md (TFD-PRD-JRN-001).
+# UX sources: docs/product/ux/guided-workspace-v1.0/
+#   - Tattva_AI_Film_Director_UX_Strategy_Guided_Workspace_v1.0.md (sections 5-7, 10-11, 16)
+#   - Tattva_AI_Film_Director_Guided_Workspace_Wireframe_v1.1.html (the `stages` data, the
+#     subpoint template and the section-gating behaviour)
+#
+# Identity rules (DEC-011):
+#   - Group IDs (JRN-<section>.<group>) and subpoint IDs (JRN-<section>.<group>.<item>) are
+#     permanent. They never change when items are reordered, renamed or retired.
+#   - Visible numbering (01, 01.1, 01.1.1) is derived from list order at render time.
+#   - Retire an item by setting `retired: true`. Never delete it and never reuse its ID.
+#
+# Validated by tests/unit/test_journey_manifest.py.
+
+manifest_version: 1
+
+enums:
+  production_modes: [fully_ai, hybrid_live_action, mixed]
+  # v1 = FD-V1; v1_v2 = introduced in FD-V1 and expanded in FD-V2; v2 = FD-V2 only.
+  releases: [v1, v1_v2, v2]
+  # UX section 6 status model. `stale` implements step 10 (upstream change).
+  item_statuses:
+    - not_started
+    - in_progress
+    - review_required
+    - changes_required
+    - blocked
+    - completed
+    - not_applicable
+    - stale
+  section_statuses: [not_started, in_progress, blocked, ready_to_continue, completed]
+  # `never`: the item can't be marked not applicable.
+  # `reason_required`: marking it not applicable needs a recorded reason (UX section 6, step 5).
+  na_policies: [never, reason_required]
+  completion_check_kinds: [manual_with_evidence, system]
+
+gating:
+  # Wireframe v1.1 `isUnlocked`: a section opens when the previous section has no remaining
+  # required items. Earlier sections stay revisitable, and reopening keeps history (UX 6.9).
+  section_unlock: previous_section_ready
+  revisit_completed_sections: true
+  # Studio Tools are reachable directly (permission-aware), but opening a tool never completes
+  # a step and never bypasses a gate (wireframe v1.1, Studio Tools Index text).
+  studio_tools_complete_steps: false
+  # UX 6.8: the server never moves the user to the next section unprompted.
+  auto_advance: false
+
+# Wireframe v1.1 accordion body: every group has the same two subpoints. Subpoint IDs are
+# <group id>.<suffix>. A group needing other subpoints lists them explicitly with new IDs.
+subpoint_template:
+  - suffix: 1
+    key: prepare
+    title: Review and prepare
+    kind: work
+    description: >-
+      Confirm the relevant source material, responsible owner and required decisions.
+  - suffix: 2
+    key: validate
+    title: Validate and approve
+    kind: review_gate
+    description: >-
+      Check completeness, source/asset links, permissions and any approval requirement.
+      Preserve prior versions and record exceptions. Complete only when the product
+      workflow behind it has actually passed its checks.
+
+# Applicability (UX section 6, step 1):
+#   modes: [..] or "all"      production modes in which the group applies by default
+#   unless_any: [conditions]  the group still applies when any condition is true
+#   Supported conditions are listed in JOURNEY_MANIFEST.md section 5.
+# release: groups whose release is not shipped yet are absent, not shown as teasers (IA 4.2 r4).
+
+sections:
+  - id: JRN-01
+    title: Project Workspace & Setup
+    release_label: V1
+    groups:
+      - id: JRN-01.1
+        title: Project identity
+        purpose: Project title, logline, genre, language, owner and creative brief.
+        completion_rule: Project details are valid and an owner is assigned.
+        required: true
+        na: never
+        release: v1
+        applicability: {modes: all}
+        act_capability: project.admin
+        approval_capability: null
+        completion_check: {kind: manual_with_evidence}
+        studio_tools: [S-GLB-02, S-PRJ-01, S-PRJ-02]
+        requirements: [TFD-PRJ-001, TFD-PRJ-002]
+
+      - id: JRN-01.2
+        title: Production format
+        purpose: >-
+          Feature film, OTT series, short, trailer, documentary, vertical film or branded
+          content; configure episode/season structure where applicable.
+        completion_rule: A production format and required structure are selected.
+        required: true
+        na: never
+        release: v1
+        applicability: {modes: all}
+        act_capability: project.admin
+        approval_capability: null
+        completion_check: {kind: manual_with_evidence}
+        studio_tools: [S-GLB-02, S-PRJ-02]
+        requirements: [TFD-FMT-001, TFD-FMT-003, TFD-FMT-004, TFD-FMT-005]
+
+      - id: JRN-01.3
+        title: Production mode
+        purpose: >-
+          Three-way choice: Fully AI, Hybrid Live-Action + AI, or Mixed. Allow overrides at
+          sequence, scene and shot level.
+        completion_rule: A project default is selected; mixed projects can override lower in the hierarchy.
+        required: true
+        na: never
+        release: v1
+        applicability: {modes: all}
+        act_capability: project.admin
+        approval_capability: null
+        completion_check: {kind: manual_with_evidence}
+        studio_tools: [S-GLB-02, S-MTH-01]
+        requirements: [TFD-PRJ-003, TFD-PRJ-004, TFD-PRJ-005, TFD-PRJ-006]
+
+      - id: JRN-01.4
+        title: Creative governance
+        purpose: >-
+          Define management authority, locked screenplay policy, director revision rights
+          and approval rules.
+        completion_rule: Approval authority and script-governance policy are configured.
+        required: true
+        na: never
+        release: v1
+        applicability: {modes: all}
+        act_capability: project.admin
+        approval_capability: null
+        completion_check: {kind: manual_with_evidence}
+        studio_tools: [S-TEAM-02, S-PRJ-02]
+        requirements: [TFD-IAM-005, TFD-SCR-002, TFD-APR-007]
+
+      - id: JRN-01.5
+        title: Delivery profile
+        purpose: >-
+          Aspect ratio, resolution, frame rate, audio, subtitles and delivery targets; allow
+          multiple profiles.
+        completion_rule: At least one delivery profile exists or is explicitly marked not applicable.
+        required: true
+        na: reason_required
+        release: v1
+        applicability: {modes: all}
+        act_capability: project.admin
+        approval_capability: null
+        completion_check: {kind: manual_with_evidence}
+        studio_tools: [S-GLB-02, S-PRJ-02]
+        requirements: [TFD-FMT-002]
+
+      - id: JRN-01.6
+        title: Team & permissions
+        purpose: >-
+          Invite members, assign departments, roles, project access and separate approval
+          authority.
+        completion_rule: >-
+          Required team roles and approvers are assigned; solo projects may mark team setup
+          not applicable.
+        required: true
+        na: reason_required
+        release: v1
+        applicability: {modes: all}
+        act_capability: project.admin
+        approval_capability: null
+        completion_check: {kind: manual_with_evidence}
+        studio_tools: [S-TEAM-02, S-TEAM-01]
+        requirements: [TFD-IAM-002, TFD-IAM-003, TFD-IAM-004, TFD-IAM-008]
+
+      - id: JRN-01.7
+        title: Project policies
+        purpose: >-
+          Data classification, confidentiality, retention, provider-use rules,
+          performer-consent policy and continuity defaults.
+        completion_rule: Policy acknowledgement and project defaults are recorded.
+        required: true
+        na: reason_required
+        release: v1
+        applicability: {modes: all}
+        act_capability: project.admin
+        approval_capability: null
+        completion_check: {kind: manual_with_evidence}
+        studio_tools: [S-PRJ-02]
+        requirements: [TFD-INT-006, TFD-CNS-002, TFD-IAM-007]
+
+  - id: JRN-02
+    title: Screenplay & Governance
+    release_label: V1
+    groups:
+      - id: JRN-02.1
+        title: Import screenplay and source bundle
+        purpose: >-
+          Upload screenplay and supporting documents; preserve original files, checksum,
+          source and version.
+        completion_rule: >-
+          An approved script or an explicit development brief is attached; ingestion
+          outcomes are visible.
+        required: true
+        na: reason_required
+        release: v1
+        applicability: {modes: all}
+        act_capability: asset.upload
+        approval_capability: null
+        completion_check: {kind: system, key: screenplay_asset_present}
+        studio_tools: [S-AST-01, S-SCR-01]
+        requirements: [TFD-SCR-001, TFD-AST-001, TFD-AST-002, TFD-AST-004, TFD-AST-005, TFD-AST-006]
+
+      - id: JRN-02.2
+        title: Script understanding
+        purpose: >-
+          Parse scenes, sluglines, dialogue, characters, locations, props and source
+          locators; show confidence and parse warnings.
+        completion_rule: Extraction is completed or reviewed with unresolved parse issues acknowledged.
+        required: true
+        na: reason_required
+        release: v1
+        applicability: {modes: all}
+        act_capability: workflow.run
+        approval_capability: null
+        completion_check: {kind: system, key: "workflow_completed:script_intelligence"}
+        studio_tools: [S-SCR-02, S-BRN-01]
+        requirements: [TFD-STY-001, TFD-STY-002, TFD-STY-003, TFD-SCR-004]
+
+      - id: JRN-02.3
+        title: Scene and dialogue review
+        purpose: >-
+          Inspect scene list, dialogue, characters, scene boundaries and links to source
+          text.
+        completion_rule: Required scene/dialogue candidates are reviewed or explicitly deferred.
+        required: true
+        na: reason_required
+        release: v1
+        applicability: {modes: all}
+        act_capability: workflow.run
+        approval_capability: approval.creative
+        completion_check: {kind: system, key: "no_pending_candidates:script_intelligence"}
+        studio_tools: [S-SCR-02, S-APR-02]
+        requirements: [TFD-STY-001, TFD-STY-002, TFD-APR-004]
+
+      - id: JRN-02.4
+        title: Approved screenplay lock
+        purpose: >-
+          Identify management-approved screenplay version; display lock state and immutable
+          source reference.
+        completion_rule: >-
+          A production-authoritative screenplay version is selected and locked by an
+          authorized manager.
+        required: true
+        na: reason_required
+        release: v1
+        applicability: {modes: all}
+        act_capability: canon.propose
+        approval_capability: screenplay.approve_lock
+        completion_check: {kind: manual_with_evidence}
+        studio_tools: [S-SCR-01, S-APR-02]
+        requirements: [TFD-SCR-002, TFD-SCR-003, TFD-IAM-005]
+
+      - id: JRN-02.5
+        title: AI suggestions workspace
+        purpose: >-
+          Keep alternative dialogue, scene and story suggestions separate from canon;
+          compare against locked source.
+        completion_rule: Suggestions are either absent, saved as proposals or explicitly marked not required.
+        required: true
+        na: reason_required
+        release: v1
+        applicability: {modes: all}
+        act_capability: workflow.run
+        approval_capability: null
+        completion_check: {kind: manual_with_evidence}
+        studio_tools: [S-SCR-04]
+        requirements: [TFD-SCR-005]
+
+      - id: JRN-02.6
+        title: Director-led revision
+        purpose: >-
+          Prepare proposed edits, rationale, diff, affected scenes and downstream production
+          impact.
+        completion_rule: Revision is submitted for approval or explicitly not required.
+        required: true
+        na: reason_required
+        release: v1
+        applicability: {modes: all}
+        act_capability: canon.propose
+        approval_capability: null
+        completion_check: {kind: manual_with_evidence}
+        studio_tools: [S-SCR-03]
+        requirements: [TFD-SCR-006, TFD-SCR-010]
+
+      - id: JRN-02.7
+        title: Management decision
+        purpose: >-
+          Approve, reject or request changes; approval creates a new locked screenplay
+          version.
+        completion_rule: >-
+          All pending screenplay decisions are resolved before production planning relies on
+          the revised script.
+        required: true
+        na: reason_required
+        release: v1
+        applicability: {modes: all}
+        act_capability: screenplay.approve_lock
+        approval_capability: screenplay.approve_lock
+        completion_check: {kind: manual_with_evidence}
+        studio_tools: [S-SCR-03, S-APR-02]
+        requirements: [TFD-SCR-007, TFD-SCR-008, TFD-SCR-010]
+
+  - id: JRN-03
+    title: Research & Story Intelligence
+    release_label: V1
+    groups:
+      - id: JRN-03.1
+        title: Story Brain
+        purpose: >-
+          Connect script, notes, scenes, characters, relationships, open questions and
+          project context in one intelligence layer.
+        completion_rule: Core project context has been generated and reviewed for material omissions.
+        required: true
+        na: reason_required
+        release: v1
+        applicability: {modes: all}
+        act_capability: workflow.run
+        approval_capability: null
+        completion_check: {kind: manual_with_evidence}
+        studio_tools: [S-BRN-01, S-BRN-02]
+        requirements: [TFD-STY-004, TFD-STY-005, TFD-STY-006, TFD-CTX-001]
+
+      - id: JRN-03.2
+        title: Research brief
+        purpose: >-
+          Define research questions, period, geography, themes, cultural context and required
+          confidence level.
+        completion_rule: Relevant research scope is captured or marked not applicable.
+        required: true
+        na: reason_required
+        release: v1
+        applicability: {modes: all}
+        act_capability: canon.propose
+        approval_capability: null
+        completion_check: {kind: system, key: research_questions_present}
+        studio_tools: [S-RES-01, S-RES-02]
+        requirements: [TFD-RES-001, TFD-RES-007]
+
+      - id: JRN-03.3
+        title: Sources and evidence
+        purpose: >-
+          Capture source metadata, excerpts, locators, dates, reliability, claims and
+          disagreements.
+        completion_rule: Material claims are linked to evidence or explicitly labelled assumptions/interpretations.
+        required: true
+        na: reason_required
+        release: v1
+        applicability: {modes: all}
+        act_capability: canon.propose
+        approval_capability: null
+        completion_check: {kind: manual_with_evidence}
+        studio_tools: [S-RES-03]
+        requirements: [TFD-RES-002, TFD-RES-003]
+
+      - id: JRN-03.4
+        title: Historical timeline
+        purpose: >-
+          Map events, character ages, locations, material culture and temporal constraints.
+        completion_rule: Timeline conflicts are reviewed; unresolved points remain visible.
+        required: true
+        na: reason_required
+        release: v1
+        applicability: {modes: all}
+        act_capability: canon.propose
+        approval_capability: null
+        completion_check: {kind: manual_with_evidence}
+        studio_tools: [S-RES-04]
+        requirements: [TFD-RES-006]
+
+      - id: JRN-03.5
+        title: Visual and cultural evolution
+        purpose: >-
+          Translate period research into defensible architecture, costume, weapon, material
+          and environment references.
+        completion_rule: Relevant visual reference requirements are recorded with evidence state.
+        required: true
+        na: reason_required
+        release: v1
+        applicability: {modes: all}
+        act_capability: canon.propose
+        approval_capability: null
+        completion_check: {kind: manual_with_evidence}
+        studio_tools: [S-RES-05, S-ENV-01]
+        requirements: [TFD-RES-008, TFD-RES-009]
+
+      - id: JRN-03.6
+        title: Research review
+        purpose: >-
+          Separate historical fact, evidence, interpretation, dramatization, assumption and
+          conflict; obtain human approval for canon claims.
+        completion_rule: Claims that affect production are reviewed or explicitly flagged for later review.
+        required: true
+        na: reason_required
+        release: v1
+        applicability: {modes: all}
+        act_capability: canon.propose
+        approval_capability: approval.creative
+        completion_check: {kind: system, key: "no_pending_candidates:historical_research"}
+        studio_tools: [S-RES-02, S-RES-03, S-APR-02]
+        requirements: [TFD-RES-004, TFD-RES-005, TFD-APR-004]
+
+  - id: JRN-04
+    title: Character & Digital Human Studio
+    release_label: V1 foundation; V2 production integrations
+    groups:
+      - id: JRN-04.1
+        title: Character register
+        purpose: >-
+          Create characters from screenplay or manually; link scenes, relationships, role and
+          timeline.
+        completion_rule: Required characters are identified and source-linked.
+        required: true
+        na: reason_required
+        release: v1
+        applicability: {modes: all}
+        act_capability: canon.propose
+        approval_capability: null
+        completion_check: {kind: manual_with_evidence}
+        studio_tools: [S-CHR-01, S-CHR-02]
+        requirements: [TFD-CHR-009, TFD-STY-003, TFD-CHR-008]
+
+      - id: JRN-04.2
+        title: Character identity profile
+        purpose: >-
+          Face references, distinguishing features, age appearance, hair, skin, expression
+          and approved identity version.
+        completion_rule: Required identity attributes and reference images are reviewed.
+        required: true
+        na: reason_required
+        release: v1
+        applicability: {modes: all}
+        act_capability: canon.propose
+        approval_capability: null
+        completion_check: {kind: manual_with_evidence}
+        studio_tools: [S-CHR-01]
+        requirements: [TFD-CHR-001, TFD-CHR-002, TFD-CHR-005]
+
+      - id: JRN-04.3
+        title: Physical identity & measurements
+        purpose: >-
+          Manual measurements, AI-assisted estimation, scan imports, units, source,
+          confidence and verification.
+        completion_rule: >-
+          Required measurements are entered or imported; estimates remain clearly unverified
+          until human confirmation.
+        required: true
+        na: reason_required
+        release: v1_v2
+        applicability: {modes: all}
+        act_capability: canon.propose
+        approval_capability: null
+        completion_check: {kind: manual_with_evidence}
+        studio_tools: [S-PHY-01]
+        requirements: [TFD-PHY-001, TFD-PHY-002, TFD-PHY-003, TFD-PHY-004, TFD-PHY-006, TFD-PHY-005, TFD-PHY-007]
+
+      - id: JRN-04.4
+        title: Avatar approach
+        purpose: >-
+          Choose identity-preserving digital double, fictional AI avatar or a combination;
+          define which traits are retained or redesigned.
+        completion_rule: Avatar approach and preservation rules are approved for applicable characters.
+        required: true
+        na: reason_required
+        release: v1_v2
+        applicability: {modes: all}
+        act_capability: canon.propose
+        approval_capability: approval.creative
+        completion_check: {kind: manual_with_evidence}
+        studio_tools: [S-CHR-01, S-DH-02]
+        requirements: [TFD-DH-010, TFD-DH-001, TFD-DH-002, TFD-DH-003]
+
+      - id: JRN-04.5
+        title: Performance references
+        purpose: >-
+          Capture/import facial and body performance, movement references, posture, gestures
+          and source footage.
+        completion_rule: Required performance references are linked or explicitly not needed.
+        required: true
+        na: reason_required
+        release: v1_v2
+        applicability: {modes: all}
+        act_capability: canon.propose
+        approval_capability: null
+        completion_check: {kind: manual_with_evidence}
+        studio_tools: [S-CHR-01, S-DH-02, S-CAP-01]
+        requirements: [TFD-CHR-003, TFD-DH-004, TFD-DH-008]
+
+      - id: JRN-04.6
+        title: Voice profile
+        purpose: >-
+          Original recorded voice or authorized AI voice; language, delivery, accent,
+          approvals and dialogue linkage.
+        completion_rule: Voice path is selected and rights/consent requirements are satisfied.
+        required: true
+        na: reason_required
+        release: v1_v2
+        applicability: {modes: all}
+        act_capability: canon.propose
+        approval_capability: null
+        completion_check: {kind: manual_with_evidence}
+        studio_tools: [S-CHR-01, S-VOC-01]
+        requirements: [TFD-VOC-001, TFD-CNS-005, TFD-VOC-003, TFD-VOC-004]
+
+      - id: JRN-04.7
+        title: Consent and authorization
+        purpose: >-
+          Purpose-specific likeness, footage, digital-double and voice permissions with
+          scope, evidence and expiry/revocation handling.
+        completion_rule: Required performer authorization is valid before any derived identity or voice workflow.
+        required: true
+        na: reason_required
+        release: v1
+        # Wireframe v1.1 keeps this applicable in Fully AI mode too (AI work can still use a
+        # real person's likeness or voice). "No real performers" is a recorded N/A reason.
+        applicability: {modes: all}
+        act_capability: consent.manage
+        approval_capability: consent.manage
+        completion_check: {kind: manual_with_evidence}
+        studio_tools: [S-DH-01]
+        requirements: [TFD-CNS-001, TFD-CNS-002, TFD-CNS-003, TFD-CNS-004, TFD-CNS-005, TFD-IAM-007]
+
+      - id: JRN-04.8
+        title: Character approval & version
+        purpose: >-
+          Review the complete identity, physical, avatar, performance and voice package;
+          version the approved profile.
+        completion_rule: Director/authorized approver accepts the character profile or records exceptions.
+        required: true
+        na: reason_required
+        release: v1
+        applicability: {modes: all}
+        act_capability: canon.propose
+        approval_capability: approval.creative
+        completion_check: {kind: manual_with_evidence}
+        studio_tools: [S-CHR-01, S-APR-02]
+        requirements: [TFD-CHR-006, TFD-VER-002]
+
+  - id: JRN-05
+    title: Visual World Development
+    release_label: V1
+    groups:
+      - id: JRN-05.1
+        title: Visual direction
+        purpose: >-
+          Define overall art direction, realism/stylization, colour language, materials and
+          references.
+        completion_rule: A project visual-language profile is approved or intentionally left flexible.
+        required: true
+        na: reason_required
+        release: v1
+        applicability: {modes: all}
+        act_capability: workflow.run
+        approval_capability: approval.creative
+        completion_check: {kind: system, key: "approved_rules_present:film_bible"}
+        studio_tools: [S-BIB-01, S-BIB-02, S-ENV-01]
+        requirements: [TFD-CIN-010, TFD-CIN-011, TFD-CIN-012, TFD-CIN-013]
+
+      - id: JRN-05.2
+        title: Location and environment bible
+        purpose: >-
+          Locations, interiors, exteriors, terrain, architecture, atmosphere, geography and
+          environmental states.
+        completion_rule: Production-relevant locations have approved reference profiles.
+        required: true
+        na: reason_required
+        release: v1
+        applicability: {modes: all}
+        act_capability: canon.propose
+        approval_capability: approval.creative
+        completion_check: {kind: manual_with_evidence}
+        studio_tools: [S-ENV-01]
+        requirements: [TFD-ENV-001, TFD-ENV-002, TFD-ENV-004]
+
+      - id: JRN-05.3
+        title: Architecture and materials
+        purpose: >-
+          Period-appropriate construction, material, surface, scale, ageing and evidence
+          references.
+        completion_rule: Critical visual claims are sourced or labelled as creative interpretation.
+        required: true
+        na: reason_required
+        release: v1
+        applicability: {modes: all}
+        act_capability: canon.propose
+        approval_capability: null
+        completion_check: {kind: manual_with_evidence}
+        studio_tools: [S-ENV-01, S-RES-03]
+        requirements: [TFD-ENV-001, TFD-PRP-003, TFD-RES-008]
+
+      - id: JRN-05.4
+        title: Costume and appearance
+        purpose: >-
+          Costume sets, armour, footwear, jewellery, hair, makeup, wear/damage and timeline
+          states.
+        completion_rule: Main character costume states are defined for planned scenes.
+        required: true
+        na: reason_required
+        release: v1
+        applicability: {modes: all}
+        act_capability: canon.propose
+        approval_capability: null
+        completion_check: {kind: manual_with_evidence}
+        studio_tools: [S-CST-01]
+        requirements: [TFD-CST-001, TFD-CST-002, TFD-CST-003, TFD-CHR-004, TFD-CHR-007]
+
+      - id: JRN-05.5
+        title: Props and weapons
+        purpose: >-
+          Design, scale, materials, ownership, scene state, handling and continuity
+          relationships.
+        completion_rule: Critical props/weapons are registered and linked to scenes/shots.
+        required: true
+        na: reason_required
+        release: v1
+        applicability: {modes: all}
+        act_capability: canon.propose
+        approval_capability: null
+        completion_check: {kind: manual_with_evidence}
+        studio_tools: [S-CST-02]
+        requirements: [TFD-PRP-001, TFD-PRP-002, TFD-PRP-003]
+
+      - id: JRN-05.6
+        title: Reference asset library
+        purpose: >-
+          Import, tag, compare, version and relate reference images, video, research and
+          generated concepts.
+        completion_rule: Required reference sets are available or missing references are documented.
+        required: true
+        na: reason_required
+        release: v1
+        applicability: {modes: all}
+        act_capability: asset.upload
+        approval_capability: null
+        completion_check: {kind: manual_with_evidence}
+        # The wireframe names "Production Asset Library". Reference inputs live in the input
+        # library S-AST-02 (IA section 3); S-LIB-01 holds approved outputs (section 10).
+        studio_tools: [S-AST-02, S-AST-03]
+        requirements: [TFD-AST-003, TFD-AST-007, TFD-ENV-003]
+
+      - id: JRN-05.7
+        title: World continuity approval
+        purpose: >-
+          Approve location, costume, prop and environment states; distinguish intentional
+          variation from inconsistency.
+        completion_rule: Baseline world references and continuity rules are approved.
+        required: true
+        na: reason_required
+        release: v1
+        applicability: {modes: all}
+        act_capability: canon.propose
+        approval_capability: approval.creative
+        completion_check: {kind: manual_with_evidence}
+        studio_tools: [S-CON-01]
+        requirements: [TFD-CON-002, TFD-CON-003, TFD-CON-006]
+
+  - id: JRN-06
+    title: Cinematography & Storyboard Studio
+    release_label: V1
+    groups:
+      - id: JRN-06.1
+        title: Cinematography bible
+        purpose: Visual language, camera grammar, movement principles, framing and lighting approach.
+        completion_rule: Project cinematography direction is defined or left open with an owner.
+        required: true
+        na: reason_required
+        release: v1
+        applicability: {modes: all}
+        act_capability: canon.propose
+        approval_capability: null
+        completion_check: {kind: manual_with_evidence}
+        studio_tools: [S-CIN-01]
+        requirements: [TFD-CIN-005]
+
+      - id: JRN-06.2
+        title: Camera package
+        purpose: >-
+          Camera body, sensor, format, codec, frame rate, shutter and exposure metadata;
+          distinguish actual from intended virtual settings.
+        completion_rule: Physical shoot settings or virtual camera defaults are recorded where relevant.
+        required: true
+        na: reason_required
+        release: v1
+        applicability: {modes: all}
+        act_capability: canon.propose
+        approval_capability: null
+        completion_check: {kind: manual_with_evidence}
+        studio_tools: [S-CIN-01]
+        requirements: [TFD-CIN-001, TFD-CIN-002, TFD-CIN-003]
+
+      - id: JRN-06.3
+        title: Lens library
+        purpose: >-
+          Manufacturer, lens series, focal length, aperture, characteristics, focus and
+          desired lens look.
+        completion_rule: Lens preferences are recorded or AI recommendations are accepted/overridden.
+        required: true
+        na: reason_required
+        release: v1
+        applicability: {modes: all}
+        act_capability: canon.propose
+        approval_capability: null
+        completion_check: {kind: manual_with_evidence}
+        studio_tools: [S-CIN-01]
+        requirements: [TFD-CIN-001, TFD-CIN-004]
+
+      - id: JRN-06.4
+        title: Lighting and exposure
+        purpose: >-
+          Lighting setup, direction, contrast, colour temperature, subject/background
+          separation and continuity.
+        completion_rule: Lighting intent is defined for production-critical sequences.
+        required: true
+        na: reason_required
+        release: v1
+        applicability: {modes: all}
+        act_capability: canon.propose
+        approval_capability: null
+        completion_check: {kind: manual_with_evidence}
+        studio_tools: [S-CIN-01]
+        requirements: [TFD-CIN-005, TFD-CIN-006]
+
+      - id: JRN-06.5
+        title: Storyboard studio
+        purpose: >-
+          Import or create panels; connect panels to script scenes, sequences, characters and
+          references.
+        completion_rule: Relevant storyboard panels are mapped or explicitly not required.
+        required: true
+        na: reason_required
+        release: v1
+        applicability: {modes: all}
+        act_capability: workflow.run
+        approval_capability: approval.creative
+        completion_check: {kind: system, key: "no_pending_candidates:storyboard_intelligence"}
+        studio_tools: [S-SB-01]
+        requirements: [TFD-SB-001, TFD-SB-002, TFD-SB-004]
+
+      - id: JRN-06.6
+        title: Storyboard and script mapping
+        purpose: Check coverage, missing panels, scene order and visual continuity.
+        completion_rule: Coverage gaps are reviewed and accepted or resolved.
+        required: true
+        na: reason_required
+        release: v1
+        applicability: {modes: all}
+        act_capability: canon.propose
+        approval_capability: null
+        completion_check: {kind: manual_with_evidence}
+        studio_tools: [S-SB-02, S-SEQ-01]
+        requirements: [TFD-SB-003]
+
+      - id: JRN-06.7
+        title: Shot visual intention
+        purpose: >-
+          Define story purpose, subject, composition, movement, duration, lens intent and
+          reference requirements.
+        completion_rule: The sequence has enough visual intent to create structured shot specifications.
+        required: true
+        na: reason_required
+        release: v1
+        applicability: {modes: all}
+        act_capability: canon.propose
+        approval_capability: null
+        completion_check: {kind: manual_with_evidence}
+        studio_tools: [S-SHT-01]
+        requirements: [TFD-SHT-006, TFD-CIN-004]
+
+  - id: JRN-07
+    title: Production Planning
+    release_label: V1
+    groups:
+      - id: JRN-07.1
+        title: Sequence planning
+        purpose: >-
+          Group scenes into sequences; capture narrative purpose, geography, time and
+          dependencies.
+        completion_rule: Required sequences are structured and linked to approved screenplay version.
+        required: true
+        na: reason_required
+        release: v1
+        applicability: {modes: all}
+        act_capability: canon.propose
+        approval_capability: null
+        completion_check: {kind: manual_with_evidence}
+        studio_tools: [S-SEQ-01, S-SEQ-02]
+        requirements: [TFD-SEQ-001, TFD-SEQ-002]
+
+      - id: JRN-07.2
+        title: Shot list
+        purpose: >-
+          Create and order shots with scene, sequence, subject, action, duration, framing and
+          coverage notes.
+        completion_rule: Required shots are identified and assigned IDs.
+        required: true
+        na: reason_required
+        release: v1
+        applicability: {modes: all}
+        act_capability: canon.propose
+        approval_capability: null
+        completion_check: {kind: manual_with_evidence}
+        studio_tools: [S-SHT-01]
+        requirements: [TFD-SHT-001]
+
+      - id: JRN-07.3
+        title: Production method per shot
+        purpose: >-
+          Select fully AI, live-action/chroma, performance transformation, digital human or
+          combined method.
+        completion_rule: Every production-critical shot has a valid method or an approved exception.
+        required: true
+        na: reason_required
+        release: v1
+        applicability: {modes: all}
+        act_capability: canon.propose
+        approval_capability: null
+        completion_check: {kind: manual_with_evidence}
+        studio_tools: [S-MTH-01]
+        requirements: [TFD-SHT-002, TFD-PRJ-004, TFD-PRJ-005]
+
+      - id: JRN-07.4
+        title: On-set capture plan
+        purpose: >-
+          For hybrid shots, specify camera/lens, lighting, chroma, tracking, clean plates,
+          performer references and capture manifest.
+        completion_rule: Capture requirements are prepared or independent footage ingestion is selected.
+        required: true
+        na: reason_required
+        # Plan D7: capture plan record is a V1 manual form; WF-12 automation is V2.
+        release: v1_v2
+        # Wireframe v1.1: not applicable in Fully AI mode. UX section 7: unless the project
+        # contains a live-action shot.
+        applicability:
+          modes: [hybrid_live_action, mixed]
+          unless_any:
+            - shot_method_in: [live_action_chroma, performance_transformation]
+        act_capability: canon.propose
+        approval_capability: approval.creative
+        completion_check: {kind: manual_with_evidence}
+        studio_tools: [S-CAP-01, S-CAP-02]
+        requirements: [TFD-HYB-001, TFD-HYB-002, TFD-HYB-003, TFD-HYB-004]
+
+      - id: JRN-07.5
+        title: Shot Specification
+        purpose: >-
+          Provider-neutral shot intent, character/environment state, references, constraints
+          and acceptance criteria.
+        completion_rule: Shot specifications pass schema and completeness validation.
+        required: true
+        na: reason_required
+        release: v1
+        applicability: {modes: all}
+        act_capability: canon.propose
+        approval_capability: approval.creative
+        completion_check: {kind: manual_with_evidence}
+        studio_tools: [S-SHT-01, S-PKG-02]
+        requirements: [TFD-SHT-003, TFD-SHT-004, TFD-SHT-005]
+
+      - id: JRN-07.6
+        title: Continuity policy
+        purpose: >-
+          Lock or permit variation at project, character, sequence, scene and shot level.
+        completion_rule: Continuity rules and exception authority are explicit.
+        required: true
+        na: reason_required
+        release: v1
+        applicability: {modes: all}
+        act_capability: canon.propose
+        approval_capability: null
+        completion_check: {kind: manual_with_evidence}
+        studio_tools: [S-CON-01]
+        requirements: [TFD-CON-002, TFD-CON-003, TFD-CON-004]
+
+      - id: JRN-07.7
+        title: Production readiness
+        purpose: >-
+          Check screenplay version, assets, character/visual bible, shot specs, dependencies,
+          approvals and missing inputs.
+        completion_rule: Blocking issues are resolved or accepted by authorized roles.
+        required: true
+        na: never
+        release: v1
+        applicability: {modes: all}
+        act_capability: canon.propose
+        approval_capability: approval.creative
+        completion_check: {kind: manual_with_evidence}
+        studio_tools: [S-PRJ-01, S-AID-01, S-SHT-01]
+        requirements: [TFD-AID-001, TFD-CON-001, TFD-CON-005, TFD-PRJ-007]
+
+  - id: JRN-08
+    title: AI Production & Tool Handoff
+    release_label: V1 manual; V2 connected
+    groups:
+      - id: JRN-08.1
+        title: Production tool registry
+        purpose: >-
+          List provider, model, verified capability, input/output modes, terms, schema
+          version and last verification.
+        completion_rule: The intended tool is selectable only in an allowed, verified mode.
+        required: true
+        na: reason_required
+        release: v1_v2
+        applicability: {modes: all}
+        act_capability: project.admin
+        approval_capability: null
+        completion_check: {kind: manual_with_evidence}
+        studio_tools: [S-REG-01, S-REG-02]
+        requirements: [TFD-INT-003, TFD-INT-004, TFD-INT-006]
+
+      - id: JRN-08.2
+        title: AI tool recommendation
+        purpose: >-
+          Compare realism, identity consistency, motion, control, cost, speed, provider
+          policy and shot requirements.
+        completion_rule: Recommendation reasoning and alternatives are visible; user retains selection.
+        required: true
+        na: reason_required
+        release: v1_v2
+        applicability: {modes: all}
+        act_capability: package.export
+        approval_capability: null
+        completion_check: {kind: manual_with_evidence}
+        studio_tools: [S-REG-01, S-PKG-02]
+        requirements: [TFD-PKG-006]
+
+      - id: JRN-08.3
+        title: Prompt and package compiler
+        purpose: >-
+          Compile model-neutral Shot Specification into provider-specific prompt, settings
+          and reference manifest.
+        completion_rule: Package validates and references the exact source project/shot versions.
+        required: true
+        na: reason_required
+        release: v1
+        applicability: {modes: all}
+        act_capability: package.export
+        approval_capability: null
+        completion_check: {kind: manual_with_evidence}
+        studio_tools: [S-PKG-01, S-PKG-02]
+        requirements: [TFD-PKG-001, TFD-PKG-002, TFD-PKG-003, TFD-PKG-004, TFD-PKG-005, TFD-PKG-007]
+
+      - id: JRN-08.4
+        title: Connected execution
+        purpose: >-
+          Use officially supported API/MCP only after schema, permissions, terms, cost,
+          idempotency and output path validation.
+        completion_rule: Explicit authorized confirmation is captured before external action.
+        required: true
+        na: reason_required
+        release: v2
+        applicability: {modes: all}
+        act_capability: provider.submit
+        approval_capability: cost.approve
+        completion_check: {kind: manual_with_evidence}
+        studio_tools: [S-PKG-03, S-EXE-01, S-REG-02]
+        requirements: [TFD-INT-002, TFD-INT-005, TFD-GEN-001, TFD-GEN-002, TFD-GEN-004, TFD-CNS-007, TFD-CNS-008]
+
+      - id: JRN-08.5
+        title: Manual handoff
+        purpose: >-
+          Copy prompts/settings; download JSON/ZIP/reference pack; open external tool; record
+          manual run.
+        completion_rule: Package can be executed without a connector and retains lineage.
+        required: true
+        na: reason_required
+        release: v1
+        applicability: {modes: all}
+        act_capability: package.export
+        approval_capability: null
+        completion_check: {kind: manual_with_evidence}
+        studio_tools: [S-PKG-03]
+        requirements: [TFD-INT-001, TFD-INT-004]
+
+      - id: JRN-08.6
+        title: Execution tracking
+        purpose: >-
+          Track queued, submitted, running, completed, failed, unknown outcome, cancelled and
+          reconciled states.
+        completion_rule: Every run has an honest state and recovery path; unknown outcomes are reconciled before retry.
+        required: true
+        na: reason_required
+        release: v1_v2
+        applicability: {modes: all}
+        act_capability: package.export
+        approval_capability: null
+        completion_check: {kind: manual_with_evidence}
+        studio_tools: [S-EXE-01]
+        requirements: [TFD-INT-004, TFD-GEN-001, TFD-GEN-003, TFD-GEN-008, TFD-OPS-005]
+
+      - id: JRN-08.7
+        title: Cost and usage
+        purpose: >-
+          Estimate/show credits and costs; set caps; record provider charges or user-entered
+          manual spend.
+        completion_rule: Cost visibility and approval are applied where available; estimates are labelled.
+        required: true
+        na: reason_required
+        release: v2
+        applicability: {modes: all}
+        act_capability: budget.manage
+        approval_capability: cost.approve
+        completion_check: {kind: manual_with_evidence}
+        studio_tools: [S-USE-01]
+        requirements: [TFD-GEN-004, TFD-IAM-006, TFD-AID-007]
+
+  - id: JRN-09
+    title: Output Inspection & Continuity Approval
+    # The UX labels the whole section V2. Plan D9 and the IA release view bring manual import,
+    # manual review and shot approval into FD-V1. Each group's own release governs.
+    release_label: V1 manual review; V2 assisted inspection
+    groups:
+      - id: JRN-09.1
+        title: Output import
+        purpose: >-
+          Import generated or transformed media; checksum, validate, preserve original and
+          link to run/package/shot.
+        completion_rule: Asset is safely stored and has provenance and intended shot mapping.
+        required: true
+        na: reason_required
+        release: v1
+        applicability: {modes: all}
+        act_capability: asset.upload
+        approval_capability: null
+        completion_check: {kind: manual_with_evidence}
+        studio_tools: [S-EXE-02, S-EXE-01]
+        requirements: [TFD-OUT-001, TFD-OUT-006]
+
+      - id: JRN-09.2
+        title: Output inspection
+        purpose: >-
+          Review visual artifacts, framing, exposure, motion, quality, resolution and media
+          integrity.
+        completion_rule: Required technical checks are passed or findings are recorded.
+        required: true
+        na: reason_required
+        release: v1_v2
+        applicability: {modes: all}
+        act_capability: approval.creative
+        approval_capability: null
+        completion_check: {kind: manual_with_evidence}
+        studio_tools: [S-OUT-01]
+        requirements: [TFD-OUT-002]
+
+      - id: JRN-09.3
+        title: Identity and appearance review
+        purpose: Compare face, body proportions, costume, props and approved references.
+        completion_rule: Character and appearance findings have a human disposition.
+        required: true
+        na: reason_required
+        release: v1_v2
+        applicability: {modes: all}
+        act_capability: approval.creative
+        approval_capability: null
+        completion_check: {kind: manual_with_evidence}
+        studio_tools: [S-OUT-01, S-CON-01]
+        requirements: [TFD-OUT-002, TFD-CON-007]
+
+      - id: JRN-09.4
+        title: Performance and motion review
+        purpose: >-
+          Compare timing, gestures, screen direction, expression and motion plausibility
+          against source performance.
+        completion_rule: Performance deviations are accepted or revision requested.
+        required: true
+        na: reason_required
+        release: v1_v2
+        applicability: {modes: all}
+        act_capability: approval.creative
+        approval_capability: null
+        completion_check: {kind: manual_with_evidence}
+        studio_tools: [S-OUT-01]
+        requirements: [TFD-OUT-002, TFD-OUT-003]
+
+      - id: JRN-09.5
+        title: World and cinematography review
+        purpose: >-
+          Check environment, lighting, camera intent, lens look, composition and shot
+          continuity.
+        completion_rule: Director approves or records intentional variation.
+        required: true
+        na: reason_required
+        release: v1_v2
+        applicability: {modes: all}
+        act_capability: approval.creative
+        approval_capability: approval.creative
+        completion_check: {kind: manual_with_evidence}
+        studio_tools: [S-CON-01, S-OUT-01]
+        requirements: [TFD-OUT-002, TFD-CON-004, TFD-CIN-006]
+
+      - id: JRN-09.6
+        title: Voice and lip-sync review
+        purpose: >-
+          Review audio identity, language, dialogue version, timing, lip-sync and
+          authorization.
+        completion_rule: Required audio/voice checks are approved or revision requested.
+        required: true
+        na: reason_required
+        release: v2
+        applicability: {modes: all}
+        act_capability: approval.creative
+        approval_capability: approval.creative
+        completion_check: {kind: manual_with_evidence}
+        studio_tools: [S-VOC-01, S-VOC-02, S-OUT-01]
+        requirements: [TFD-VOC-004, TFD-VOC-006, TFD-VOC-007]
+
+      - id: JRN-09.7
+        title: Revision request
+        purpose: >-
+          Create versioned revision package with specific findings, reference targets and
+          change scope.
+        completion_rule: Revision is assigned and does not overwrite prior outputs.
+        required: true
+        na: reason_required
+        release: v1_v2
+        applicability: {modes: all}
+        act_capability: canon.propose
+        approval_capability: null
+        completion_check: {kind: manual_with_evidence}
+        studio_tools: [S-OUT-01, S-EXE-01]
+        requirements: [TFD-OUT-005]
+
+      - id: JRN-09.8
+        title: Shot approval
+        purpose: >-
+          Approve, reject or request changes; preserve reviewer, rationale and output
+          lineage.
+        completion_rule: Approved output is canonically linked to the shot and project version.
+        required: true
+        na: never
+        release: v1
+        applicability: {modes: all}
+        act_capability: approval.creative
+        approval_capability: approval.creative
+        completion_check: {kind: manual_with_evidence}
+        studio_tools: [S-APR-02]
+        requirements: [TFD-OUT-004, TFD-APR-001, TFD-APR-003]
+
+  - id: JRN-10
+    title: Production Library & Delivery
+    release_label: V1 foundation; V2 expanded
+    groups:
+      - id: JRN-10.1
+        title: Approved production library
+        purpose: >-
+          Organize approved images, video, audio, digital humans, motion, references and
+          documents.
+        completion_rule: Approved assets are discoverable by project, sequence, scene, shot and character.
+        required: true
+        na: reason_required
+        # Plan D9 brings the library foundation into FD-V1; the full library is V2 (TFD-LIB-001).
+        release: v1_v2
+        applicability: {modes: all}
+        act_capability: package.export
+        approval_capability: null
+        completion_check: {kind: manual_with_evidence}
+        studio_tools: [S-LIB-01, S-AST-02]
+        requirements: [TFD-LIB-001]
+
+      - id: JRN-10.2
+        title: Asset metadata and provenance
+        purpose: >-
+          Track parent asset, derivative, source, provider, model, prompt/package, version,
+          permissions and checksum.
+        completion_rule: All delivery assets have required lineage and permission metadata.
+        required: true
+        na: reason_required
+        release: v1_v2
+        applicability: {modes: all}
+        act_capability: canon.propose
+        approval_capability: null
+        completion_check: {kind: manual_with_evidence}
+        studio_tools: [S-LIB-01, S-APR-03]
+        requirements: [TFD-LIB-002, TFD-VER-004, TFD-AST-004]
+
+      - id: JRN-10.3
+        title: Delivery manifest
+        purpose: >-
+          Create shot/scene manifest with media metadata, versions, timecodes where available
+          and notes.
+        completion_rule: Manifest validation passes for selected delivery profile.
+        required: true
+        na: reason_required
+        # DEC-014: JSON and CSV manifests first (plan D9 V1 foundation).
+        release: v1_v2
+        applicability: {modes: all}
+        act_capability: package.export
+        approval_capability: null
+        completion_check: {kind: manual_with_evidence}
+        studio_tools: [S-PST-01]
+        requirements: [TFD-POST-001, TFD-POST-002, TFD-POST-003]
+
+      - id: JRN-10.4
+        title: External editor handoff
+        purpose: >-
+          Prepare Resolve/Premiere handoff profiles and standards-based XML/EDL/AAF/OTIO only
+          when validated.
+        completion_rule: Handoff package is structurally validated and labelled with supported interchange format.
+        required: true
+        na: reason_required
+        # DEC-014: OTIO/EDL/XML only after a validated Resolve or Premiere round trip.
+        release: v2
+        applicability: {modes: all}
+        act_capability: package.export
+        approval_capability: null
+        completion_check: {kind: manual_with_evidence}
+        studio_tools: [S-PST-01]
+        requirements: [TFD-POST-001, TFD-POST-002]
+
+      - id: JRN-10.5
+        title: Archive and export
+        purpose: >-
+          Export approved artifacts, assets, evidence, prompts, manifests, provider runs and
+          audit/version records.
+        completion_rule: Export is complete, checksum-verified and access-controlled.
+        required: true
+        na: reason_required
+        release: v1
+        applicability: {modes: all}
+        act_capability: package.export
+        approval_capability: null
+        completion_check: {kind: manual_with_evidence}
+        studio_tools: [S-PST-01, S-PRJ-02]
+        requirements: [TFD-POST-004, TFD-AUD-003]
+
+      - id: JRN-10.6
+        title: Project closure and audit
+        purpose: >-
+          Close or archive project; retain required audit and provenance; support
+          restoration/export policy.
+        completion_rule: Project owner confirms closure conditions and retention policy.
+        required: true
+        na: reason_required
+        release: v1
+        applicability: {modes: all}
+        act_capability: project.admin
+        approval_capability: project.admin
+        completion_check: {kind: manual_with_evidence}
+        studio_tools: [S-APR-03, S-PRJ-02]
+        requirements: [TFD-PRJ-002, TFD-AUD-001, TFD-AUD-002]
+
+# Studio Tools catalogue: every canonical screen (IA v1.1 section 3), where it lives in the
+# Guided Workspace and the wireframe v1.1 screen it corresponds to (null = no wireframe screen).
+# home: "workspace" = Online Workspace level; "cross_stage" = available from every section;
+# JRN-xx = the journey section that owns the tool in the Studio Tools Index.
+studio_tools:
+  - {id: S-GLB-01, name: Online Workspace, release: v1, home: workspace, wireframe: [1, 2]}
+  - {id: S-GLB-02, name: Create Project, release: v1, home: workspace, wireframe: [3]}
+  - {id: S-OPS-01, name: Task Centre, release: v1, home: workspace, wireframe: []}
+  - {id: S-APR-01, name: Approvals Inbox, release: v1, home: workspace, wireframe: [33]}
+  - {id: S-TEAM-01, name: Organisation Members & Roles, release: v1, home: workspace, wireframe: [5]}
+  - {id: S-REG-01, name: Production Tool Registry, release: v1_v2, home: JRN-08, wireframe: [26]}
+  - {id: S-REG-02, name: Provider Connections, release: v2, home: JRN-08, wireframe: [26]}
+  - {id: S-LIB-02, name: Shared Organisation Library, release: v2, home: workspace, wireframe: []}
+  - {id: S-PRJ-01, name: Project Overview, release: v1, home: cross_stage, wireframe: [4]}
+  - {id: S-PRJ-02, name: Project Settings & Governance, release: v1, home: JRN-01, wireframe: [6]}
+  - {id: S-TEAM-02, name: Project Members & Roles, release: v1, home: JRN-01, wireframe: [5]}
+  - {id: S-AST-01, name: Intake Inbox, release: v1, home: JRN-02, wireframe: []}
+  - {id: S-AST-02, name: Asset Library (inputs), release: v1, home: cross_stage, wireframe: []}
+  - {id: S-AST-03, name: Asset Inspector, release: v1_v2, home: cross_stage, wireframe: []}
+  - {id: S-SCR-01, name: Screenplay Versions & Lock, release: v1, home: JRN-02, wireframe: [7]}
+  - {id: S-SCR-02, name: Script & Scene Breakdown, release: v1, home: JRN-02, wireframe: [7]}
+  - {id: S-SCR-03, name: Revision Workspace, release: v1, home: JRN-02, wireframe: [9]}
+  - {id: S-SCR-04, name: AI Suggestions Workspace, release: v1, home: JRN-02, wireframe: [8]}
+  - {id: S-BRN-01, name: Story Brain, release: v1, home: JRN-03, wireframe: [10]}
+  - {id: S-BRN-02, name: Narrative Timeline, release: v1, home: JRN-03, wireframe: []}
+  - {id: S-RES-01, name: Historical Brief, release: v1, home: JRN-03, wireframe: [11]}
+  - {id: S-RES-02, name: Investigation Board, release: v1, home: JRN-03, wireframe: [11]}
+  - {id: S-RES-03, name: Source & Evidence Inspector, release: v1, home: JRN-03, wireframe: [13]}
+  - {id: S-RES-04, name: Historical Timeline, release: v1, home: JRN-03, wireframe: [12]}
+  - {id: S-RES-05, name: Temporal Visual Profile, release: v1, home: JRN-03, wireframe: [12]}
+  - {id: S-CHR-01, name: Character Studio, release: v1_v2, home: JRN-04, wireframe: [14, 15]}
+  - {id: S-CHR-02, name: Character State Timeline, release: v1, home: JRN-04, wireframe: []}
+  - {id: S-PHY-01, name: Physical Identity & Measurements, release: v1_v2, home: JRN-04, wireframe: [17]}
+  - {id: S-DH-01, name: Performers & Consent, release: v1, home: JRN-04, wireframe: []}
+  - {id: S-DH-02, name: Digital Human & Avatar Workspace, release: v2, home: JRN-04, wireframe: [16]}
+  - {id: S-VOC-01, name: Dialogue & Voice Studio, release: v2, home: JRN-04, wireframe: [32]}
+  - {id: S-VOC-02, name: Localisation & Dubbing, release: v2, home: JRN-09, wireframe: [32]}
+  - {id: S-BIB-01, name: Film Bible Overview, release: v1, home: JRN-05, wireframe: []}
+  - {id: S-BIB-02, name: Visual Language Rules, release: v1, home: JRN-05, wireframe: []}
+  - {id: S-ENV-01, name: Locations & Environments, release: v1_v2, home: JRN-05, wireframe: [19]}
+  - {id: S-CST-01, name: Costume Bible, release: v1_v2, home: JRN-05, wireframe: [18]}
+  - {id: S-CST-02, name: Props & Weapons Register, release: v1_v2, home: JRN-05, wireframe: [18]}
+  - {id: S-CIN-01, name: Cinematography Bible & Libraries, release: v1, home: JRN-06, wireframe: [21]}
+  - {id: S-SB-01, name: Storyboard Workbench, release: v1, home: JRN-06, wireframe: [20]}
+  - {id: S-SB-02, name: Script & Storyboard Alignment, release: v1, home: JRN-06, wireframe: [20]}
+  - {id: S-SEQ-01, name: Sequence Planner, release: v1, home: JRN-07, wireframe: [22]}
+  - {id: S-SEQ-02, name: Scene Planner, release: v1, home: JRN-07, wireframe: [22]}
+  - {id: S-SHT-01, name: Shot Planner & Shot Spec, release: v1, home: JRN-07, wireframe: [23]}
+  - {id: S-MTH-01, name: Production Mode & Method Map, release: v1, home: JRN-07, wireframe: [24]}
+  - {id: S-CAP-01, name: Capture Plan & Manifest, release: v1_v2, home: JRN-07, wireframe: [25]}
+  - {id: S-CAP-02, name: Footage Ingestion & Analysis, release: v2, home: JRN-07, wireframe: [25]}
+  - {id: S-AID-01, name: AI Director Review, release: v1, home: JRN-07, wireframe: []}
+  - {id: S-PKG-01, name: Master Direction, release: v1, home: JRN-08, wireframe: [27]}
+  - {id: S-PKG-02, name: Shot Package Compiler, release: v1_v2, home: JRN-08, wireframe: [27]}
+  - {id: S-PKG-03, name: "Handoff: Manual Export / Connected Submit", release: v1_v2, home: JRN-08, wireframe: [27]}
+  - {id: S-EXE-01, name: Execution Monitor, release: v1_v2, home: JRN-08, wireframe: [28]}
+  - {id: S-USE-01, name: Usage & Cost Overview, release: v2, home: JRN-08, wireframe: [36]}
+  - {id: S-EXE-02, name: Output Import & Mapping, release: v1, home: JRN-09, wireframe: [28]}
+  - {id: S-OUT-01, name: Output Inspector & Revision, release: v1_v2, home: JRN-09, wireframe: [30]}
+  - {id: S-CON-01, name: Continuity Overview & Rules, release: v1, home: JRN-09, wireframe: [31]}
+  - {id: S-CON-02, name: Continuity Finding Detail, release: v1, home: JRN-09, wireframe: [31]}
+  - {id: S-CON-03, name: Change Impact Analysis, release: v1, home: cross_stage, wireframe: [31]}
+  - {id: S-LIB-01, name: Production Asset Library, release: v1_v2, home: JRN-10, wireframe: [29]}
+  - {id: S-PST-01, name: Exports & Post-Production Handoff, release: v1_v2, home: JRN-10, wireframe: [34]}
+  - {id: S-APR-02, name: Approval Detail, release: v1, home: cross_stage, wireframe: [33]}
+  - {id: S-APR-03, name: Versions, Decisions & Audit, release: v1, home: cross_stage, wireframe: [33, 35]}

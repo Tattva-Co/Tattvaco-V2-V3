@@ -27,6 +27,7 @@ dependencies = [
     "requests>=2.31.0",
     "langgraph-checkpoint-postgres>=2.0.0",
     "PyJWT[crypto]>=2.8.0",
+    "PyYAML>=6.0",
 ]
 
 [project.optional-dependencies]
