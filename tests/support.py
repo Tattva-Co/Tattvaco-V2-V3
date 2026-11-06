@@ -17,8 +17,10 @@ from packages.persistence.models import (
     EntityModel,
     FilmBibleRuleCandidateModel,
     FilmBibleRuleModel,
+    MembershipModel,
     OrganizationModel,
     OutboxTaskModel,
+    ProjectMembershipModel,
     ProjectModel,
     ProjectVersionModel,
     ResearchClaimCandidateModel,
@@ -27,6 +29,8 @@ from packages.persistence.models import (
     ResearchQuestionCandidateModel,
     ResearchQuestionModel,
     ResearchSourceModel,
+    RoleTemplateCapabilityModel,
+    RoleTemplateModel,
     SceneCandidateModel,
     SceneModel,
     StoryboardPanelCandidateModel,
@@ -34,6 +38,7 @@ from packages.persistence.models import (
     UserModel,
     WorkflowRunModel,
 )
+from packages.persistence.repositories import RoleTemplateRepository
 
 SAMPLE_SCRIPT = """
 EXT. RAJPUT FORTRESS - DAY
@@ -94,10 +99,20 @@ def purge_organization(org_id: str) -> None:
                 SceneModel,
                 EntityModel,
                 ProjectVersionModel,
+                ProjectMembershipModel,
             ):
                 db.query(model).filter(model.project_id.in_(project_ids)).delete(
                     synchronize_session=False
                 )
+        role_template_ids: List[str] = [
+            rid for (rid,) in db.query(RoleTemplateModel.id).filter_by(organization_id=org_id).all()
+        ]
+        if role_template_ids:
+            db.query(RoleTemplateCapabilityModel).filter(
+                RoleTemplateCapabilityModel.role_template_id.in_(role_template_ids)
+            ).delete(synchronize_session=False)
+        db.query(MembershipModel).filter_by(organization_id=org_id).delete(synchronize_session=False)
+        db.query(RoleTemplateModel).filter_by(organization_id=org_id).delete(synchronize_session=False)
         db.query(WorkflowRunModel).filter_by(organization_id=org_id).delete(synchronize_session=False)
         db.query(AssetModel).filter_by(organization_id=org_id).delete(synchronize_session=False)
         db.query(ProjectModel).filter_by(organization_id=org_id).delete(synchronize_session=False)
@@ -109,12 +124,16 @@ def purge_organization(org_id: str) -> None:
 
 
 def create_tenant(role: str = "director") -> Tenant:
+    """A brand-new org with one user, who is that org's owner (ADR-003 §2): every test
+    tenant is alone in its own org, so this is the only mapping that preserves "a test
+    tenant can do anything in its own org", which every existing test already assumes."""
     org_id = str(uuid.uuid4())
     user_id = str(uuid.uuid4())
     db = SessionLocal()
     try:
         db.add(OrganizationModel(id=org_id, name="Test Studio", slug=f"test-{org_id[:8]}"))
         db.flush()
+        RoleTemplateRepository(db).seed_defaults_for_org(org_id)
         db.add(
             UserModel(
                 id=user_id,
@@ -124,6 +143,8 @@ def create_tenant(role: str = "director") -> Tenant:
                 role=role,
             )
         )
+        db.flush()
+        db.add(MembershipModel(user_id=user_id, organization_id=org_id, org_role="owner", status="active"))
         db.commit()
     finally:
         db.close()

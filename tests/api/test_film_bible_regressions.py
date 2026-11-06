@@ -8,12 +8,21 @@ from __future__ import annotations
 import uuid
 
 from packages.persistence.database import SessionLocal
-from packages.persistence.models import ResearchClaimModel, UserModel, WorkflowRunModel
+from packages.persistence.models import (
+    MembershipModel,
+    ProjectMembershipModel,
+    ResearchClaimModel,
+    UserModel,
+    WorkflowRunModel,
+)
+from packages.persistence.repositories import RoleTemplateRepository
 from tests.support import as_actor, create_project
 
 
-def _add_reviewer(org_id: str) -> str:
-    """Create a second user in the same organization to act as reviewer."""
+def _add_reviewer(org_id: str, project_id: str) -> str:
+    """Create a second user in the same organization, with org membership and a
+    project-level 'reviewer' role (grants approval.creative; ADR-003 §2) -- a bare user
+    row with no membership cannot act on anything under RBAC enforcement."""
     user_id = str(uuid.uuid4())
     db = SessionLocal()
     try:
@@ -25,6 +34,12 @@ def _add_reviewer(org_id: str) -> str:
                 full_name="Reviewer",
                 role="director",
             )
+        )
+        db.flush()
+        db.add(MembershipModel(user_id=user_id, organization_id=org_id, org_role="member", status="active"))
+        reviewer_template = RoleTemplateRepository(db).get_by_key(org_id, "reviewer")
+        db.add(
+            ProjectMembershipModel(user_id=user_id, project_id=project_id, role_template_id=reviewer_template.id)
         )
         db.commit()
     finally:
@@ -46,7 +61,7 @@ def _start_synthesis(client, tenant, project_id: str) -> str:
 def test_decision_notes_reach_canon_and_reviewer_is_attributed(client, tenant):
     """G04-A (notes dropped), G04-H (version field overwritten), G04-I (initiator overwritten)."""
     project = create_project(client, tenant, title="Attribution Check")
-    reviewer_id = _add_reviewer(tenant.org_id)
+    reviewer_id = _add_reviewer(tenant.org_id, project["id"])
     approval_id = _start_synthesis(client, tenant, project["id"])
 
     resp = client.post(

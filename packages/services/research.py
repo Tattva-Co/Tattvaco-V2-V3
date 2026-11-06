@@ -17,6 +17,7 @@ from packages.persistence.repositories import (
     ProjectRepository,
     ResearchRepository,
 )
+from packages.services.authz import AuthzService
 from packages.services.identity import ActorContext
 
 
@@ -27,9 +28,11 @@ class ResearchService:
         self.research = ResearchRepository(db)
         self.assets = AssetRepository(db)
         self.audit = AuditRepository(db)
+        self.authz = AuthzService(db)
 
     def list_questions(self, actor: ActorContext, project_id: str, status: str | None = None) -> list[ResearchQuestionModel]:
-        self.projects.get_scoped(project_id, actor.org_id)
+        project = self.projects.get_scoped(project_id, actor.org_id)
+        self.authz.require(actor, "project.read", project)
         return self.research.list_questions(project_id, status=status)
 
     def create_question(
@@ -40,6 +43,7 @@ class ResearchService:
         category: str = "general",
     ) -> ResearchQuestionModel:
         project = self.projects.get_scoped(project_id, actor.org_id)
+        self.authz.require(actor, "canon.propose", project)
         question = ResearchQuestionModel(
             project_id=project.id,
             organization_id=project.organization_id,
@@ -64,7 +68,8 @@ class ResearchService:
         return question
 
     def list_sources(self, actor: ActorContext, project_id: str) -> list[ResearchSourceModel]:
-        self.projects.get_scoped(project_id, actor.org_id)
+        project = self.projects.get_scoped(project_id, actor.org_id)
+        self.authz.require(actor, "project.read", project)
         return self.research.list_sources(project_id)
 
     def create_source(
@@ -81,6 +86,7 @@ class ResearchService:
         reliability_notes: str | None = None,
     ) -> ResearchSourceModel:
         project = self.projects.get_scoped(project_id, actor.org_id)
+        self.authz.require(actor, "canon.propose", project)
         if asset_id is not None:
             # Raises NotFoundError (404) if the asset doesn't exist or belongs to a
             # different project, preventing a source from pointing at another tenant's
@@ -120,10 +126,12 @@ class ResearchService:
         project_id: str,
         claim_class: str | None = None,
     ) -> list[ResearchClaimModel]:
-        self.projects.get_scoped(project_id, actor.org_id)
+        project = self.projects.get_scoped(project_id, actor.org_id)
+        self.authz.require(actor, "project.read", project)
         return self.research.list_claims(project_id, claim_class=claim_class)
 
     def list_conflicts(self, actor: ActorContext, project_id: str) -> list[ResearchConflictModel]:
-        self.projects.get_scoped(project_id, actor.org_id)
+        project = self.projects.get_scoped(project_id, actor.org_id)
+        self.authz.require(actor, "project.read", project)
         return self.research.list_conflicts(project_id)
 

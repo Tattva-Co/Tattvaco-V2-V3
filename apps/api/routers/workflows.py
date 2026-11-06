@@ -12,7 +12,8 @@ from apps.api.schemas import (
     WorkflowTriggerRequest,
     WorkflowTriggerResponse,
 )
-from packages.persistence.repositories import ApprovalRepository, WorkflowRunRepository
+from packages.persistence.repositories import ApprovalRepository, ProjectRepository, WorkflowRunRepository
+from packages.services.authz import AuthzService
 from packages.services.film_bible import FilmBibleSynthesisService
 from packages.services.historical_research import HistoricalResearchService
 from packages.services.identity import ActorContext
@@ -112,4 +113,7 @@ def trigger_film_bible_synthesis(
 
 @router.get("/workflow-runs/{run_id}", response_model=WorkflowRunResponse)
 def get_workflow_run(run_id: str, actor: ActorContext = Depends(get_actor), db: Session = Depends(get_db)):
-    return WorkflowRunRepository(db).get_scoped(run_id, actor.org_id)
+    run = WorkflowRunRepository(db).get_scoped(run_id, actor.org_id)
+    project = ProjectRepository(db).get_scoped(run.project_id, actor.org_id)
+    AuthzService(db).require(actor, "project.read", project)
+    return run

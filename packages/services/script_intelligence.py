@@ -32,6 +32,7 @@ from packages.persistence.repositories import (
     ProjectRepository,
     WorkflowRunRepository,
 )
+from packages.services.authz import AuthzService
 from packages.services.identity import ActorContext
 from packages.services.script_review import record_decision
 from packages.workflows.checkpointer import get_checkpointer
@@ -55,6 +56,7 @@ class ScriptIntelligenceService:
         self.runs = WorkflowRunRepository(db)
         self.approvals = ApprovalRepository(db)
         self.audit = AuditRepository(db)
+        self.authz = AuthzService(db)
 
     # -- start ---------------------------------------------------------------
 
@@ -68,6 +70,7 @@ class ScriptIntelligenceService:
     ) -> WorkflowRunModel:
         """Create a run. Executes inline when ``sync``; otherwise queues it for the worker."""
         project = self.projects.get_scoped(project_id, actor.org_id)
+        self.authz.require(actor, "workflow.run", project)
         asset = AssetRepository(self.db).get_for_project(script_asset_id, project.id)
 
         run = self.runs.add(
@@ -141,6 +144,8 @@ class ScriptIntelligenceService:
         )
         if approval.status != ApprovalStatus.PENDING.value:
             raise InvalidStateError(f"Approval request already {approval.status}.")
+        project_for_authz = self.projects.get_scoped(approval.project_id, actor.org_id)
+        self.authz.require(actor, "approval.creative", project_for_authz)
 
         # Invariant 4: persist the human decision before resuming the graph.
         record_decision(approval, decision, actor.user_id, notes)

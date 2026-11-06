@@ -423,3 +423,71 @@ class FilmBibleRuleCandidateModel(Base):
     conflict_warning = Column(Text, nullable=True)
     status = Column(String(50), default="proposed", nullable=False)
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+
+# -- Authorization (ADR-003 §2) ----------------------------------------------
+#
+# Enforcement lives in packages/services/authz.py::AuthzService, reading these tables
+# through MembershipRepository/RoleTemplateRepository/ProjectMembershipRepository. The
+# capability catalogue and default per-role bundles are the single source of truth in
+# packages/domain/capabilities.py; this schema only stores assignments.
+
+
+class MembershipModel(Base):
+    """Org-level membership. An org_role of 'owner' holds every capability on every
+    project in that org implicitly (AuthzService never consults project_memberships for
+    an owner); 'admin'/'member' are not yet distinguished beyond that bypass."""
+    __tablename__ = "memberships"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=False, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id"), nullable=False, index=True)
+    org_role = Column(String(50), default="member", nullable=False)
+    status = Column(String(50), default="active", nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+    __table_args__ = (Index("uq_memberships_user_org", "user_id", "organization_id", unique=True),)
+
+
+class RoleTemplateModel(Base):
+    """A named, editable bundle of capabilities, seeded per organization so each org can
+    later customize its own templates without affecting any other tenant."""
+    __tablename__ = "role_templates"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    organization_id = Column(String(36), ForeignKey("organizations.id"), nullable=False, index=True)
+    key = Column(String(50), nullable=False)
+    name = Column(String(255), nullable=False)
+    is_system = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+    __table_args__ = (Index("uq_role_templates_org_key", "organization_id", "key", unique=True),)
+
+
+class CapabilityModel(Base):
+    """Static reference table mirroring packages.domain.capabilities.CAPABILITIES."""
+    __tablename__ = "capabilities"
+
+    key = Column(String(100), primary_key=True)
+    description = Column(Text, nullable=False)
+
+
+class RoleTemplateCapabilityModel(Base):
+    __tablename__ = "role_template_capabilities"
+
+    role_template_id = Column(String(36), ForeignKey("role_templates.id"), primary_key=True)
+    capability_key = Column(String(100), ForeignKey("capabilities.key"), primary_key=True)
+
+
+class ProjectMembershipModel(Base):
+    """A user's role on one specific project. Not consulted for an org owner (see
+    MembershipModel); every other user needs an explicit row to act on a project."""
+    __tablename__ = "project_memberships"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=False, index=True)
+    project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, index=True)
+    role_template_id = Column(String(36), ForeignKey("role_templates.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+    __table_args__ = (Index("uq_project_memberships_user_project", "user_id", "project_id", unique=True),)

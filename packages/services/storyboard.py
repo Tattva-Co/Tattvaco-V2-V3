@@ -34,6 +34,7 @@ from packages.persistence.repositories import (
     StoryboardRepository,
     WorkflowRunRepository,
 )
+from packages.services.authz import AuthzService
 from packages.services.identity import ActorContext
 from packages.services.script_review import record_decision
 from packages.workflows.checkpointer import get_checkpointer
@@ -57,6 +58,7 @@ class StoryboardIntelligenceService:
         self.runs = WorkflowRunRepository(db)
         self.approvals = ApprovalRepository(db)
         self.audit = AuditRepository(db)
+        self.authz = AuthzService(db)
 
     def start(
         self,
@@ -67,6 +69,7 @@ class StoryboardIntelligenceService:
         sync: bool = True,
     ) -> WorkflowRunModel:
         project = self.projects.get_scoped(project_id, actor.org_id)
+        self.authz.require(actor, "workflow.run", project)
 
         run = self.runs.add(
             WorkflowRunModel(
@@ -135,6 +138,8 @@ class StoryboardIntelligenceService:
         )
         if approval.status != ApprovalStatus.PENDING.value:
             raise InvalidStateError(f"Approval request already {approval.status}.")
+        project_for_authz = self.projects.get_scoped(approval.project_id, actor.org_id)
+        self.authz.require(actor, "approval.creative", project_for_authz)
 
         record_decision(approval, decision, actor.user_id, notes)
         self.audit.record(
@@ -220,8 +225,10 @@ class StoryboardService:
         self.db = db
         self.projects = ProjectRepository(db)
         self.storyboard = StoryboardRepository(db)
+        self.authz = AuthzService(db)
 
     def list_panels(self, actor: ActorContext, project_id: str) -> list[StoryboardPanelModel]:
-        self.projects.get_scoped(project_id, actor.org_id)
+        project = self.projects.get_scoped(project_id, actor.org_id)
+        self.authz.require(actor, "project.read", project)
         return self.storyboard.list_panels_for_project(project_id)
 

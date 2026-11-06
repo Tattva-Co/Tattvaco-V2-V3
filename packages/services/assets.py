@@ -11,6 +11,7 @@ from packages.domain.enums import AssetType, AuditAction
 from packages.domain.errors import PayloadTooLargeError, UnsupportedMediaTypeError, ValidationFailure
 from packages.persistence.models import AssetModel
 from packages.persistence.repositories import AssetRepository, AuditRepository, ProjectRepository
+from packages.services.authz import AuthzService
 from packages.services.identity import ActorContext
 from packages.storage.service import StorageService, detect_mime_type
 
@@ -23,6 +24,7 @@ class AssetService:
         self.assets = AssetRepository(db)
         self.projects = ProjectRepository(db)
         self.audit = AuditRepository(db)
+        self.authz = AuthzService(db)
 
     def validate_upload(self, filename: str, size_bytes: int, declared_mime: str | None) -> str:
         """Apply upload policy; returns the effective MIME type."""
@@ -48,6 +50,7 @@ class AssetService:
         asset_type: AssetType = AssetType.SCRIPT,
     ) -> AssetModel:
         project = self.projects.get_scoped(project_id, actor.org_id)
+        self.authz.require(actor, "asset.upload", project)
         mime = self.validate_upload(filename, len(content), declared_mime)
 
         stored = self.storage.store_bytes(
@@ -86,5 +89,6 @@ class AssetService:
         return asset
 
     def list(self, actor: ActorContext, project_id: str) -> List[AssetModel]:
-        self.projects.get_scoped(project_id, actor.org_id)
+        project = self.projects.get_scoped(project_id, actor.org_id)
+        self.authz.require(actor, "project.read", project)
         return self.assets.list_for_project(project_id)

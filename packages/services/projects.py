@@ -14,6 +14,7 @@ from packages.persistence.models import (
     EntityCandidateModel,
     EntityModel,
     FilmBibleRuleCandidateModel,
+    ProjectMembershipModel,
     ProjectModel,
     ProjectVersionModel,
     ResearchClaimCandidateModel,
@@ -27,8 +28,11 @@ from packages.persistence.repositories import (
     AuditRepository,
     CandidateRepository,
     CanonicalRepository,
+    ProjectMembershipRepository,
     ProjectRepository,
+    RoleTemplateRepository,
 )
+from packages.services.authz import AuthzService
 from packages.services.identity import ActorContext
 
 
@@ -47,7 +51,10 @@ class ProjectService:
     def __init__(self, db: Session):
         self.db = db
         self.projects = ProjectRepository(db)
+        self.project_memberships = ProjectMembershipRepository(db)
+        self.role_templates = RoleTemplateRepository(db)
         self.audit = AuditRepository(db)
+        self.authz = AuthzService(db)
 
     def create(
         self,
@@ -57,6 +64,9 @@ class ProjectService:
         logline: str | None = None,
         genre: str | None = None,
     ) -> ProjectModel:
+        # project.create has no project to scope the check to yet; any active member of
+        # the organization may create a project (ADR-003 §2).
+        self.authz.require_org_member(actor)
         project = self.projects.add(
             ProjectModel(
                 organization_id=actor.org_id,
@@ -68,6 +78,18 @@ class ProjectService:
                 created_by=actor.user_id,
             )
         )
+        self.db.flush()
+        # Grant the creator a director role on their own new project. An org owner
+        # wouldn't need this (AuthzService bypasses project_memberships for owners), but
+        # a plain 'member' creating their first project otherwise couldn't act on it at
+        # all -- there is no separate "invite yourself" step.
+        director_template = self.role_templates.get_by_key(actor.org_id, "director")
+        if director_template is not None:
+            self.project_memberships.add(
+                ProjectMembershipModel(
+                    user_id=actor.user_id, project_id=project.id, role_template_id=director_template.id
+                )
+            )
         self.projects.add_version(
             ProjectVersionModel(
                 project_id=project.id,
@@ -95,14 +117,17 @@ class ProjectService:
         return self.projects.list_for_org(actor.org_id)
 
     def get(self, actor: ActorContext, project_id: str) -> ProjectModel:
-        return self.projects.get_scoped(project_id, actor.org_id)
+        project = self.projects.get_scoped(project_id, actor.org_id)
+        self.authz.require(actor, "project.read", project)
+        return project
 
     def versions(self, actor: ActorContext, project_id: str) -> List[ProjectVersionModel]:
         self.get(actor, project_id)
         return self.projects.list_versions(project_id)
 
     def audit_log(self, actor: ActorContext, project_id: str) -> List[AuditEventModel]:
-        self.get(actor, project_id)
+        project = self.get(actor, project_id)
+        self.authz.require(actor, "audit.read", project)
         return self.audit.list_for_project(project_id)
 
     def canonical_scenes(self, actor: ActorContext, project_id: str) -> List[SceneModel]:

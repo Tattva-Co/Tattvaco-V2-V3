@@ -84,7 +84,7 @@ Nothing below silently overwrites a prior decision. Each conflict records a reco
 | DEC-024 | Feature-flag mechanism | See `docs/engineering/DEPLOYMENT_AND_DEVOPS.md` | Eng | Open |
 | DEC-025 | Budget-gate defaults and who approves cost | See `docs/engineering/COST_AND_CAPACITY_MODEL.md` | Product + Finance | Open |
 | DEC-026 | Pilot support hours and availability tier | See `docs/release/PRODUCTION_LAUNCH_PLAN.md` | Product + Ops | Open |
-| DEC-027 | Role and capability matrix, including who holds management authority over the locked screenplay | Deny-by-default capabilities; a distinct `management_approver` role (ADR-003 placeholder `management`) | Product + Eng | **Blocks screenplay lock** |
+| DEC-027 | Role and capability matrix, including who holds management authority over the locked screenplay | **Implemented in milestone C5** (2026-11-06): 6 role templates (`management`, `director`, `producer`, `crew_editor`, `reviewer`, `viewer`) and 17 capabilities (`packages/domain/capabilities.py`), deny-by-default, org-owner bypass. `management` holds `screenplay.approve_lock`; no other template does. **No longer a blocker for screenplay lock** (D2), which can now gate on that capability directly. | Product + Eng | **Done** |
 | DEC-028 | Pilot productions, format-template default values, pilot acceptance thresholds | See `docs/product/PRODUCT_ROADMAP.md` | Product | Open |
 | DEC-029 | Creative branches | Defer; remove the hardcoded "Branch: main" label from the UI | Product | Recommended |
 

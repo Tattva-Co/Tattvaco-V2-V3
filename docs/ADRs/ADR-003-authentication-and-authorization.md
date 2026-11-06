@@ -20,10 +20,32 @@ Until then, an OIDC principal with no matching `(idp_issuer, idp_subject)` row i
 rejected (401) rather than auto-provisioned — provisioning a user from an unverified
 external claim is a product/security decision, not a default a port should make silently.
 
-§2 (Authorization model: memberships, project_memberships, role_templates,
-capabilities, approval levels) is **not yet implemented**; `get_actor` only resolves
-identity, not permissions. See `docs/implementation/FINAL_GRADE_IMPLEMENTATION_PLAN.md`
-milestones C4/C5.
+§2 (Authorization model) is **implemented as of 2026-11-06, milestone C5**, with two
+simplifications against the original text:
+- **No shadow mode / `FF_RBAC_ENFORCE` flag.** §3 step 3 describes a feature-flagged
+  rollout with a logging-only shadow period, intended for migrating a live system with
+  real users already depending on today's behaviour. This product has no deployed users
+  yet (`docs/audit/00`), so enforcement is simply on from the migration that creates the
+  schema (`dd30049081b6`). If a staging/production deployment already has real traffic
+  by the time a *change* to the capability model ships, that change should use shadow
+  mode; the initial rollout did not need to.
+- **Role templates are seeded, not yet editable.** §2 says role templates are "seeded
+  per org, editable by owner/admin"; the seeding half is implemented
+  (`RoleTemplateRepository.seed_defaults_for_org`, called at every org-creation path),
+  but there is no API to edit a template's capability bundle after seeding. That editing
+  UI/API is a Phase D team-management feature, not part of this milestone.
+
+Implemented exactly as specified: the 5-table schema, the 6 default role templates and
+17 capabilities (`packages/domain/capabilities.py`, the single source of truth also read
+by the migration's seed step and by `AuthzService`), the org-owner bypass, `AuthzService.
+require()` called from services (not routers) at every route identified in
+`docs/audit/02`, the backfill (existing `creator`-role users → `member`; every other
+existing role, in practice only the `director` bootstrap/test-fixture role, → `owner`;
+every existing (user, project) pair in the same org → a `director` project_membership),
+and the unknown-scope-rejection and cross-tenant-reference fixes from milestone C4 that
+this model now also covers via capability checks. 8 new negative-authorization tests
+(`tests/api/test_authorization.py`) plus regression fixes to 2 existing test helpers that
+had created users with no membership. 88 passed total (was 80).
 
 ## Context
 

@@ -25,8 +25,10 @@ from packages.persistence.models import (
     EntityModel,
     FilmBibleRuleCandidateModel,
     FilmBibleRuleModel,
+    MembershipModel,
     OrganizationModel,
     OutboxTaskModel,
+    ProjectMembershipModel,
     ProjectModel,
     ProjectVersionModel,
     ResearchClaimCandidateModel,
@@ -35,6 +37,8 @@ from packages.persistence.models import (
     ResearchQuestionCandidateModel,
     ResearchQuestionModel,
     ResearchSourceModel,
+    RoleTemplateCapabilityModel,
+    RoleTemplateModel,
     SceneCandidateModel,
     SceneModel,
     StoryboardPanelCandidateModel,
@@ -77,17 +81,38 @@ class UserRepository(_Repository):
         the previous silent fallback (SEC-02), which could bind an unauthenticated
         request to whichever organization the database returned first; this always
         resolves to the same named organization, never "the first one found".
+
+        A newly created organization gets its default role templates seeded here, and a
+        newly created user gets a membership: the first user in a fresh org becomes its
+        owner (so solo local development works immediately); anyone joining an
+        already-populated org becomes a plain member, who must be granted project access
+        explicitly (today, automatically, by creating their own project -- see
+        ProjectService.create) rather than inheriting access to every existing project.
         """
         org = self.db.scalars(
             select(OrganizationModel).where(OrganizationModel.slug == self.DEFAULT_ORG_SLUG)
         ).first()
         if org is None:
             org = self._add(OrganizationModel(name="Default Studio Org", slug=self.DEFAULT_ORG_SLUG))
+            self.db.flush()
+            RoleTemplateRepository(self.db).seed_defaults_for_org(org.id)
 
         user = self.db.scalars(select(UserModel).where(UserModel.email == email)).first()
         if user is None:
+            is_first_user_in_org = (
+                self.db.scalars(select(UserModel).where(UserModel.organization_id == org.id)).first() is None
+            )
             user = self._add(
                 UserModel(organization_id=org.id, email=email, full_name=full_name, role="director")
+            )
+            self.db.flush()
+            self._add(
+                MembershipModel(
+                    user_id=user.id,
+                    organization_id=org.id,
+                    org_role="owner" if is_first_user_in_org else "member",
+                    status="active",
+                )
             )
         return user
 
@@ -535,3 +560,79 @@ class FilmBibleRepository(_Repository):
         if category:
             stmt = stmt.where(FilmBibleRuleModel.category == category)
         return list(self.db.scalars(stmt))
+
+
+class MembershipRepository(_Repository):
+    def add(self, membership: MembershipModel) -> MembershipModel:
+        return self._add(membership)
+
+    def get_for_user_org(self, user_id: str, organization_id: str) -> MembershipModel | None:
+        stmt = select(MembershipModel).where(
+            MembershipModel.user_id == user_id, MembershipModel.organization_id == organization_id
+        )
+        return self.db.scalars(stmt).first()
+
+    def is_active_member(self, user_id: str, organization_id: str) -> bool:
+        m = self.get_for_user_org(user_id, organization_id)
+        return m is not None and m.status == "active"
+
+    def is_owner(self, user_id: str, organization_id: str) -> bool:
+        m = self.get_for_user_org(user_id, organization_id)
+        return m is not None and m.status == "active" and m.org_role == "owner"
+
+
+class RoleTemplateRepository(_Repository):
+    def add(self, template: RoleTemplateModel) -> RoleTemplateModel:
+        return self._add(template)
+
+    def get_by_key(self, organization_id: str, key: str) -> RoleTemplateModel | None:
+        stmt = select(RoleTemplateModel).where(
+            RoleTemplateModel.organization_id == organization_id, RoleTemplateModel.key == key
+        )
+        return self.db.scalars(stmt).first()
+
+    def capabilities_for(self, role_template_id: str) -> set[str]:
+        stmt = select(RoleTemplateCapabilityModel.capability_key).where(
+            RoleTemplateCapabilityModel.role_template_id == role_template_id
+        )
+        return set(self.db.scalars(stmt))
+
+    def seed_defaults_for_org(self, organization_id: str) -> dict[str, RoleTemplateModel]:
+        """Create the 6 default role templates (ADR-003 §2) for a new organization.
+
+        Mirrors the one-time backfill in migration ``dd30049081b6`` for organizations
+        created after it (every org creation path must call this; see
+        ``UserRepository.get_or_create_dev_user`` and ``tests/support.py::create_tenant``).
+        Idempotent: a template that already exists for this org (by ``key``) is left as
+        is, so calling this twice is harmless.
+        """
+        from packages.domain.capabilities import DEFAULT_ROLE_TEMPLATES
+
+        templates: dict[str, RoleTemplateModel] = {}
+        for key, capability_keys in DEFAULT_ROLE_TEMPLATES.items():
+            existing = self.get_by_key(organization_id, key)
+            if existing is not None:
+                templates[key] = existing
+                continue
+            template = self.add(
+                RoleTemplateModel(organization_id=organization_id, key=key, name=key.replace("_", " ").title())
+            )
+            self.db.flush()
+            for capability_key in capability_keys:
+                self.db.add(
+                    RoleTemplateCapabilityModel(role_template_id=template.id, capability_key=capability_key)
+                )
+            templates[key] = template
+        self.db.flush()
+        return templates
+
+
+class ProjectMembershipRepository(_Repository):
+    def add(self, membership: ProjectMembershipModel) -> ProjectMembershipModel:
+        return self._add(membership)
+
+    def get_for_user_project(self, user_id: str, project_id: str) -> ProjectMembershipModel | None:
+        stmt = select(ProjectMembershipModel).where(
+            ProjectMembershipModel.user_id == user_id, ProjectMembershipModel.project_id == project_id
+        )
+        return self.db.scalars(stmt).first()
