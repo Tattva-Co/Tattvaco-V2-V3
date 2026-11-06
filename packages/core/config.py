@@ -70,18 +70,22 @@ class Settings(BaseSettings):
     # Bearer access token:
     #   - "development": a token issued by this process itself (HS256, signed with
     #     secret_key) via POST /api/v1/auth/dev-login. No external identity provider.
-    #   - "staging"/"production": a token issued by an external OIDC provider (RS256,
-    #     verified against oidc_jwks_url). Until oidc_issuer/oidc_jwks_url/oidc_audience
-    #     are configured, every request in those environments fails closed with a 500
-    #     (server misconfigured) rather than silently accepting unverified identity.
+    #   - "staging"/"production": a token from the external identity provider chosen by
+    #     auth_provider. DEC-002 chose Supabase Auth (2026-11-06): set supabase_url and
+    #     the issuer, JWKS URL and audience are derived from it. "oidc" keeps the
+    #     vendor-neutral path (oidc_issuer/oidc_jwks_url/oidc_audience). Until the chosen
+    #     provider is configured, every request in those environments fails closed with
+    #     a 500 (server misconfigured) rather than accepting unverified identity.
     secret_key: str = ""
     access_token_ttl_seconds: int = 3600
-
-    # Idempotency-Key (TFD-OPS-004): how long a stored response can be replayed.
-    idempotency_ttl_hours: int = 24
+    auth_provider: Literal["supabase", "oidc"] = "supabase"
+    supabase_url: str = ""  # e.g. https://<project-ref>.supabase.co
     oidc_issuer: str = ""
     oidc_jwks_url: str = ""
     oidc_audience: str = ""
+
+    # Idempotency-Key (TFD-OPS-004): how long a stored response can be replayed.
+    idempotency_ttl_hours: int = 24
 
     # Reserved for upcoming provider adapters (see docs/implementation/OPEN_DECISIONS.md).
     # Declared so they are validated and documented; not yet consumed by any code path.

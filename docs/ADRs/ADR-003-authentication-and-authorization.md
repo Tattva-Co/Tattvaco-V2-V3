@@ -9,6 +9,18 @@
 **Status:** Proposed (approval gate #1, DEC-002)
 **Date:** 5 November 2026
 
+## Decision note (2026-11-06): DEC-002 vendor is Supabase Auth
+
+The product owner chose **Supabase Auth** as the identity provider. `SupabaseAuthProvider`
+(`packages/services/auth.py`) is the OIDC verifier configured from one setting,
+`SUPABASE_URL`: issuer `<url>/auth/v1`, JWKS `<url>/auth/v1/.well-known/jwks.json`,
+audience `authenticated`. It accepts Supabase's asymmetric signing keys (ES256
+recommended, RS256 supported), requires `role=authenticated`, and rejects anonymous
+sessions and legacy HS256 tokens. The Supabase project must have asymmetric JWT signing
+keys enabled. The vendor-neutral OIDC path remains available (`AUTH_PROVIDER=oidc`), so the
+choice stays reversible. Users are still linked by `(idp_issuer, idp_subject)`; the
+invite/linking workflow below remains deferred to Phase D.
+
 ## Implementation note (2026-11-06, milestone C3)
 
 §1 (Authentication) below is implemented as specified, with one simplification: the
@@ -107,7 +119,7 @@ The negative authZ matrix in `TESTING_AND_QA_STRATEGY.md` §5 is generated from 
 - Closes SEC-01/02/03/04/08 once complete. Unblocks staging (the UI can run against a real API).
 - Adds a dependency on an external IdP (availability, cost). Mitigation: JWKS caching tolerates short IdP outages for already-issued tokens.
 - Every test needs a token. The test JWKS fixture (Testing §6) handles this; the existing `X-Actor-ID` tests keep working in `environment=test`.
-- **OPEN — DEC-002:** IdP vendor. **OPEN:** whether SSO/SAML is a pilot requirement (product).
+- **DECIDED — DEC-002 (2026-11-06):** Supabase Auth (see the decision note above). **OPEN:** whether SSO/SAML is a pilot requirement (product).
 
 ## Links
 DEC-002 · SEC-01, SEC-02, SEC-03, SEC-04, SEC-08 · ADR-004 · ADR-006 · NFR-SEC-01..03

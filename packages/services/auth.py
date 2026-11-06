@@ -6,8 +6,8 @@ database and never decides whether that caller is allowed to do anything — tha
 ``IdentityService`` (maps a verified principal to a ``users`` row) and, from milestone
 C4 onward, the authorization/capability layer.
 
-Two implementations exist because no external identity-provider vendor has been chosen
-yet (``docs/audit/11_APPROVAL_GATE_DECISIONS.md`` gate 1):
+Implementations (``docs/audit/11_APPROVAL_GATE_DECISIONS.md`` gate 1; DEC-002 chose
+Supabase Auth on 2026-11-06):
 
 - :class:`DevTokenAuthProvider` is a minimal, self-contained issuer+verifier used only
   in ``environment=development``. It is not an external identity provider; it exists so
@@ -17,6 +17,11 @@ yet (``docs/audit/11_APPROVAL_GATE_DECISIONS.md`` gate 1):
   published JWKS. It is vendor-neutral: whichever provider is chosen, it only needs to
   publish ``oidc_issuer``/``oidc_jwks_url``/``oidc_audience``. No request is accepted on
   this path until those settings are configured (fail closed).
+- :class:`SupabaseAuthProvider` is the chosen provider for staging and production. It is
+  the OIDC verifier pointed at a Supabase project's JWKS, accepting Supabase's asymmetric
+  signing keys (ES256, the recommended default, or RS256), plus Supabase-specific claim
+  checks. Projects still on the legacy shared HS256 secret publish no public keys and
+  must switch to asymmetric signing keys first.
 """
 
 from __future__ import annotations
@@ -39,6 +44,7 @@ __all__ = [
     "AuthProvider",
     "DevTokenAuthProvider",
     "OIDCAuthProvider",
+    "SupabaseAuthProvider",
     "build_auth_provider",
 ]
 
@@ -148,7 +154,45 @@ class OIDCAuthProvider(AuthProvider):
             raise AuthenticationError(f"Invalid access token: {exc}") from exc
         if not payload.get("email_verified", True):
             raise AuthenticationError("Identity provider reports an unverified email.")
+        self.check_claims(payload)
         return Principal(subject=payload["sub"], issuer=payload["iss"], claims=payload)
+
+    def check_claims(self, payload: dict[str, Any]) -> None:
+        """Provider-specific checks after signature, expiry, issuer and audience pass."""
+
+
+class SupabaseAuthProvider(OIDCAuthProvider):
+    """Verifies Supabase Auth access tokens (DEC-002) against the project's JWKS.
+
+    From the project URL ``https://<ref>.supabase.co`` it derives:
+    issuer ``<url>/auth/v1``, JWKS ``<url>/auth/v1/.well-known/jwks.json`` and audience
+    ``authenticated``. Only tokens for a signed-in, non-anonymous user are accepted.
+    """
+
+    ALGORITHMS = ("ES256", "RS256")
+    AUDIENCE = "authenticated"
+
+    def __init__(self, supabase_url: str):
+        base = supabase_url.strip().rstrip("/")
+        if not base:
+            raise AuthConfigurationError(
+                "Supabase Auth is not configured (supabase_url). Set SUPABASE_URL to the "
+                "project URL, e.g. https://<project-ref>.supabase.co; see "
+                "docs/audit/11_APPROVAL_GATE_DECISIONS.md gate 1."
+            )
+        if not base.startswith("https://"):
+            raise AuthConfigurationError("supabase_url must be an https:// URL.")
+        super().__init__(
+            issuer=f"{base}/auth/v1",
+            jwks_url=f"{base}/auth/v1/.well-known/jwks.json",
+            audience=self.AUDIENCE,
+        )
+
+    def check_claims(self, payload: dict[str, Any]) -> None:
+        if payload.get("role") != "authenticated":
+            raise AuthenticationError("Token is not a signed-in user's access token.")
+        if payload.get("is_anonymous") is True:
+            raise AuthenticationError("Anonymous Supabase sessions are not accepted.")
 
 
 def build_auth_provider(settings: Settings) -> AuthProvider:
@@ -156,6 +200,8 @@ def build_auth_provider(settings: Settings) -> AuthProvider:
     if settings.environment == "development":
         return DevTokenAuthProvider(settings.secret_key, settings.access_token_ttl_seconds)
     if settings.environment in ("staging", "production"):
+        if settings.auth_provider == "supabase":
+            return SupabaseAuthProvider(settings.supabase_url)
         return OIDCAuthProvider(settings.oidc_issuer, settings.oidc_jwks_url, settings.oidc_audience)
     raise AuthConfigurationError(
         f"No AuthProvider for environment={settings.environment!r}; "

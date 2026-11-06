@@ -50,3 +50,7 @@ The decision register continues in `docs/audit/10_DOCUMENT_CONFLICT_AND_DECISION
 **Correction to DEC-002 above:** the code uses only the `X-Actor-ID` header. The organization is derived from the database, and `X-Org-ID`/`X-Project-ID` are not used. The header identity is unauthenticated (see `docs/audit/08` SEC-01/02).
 
 **Correction to invariant 2:** `ModelGateway`, `ApprovalService` and `RunDispatcher` are named here but do not exist in code (`docs/audit/06`).
+
+## Change Note — 2026-11-06
+
+**DEC-002 decided: Supabase Auth.** Implemented as `SupabaseAuthProvider` behind the existing `AuthProvider` port; configured with `SUPABASE_URL`. See ADR-003 decision note and `docs/audit/11` gate 1.

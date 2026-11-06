@@ -117,15 +117,22 @@ def test_requests_fail_closed_when_auth_is_not_configured(environment):
     assert resp.json()["error"] == "InternalError"
 
 
+_IDP_CONFIGS = {
+    "supabase": {"auth_provider": "supabase", "supabase_url": "https://abcdefghijklmnop.supabase.co"},
+    "oidc": {
+        "auth_provider": "oidc",
+        "oidc_issuer": "https://idp.example.com/",
+        "oidc_jwks_url": "https://idp.example.com/.well-known/jwks.json",
+        "oidc_audience": "tattva-api",
+    },
+}
+
+
+@pytest.mark.parametrize("idp", ["supabase", "oidc"])
 @pytest.mark.parametrize("environment", ["staging", "production"])
-def test_dev_tokens_are_not_accepted_in_staging_or_production(environment):
-    """A dev-issued token must not work once OIDC is configured for staging/production."""
-    client, settings = _app_for(
-        environment=environment,
-        oidc_issuer="https://idp.example.com/",
-        oidc_jwks_url="https://idp.example.com/.well-known/jwks.json",
-        oidc_audience="tattva-api",
-    )
+def test_dev_tokens_are_not_accepted_in_staging_or_production(environment, idp):
+    """A dev-issued token must not work once the identity provider is configured."""
+    client, settings = _app_for(environment=environment, **_IDP_CONFIGS[idp])
     dev_token = jwt.encode(
         {"sub": "someone", "iss": "tattva-dev", "iat": int(time.time()), "exp": int(time.time()) + 60},
         "whatever-secret-but-at-least-32-bytes-long!!",

@@ -19,7 +19,14 @@ __all__ = ["get_db", "get_settings", "get_storage", "get_actor", "resolve_actor"
 
 @lru_cache
 def _auth_provider_for(
-    environment: str, secret_key: str, access_token_ttl_seconds: int, jwks_url: str, issuer: str, audience: str
+    environment: str,
+    secret_key: str,
+    access_token_ttl_seconds: int,
+    jwks_url: str,
+    issuer: str,
+    audience: str,
+    auth_provider: str = "supabase",
+    supabase_url: str = "",
 ) -> AuthProvider:
     # Cached on the handful of plain hashable values that determine the provider's
     # identity — not on the Settings object (pydantic-settings leaves it unhashable, and
@@ -34,6 +41,8 @@ def _auth_provider_for(
         oidc_jwks_url=jwks_url,
         oidc_issuer=issuer,
         oidc_audience=audience,
+        auth_provider=auth_provider,  # type: ignore[arg-type]
+        supabase_url=supabase_url,
     )
     return build_auth_provider(settings)
 
@@ -46,6 +55,8 @@ def _get_auth_provider(settings: Settings) -> AuthProvider:
         settings.oidc_jwks_url,
         settings.oidc_issuer,
         settings.oidc_audience,
+        settings.auth_provider,
+        settings.supabase_url,
     )
 
 
