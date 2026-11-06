@@ -132,17 +132,33 @@ class WorkflowRunModel(Base):
 
 
 class OutboxTaskModel(Base):
-    """PostgreSQL-backed durable outbox for worker dispatching."""
+    """PostgreSQL-backed durable outbox for worker dispatching.
+
+    Lease/retry/dead-letter fields (C6; docs/audit/08 PERF-04): a CLAIMED task whose
+    ``lease_expires_at`` has passed is treated as abandoned by a crashed worker and is
+    reclaimable by any worker, with no separate sweep process -- ``claim_next`` just
+    looks for either a due PENDING task or an expired-lease CLAIMED one. A failed attempt
+    returns to PENDING with a future ``next_attempt_at`` (exponential backoff with
+    jitter) until ``attempts`` reaches ``max_attempts``, at which point it is marked
+    DEAD_LETTERED and never reclaimed again.
+    """
     __tablename__ = "outbox_tasks"
 
     id = Column(String(36), primary_key=True, default=generate_uuid)
     workflow_run_id = Column(String(36), ForeignKey("workflow_runs.id"), nullable=False, unique=True, index=True)
     task_type = Column(String(100), nullable=False)
     payload = Column(JSON, default=dict, nullable=False)
-    status = Column(String(50), default="pending", nullable=False, index=True)  # pending, claimed, completed, failed
+    # pending, claimed, completed, dead_lettered (legacy rows may still say "failed")
+    status = Column(String(50), default="pending", nullable=False, index=True)
     attempts = Column(Integer, default=0, nullable=False)
+    max_attempts = Column(Integer, default=5, nullable=False)
     claimed_by = Column(String(100), nullable=True)
     claimed_at = Column(DateTime(timezone=True), nullable=True)
+    lease_expires_at = Column(DateTime(timezone=True), nullable=True)
+    next_attempt_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    last_error_class = Column(String(255), nullable=True)
+    last_error_message = Column(Text, nullable=True)
+    dead_lettered_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
     updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
 

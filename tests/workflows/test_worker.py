@@ -56,7 +56,12 @@ def test_failed_run_marks_task_and_run_failed(client, tenant):
     assert run["status"] == "failed"
     assert "plain-text" in run["error_message"]
     with session_scope() as db:
-        assert db.query(OutboxTaskModel).filter_by(workflow_run_id=run_id).one().status == "failed"
+        # A business-rule error (wrong file type) is dead-lettered immediately rather
+        # than retried: the same file will fail identically on every attempt (C6).
+        task = db.query(OutboxTaskModel).filter_by(workflow_run_id=run_id).one()
+        assert task.status == "dead_lettered"
+        assert task.attempts == 1
+        assert task.last_error_class == "ValidationFailure"
 
 
 def test_queued_historical_research_run_is_executed_by_worker(client, tenant):

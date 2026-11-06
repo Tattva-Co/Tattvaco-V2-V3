@@ -52,7 +52,9 @@ class OutboxStatus(str, Enum):
     PENDING = "pending"
     CLAIMED = "claimed"
     COMPLETED = "completed"
-    FAILED = "failed"
+    FAILED = "failed"  # retained for schema history; a failed attempt now returns the
+    # task to PENDING (if attempts remain) or DEAD_LETTERED (C6), never FAILED.
+    DEAD_LETTERED = "dead_lettered"
 
 
 class AuditAction(str, Enum):

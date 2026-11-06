@@ -45,7 +45,10 @@ def test_script_intelligence_refuses_non_text_assets(client, tenant):
 
     resp = client.post(
         f"/api/v1/projects/{project['id']}/workflows/script-intelligence",
-        json={"script_asset_id": upload.json()["asset_id"]},
+        # Explicit: this test checks a validation error surfaced synchronously in the
+        # response. Workflows are async by default (C6); the error would otherwise only
+        # appear later in the outbox task, not in this request.
+        json={"script_asset_id": upload.json()["asset_id"], "sync_execution": True},
         headers=as_actor(tenant.user_id),
     )
     assert resp.status_code == 422

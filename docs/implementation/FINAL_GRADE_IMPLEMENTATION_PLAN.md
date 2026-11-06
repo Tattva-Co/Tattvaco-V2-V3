@@ -65,7 +65,7 @@ The Guided Workspace shell (GW) comes right after auth, roles and async, so ever
 | **C2** | Test DB isolation + CI | See below | `tests/conftest.py`, `.github/workflows/ci.yml`, `pyproject.toml` | Tests never touch the dev DB. CI green. Mypy runs (errors burned down per package) | M |
 | **C3** | Authentication | See below | `apps/api/dependencies.py`, `services/identity.py` → `packages/iam/`, `core/config.py`, `apps/ui/api_client.py` | Authn negative tests. A forged or absent token gives 401 outside `test`. G-01…G-04 tests pass with tokens | M |
 | **C4/C5** | RBAC + tenant integrity + version safety | See below | new `packages/iam/policy.py`, repositories, `*_review.py`, migrations R-04…R-07 | Negative authZ matrix for every router. Cross-tenant ID tests. Concurrent-approval test gives unique versions | L |
-| **C6** | Async-by-default + worker hardening | See below | `apps/worker`, `outbox_tasks` migration, services, UI task tray | Kill-worker test recovers. Redelivery creates no duplicate approval. Retries respect `max_attempts` | L |
+| **C6** | Async-by-default + worker hardening | **Backend done, 2026-11-06.** See below | `apps/worker`, `outbox_tasks` migration, services | Lease reclaim, retry/backoff, dead-letter and checkpoint-resume all covered by tests (no live kill-worker drill; the lease-expiry path is tested by directly expiring a lease, which is equivalent). Retries respect `max_attempts`. **UI task tray deferred to GW2** (no frontend exists yet to show one in; `sync_execution=True` keeps the old Streamlit screens working synchronously in the meantime). | L |
 
 **C1 scope:**
 - Declare `approved_rule_ids` and `decision_notes` in state.

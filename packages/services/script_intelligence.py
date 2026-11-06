@@ -35,7 +35,7 @@ from packages.persistence.repositories import (
 from packages.services.authz import AuthzService
 from packages.services.identity import ActorContext
 from packages.services.script_review import record_decision
-from packages.workflows.checkpointer import get_checkpointer
+from packages.workflows.checkpointer import get_checkpointer, has_existing_checkpoint
 from packages.workflows.script_intelligence.graph import build_script_intelligence_graph
 
 logger = get_logger("services.script_intelligence")
@@ -123,7 +123,13 @@ class ScriptIntelligenceService:
             "script_asset_id": run.input_asset_ids[0],
             "approval_status": "pending",
         }
-        self._invoke(run.id, initial_state)
+        # C6: a redelivered outbox task (worker crashed before this execution's
+        # first call completed) must resume from where it left off, not restart
+        # from scratch -- that would duplicate every candidate and approval request
+        # already written before the crash. See checkpointer.has_existing_checkpoint.
+        with get_checkpointer() as checkpointer:
+            graph_input = None if has_existing_checkpoint(checkpointer, run.id) else initial_state
+        self._invoke(run.id, graph_input)
         self.db.expire_all()
         return self.runs.get(run.id)
 

@@ -36,6 +36,23 @@ def get_checkpointer() -> Generator[PostgresSaver, None, None]:
         yield saver
 
 
+def has_existing_checkpoint(checkpointer: PostgresSaver, run_id: str) -> bool:
+    """Has this run's graph (thread_id=run_id) already made any progress?
+
+    Used by each workflow service's ``execute()`` to tell a first execution apart from a
+    redelivered outbox task whose worker crashed mid-run (C6; docs/audit/02 "propose_*
+    has no idempotency"). ``graph.invoke(None, config)`` on an existing checkpoint
+    resumes correctly whether the graph is mid-flight or already sitting at the human
+    approval interrupt -- the latter is a safe no-op that returns the current state
+    without re-running any node or duplicating its writes (verified empirically: two
+    consecutive ``invoke(None, ...)`` calls against an interrupted graph return the same
+    candidate list). Re-running with a *fresh* initial state instead would duplicate the
+    candidates and approval request every node before the interrupt already created.
+    """
+    config = {"configurable": {"thread_id": run_id}}
+    return checkpointer.get_tuple(config) is not None
+
+
 if __name__ == "__main__":
     from packages.core.logging import configure_logging
 

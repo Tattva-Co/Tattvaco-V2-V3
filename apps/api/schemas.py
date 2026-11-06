@@ -101,9 +101,12 @@ class AssetUploadResponse(BaseModel):
 
 class WorkflowTriggerRequest(BaseModel):
     script_asset_id: str
-    # True runs the graph inside the request (development convenience); False queues
-    # the run for the background worker and returns immediately.
-    sync_execution: bool = True
+    # False (default, C6): queues the run for the background worker and returns
+    # immediately with status="queued". True runs the graph inline in this request and
+    # returns only once it reaches the approval interrupt or fails -- useful for a
+    # synchronous caller (tests, a quick manual check), but ties up the request thread
+    # for however long the graph takes, which does not scale past local/dev use.
+    sync_execution: bool = False
 
 
 class WorkflowRunResponse(_ORM):
@@ -253,7 +256,7 @@ class StoryboardPanelResponse(_ORM):
 
 class StoryboardTriggerRequest(BaseModel):
     brief: str | None = None
-    sync_execution: bool = True
+    sync_execution: bool = False  # see WorkflowTriggerRequest; async by default (C6)
 
 
 class FilmBibleRuleResponse(_ORM):
@@ -283,7 +286,7 @@ class FilmBibleRuleCreateRequest(BaseModel):
 
 class FilmBibleTriggerRequest(BaseModel):
     user_notes: str | None = None
-    sync_execution: bool = True
+    sync_execution: bool = False  # see WorkflowTriggerRequest; async by default (C6)
 
 
 class ResearchQuestionCreateRequest(BaseModel):
@@ -358,7 +361,7 @@ class ResearchConflictResponse(_ORM):
 class HistoricalResearchTriggerRequest(BaseModel):
     topic: str = Field(..., min_length=1)
     seed_text: str | None = None
-    sync_execution: bool = True
+    sync_execution: bool = False  # see WorkflowTriggerRequest; async by default (C6)
 
 
 class ApprovalDecisionResponse(BaseModel):

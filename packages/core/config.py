@@ -57,9 +57,13 @@ class Settings(BaseSettings):
         ]
     )
 
-    # Worker
+    # Worker (C6: lease/retry/dead-letter, docs/audit/08 PERF-04)
     worker_poll_interval_seconds: float = 1.0
     worker_id: str = "worker-1"
+    worker_lease_seconds: int = 300  # how long a claim is honored before being reclaimable
+    worker_max_attempts: int = 5
+    worker_backoff_base_seconds: float = 10.0  # exponential backoff base; jitter added on top
+    worker_backoff_max_seconds: float = 900.0  # cap a single retry delay at 15 minutes
 
     # Authentication (ADR-003). In "test", callers identify via the X-Actor-ID header
     # (no token required). In every other environment, callers must present a signed

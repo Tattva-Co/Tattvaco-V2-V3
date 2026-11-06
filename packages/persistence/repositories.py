@@ -9,10 +9,10 @@ Conventions:
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any, Dict, Iterable, List
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from packages.domain.enums import ApprovalStatus, AuditAction, OutboxStatus
@@ -208,22 +208,43 @@ class WorkflowRunRepository(_Repository):
 
 
 class OutboxRepository(_Repository):
-    def enqueue(self, workflow_run_id: str, task_type: str, payload: Dict[str, Any]) -> OutboxTaskModel:
+    def enqueue(
+        self, workflow_run_id: str, task_type: str, payload: Dict[str, Any], *, max_attempts: int = 5
+    ) -> OutboxTaskModel:
         return self._add(
             OutboxTaskModel(
                 workflow_run_id=workflow_run_id,
                 task_type=task_type,
                 payload=payload,
                 status=OutboxStatus.PENDING.value,
+                max_attempts=max_attempts,
+                next_attempt_at=utc_now(),
             )
         )
 
-    def claim_next(self, worker_id: str) -> OutboxTaskModel | None:
-        """Atomically claim the oldest pending task (``FOR UPDATE SKIP LOCKED``)."""
+    def claim_next(self, worker_id: str, *, lease_seconds: int = 300) -> OutboxTaskModel | None:
+        """Atomically claim the next workable task (``FOR UPDATE SKIP LOCKED``).
+
+        A task is workable if it is either:
+          - PENDING and due (``next_attempt_at`` has passed -- immediately for a fresh
+            task, or after a backoff delay for a retried one), or
+          - CLAIMED but its lease has expired, meaning the worker that claimed it is
+            presumed crashed and the task was never marked completed or failed.
+        No separate sweep process is needed: every call to claim_next also recovers any
+        abandoned claim it happens to find (C6; docs/audit/08 PERF-04).
+        """
+        now = utc_now()
         stmt = (
             select(OutboxTaskModel)
-            .where(OutboxTaskModel.status == OutboxStatus.PENDING.value)
-            .order_by(OutboxTaskModel.created_at)
+            .where(
+                or_(
+                    (OutboxTaskModel.status == OutboxStatus.PENDING.value)
+                    & (OutboxTaskModel.next_attempt_at <= now),
+                    (OutboxTaskModel.status == OutboxStatus.CLAIMED.value)
+                    & (OutboxTaskModel.lease_expires_at < now),
+                )
+            )
+            .order_by(OutboxTaskModel.next_attempt_at)
             .limit(1)
             .with_for_update(skip_locked=True)
         )
@@ -232,8 +253,50 @@ class OutboxRepository(_Repository):
             return None
         task.status = OutboxStatus.CLAIMED.value
         task.claimed_by = worker_id
-        task.claimed_at = utc_now()
+        task.claimed_at = now
+        task.lease_expires_at = now + timedelta(seconds=lease_seconds)
         task.attempts += 1
+        return task
+
+    def retry_or_dead_letter(
+        self, task_id: str, *, error_class: str, error_message: str, next_attempt_at: datetime
+    ) -> OutboxTaskModel:
+        """Record a failed attempt: back off and re-queue, or dead-letter if attempts
+        are exhausted. ``attempts`` was already incremented by claim_next. The retry
+        delay is the caller's decision (apps/worker/worker.py computes it from settings);
+        this repository only persists the outcome, consistent with every other
+        repository here taking fully-formed values rather than reading configuration."""
+        task = self.db.get(OutboxTaskModel, task_id)
+        if task is None:
+            raise NotFoundError(f"Outbox task '{task_id}' not found.")
+        task.last_error_class = error_class
+        task.last_error_message = error_message
+        if task.attempts >= task.max_attempts:
+            task.status = OutboxStatus.DEAD_LETTERED.value
+            task.dead_lettered_at = utc_now()
+        else:
+            task.status = OutboxStatus.PENDING.value
+            task.next_attempt_at = next_attempt_at
+            task.lease_expires_at = None
+        return task
+
+    def mark_completed(self, task_id: str) -> None:
+        task = self.db.get(OutboxTaskModel, task_id)
+        if task is not None:
+            task.status = OutboxStatus.COMPLETED.value
+            task.lease_expires_at = None
+
+    def dead_letter_immediately(self, task_id: str, *, error_class: str, error_message: str) -> OutboxTaskModel:
+        """For a non-retryable failure (a business-rule error: the exact same input will
+        fail identically every time), skip the backoff/retry loop entirely rather than
+        waiting out ``max_attempts`` worth of pointless retries before giving up."""
+        task = self.db.get(OutboxTaskModel, task_id)
+        if task is None:
+            raise NotFoundError(f"Outbox task '{task_id}' not found.")
+        task.last_error_class = error_class
+        task.last_error_message = error_message
+        task.status = OutboxStatus.DEAD_LETTERED.value
+        task.dead_lettered_at = utc_now()
         return task
 
 
