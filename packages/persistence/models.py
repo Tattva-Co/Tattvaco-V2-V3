@@ -16,6 +16,7 @@ from sqlalchemy import (
     LargeBinary,
     String,
     Text,
+    text,
 )
 
 from packages.persistence.database import Base
@@ -157,7 +158,10 @@ class OutboxTaskModel(Base):
     __tablename__ = "outbox_tasks"
 
     id = Column(String(36), primary_key=True, default=generate_uuid)
-    workflow_run_id = Column(String(36), ForeignKey("workflow_runs.id"), nullable=False, unique=True, index=True)
+    # Not unique (C6): a run may get a new task after an earlier one completes or is
+    # dead-lettered. At most one *active* (pending or claimed) task per run is still
+    # enforced by uq_outbox_tasks_active_run below, so a run can't be dispatched twice.
+    workflow_run_id = Column(String(36), ForeignKey("workflow_runs.id"), nullable=False, index=True)
     task_type = Column(String(100), nullable=False)
     payload = Column(JSON, default=dict, nullable=False)
     # pending, claimed, completed, dead_lettered (legacy rows may still say "failed")
@@ -173,6 +177,15 @@ class OutboxTaskModel(Base):
     dead_lettered_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
     updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+
+    __table_args__ = (
+        Index(
+            "uq_outbox_tasks_active_run",
+            "workflow_run_id",
+            unique=True,
+            postgresql_where=text("status IN ('pending', 'claimed')"),
+        ),
+    )
 
 
 class ApprovalRequestModel(Base):
