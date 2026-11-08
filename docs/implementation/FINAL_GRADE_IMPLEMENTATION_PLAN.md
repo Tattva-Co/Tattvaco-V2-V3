@@ -112,7 +112,7 @@ The Guided Workspace shell (GW) comes right after auth, roles and async, so ever
 | # | Milestone | Scope | Tests / exit criteria | Size |
 |---|---|---|---|---|
 | **GW1** | Journey state engine (server) | **Done, 2026-11-06.** See below | Unit tests for every rule in UX §6. Applicability changes with mode (Fully AI / Hybrid / Mixed), verified against the real JRN-07.4 mode exception. Opening an item never completes it (every status transition requires an explicit `act_on_item` call; GET is read-only) | L |
-| **GW2** | Design system + Streamlit shell | See below | UI smoke tests for every state (loading, empty, error, offline, permission-denied). Keyboard-navigable expanders. UX §16 QA list items 1–10 and 13 | L |
+| **GW2** | Design system + React production workspace shell | **Done, 2026-11-07.** See below | UI smoke tests for every state (loading, empty, error, offline, permission-denied). Keyboard-navigable expanders. UX §16 QA list items 1–10 and 13 | L |
 | **GW3** | Studio Tools mapping | See below | Existing slice tests pass. Each tool reachable from its section and permission-aware | M |
 
 **GW1 scope (implemented as):**
@@ -135,6 +135,17 @@ The Guided Workspace shell (GW) comes right after auth, roles and async, so ever
   - breadcrumbs, a Studio Tools menu, a task tray, and toasts
   - loading, empty, error, offline and permission-denied states
 - **Tests:** Vitest + Testing Library for components, Playwright E2E against the real API.
+
+**GW2 — implemented as:**
+- `apps/web/src/api/`: `schema.ts` generated from a live OpenAPI dump (`scripts/dump_openapi.py` + `openapi-typescript`), a thin typed `client.ts` (one `ApiError`/`UnauthenticatedError` mapping, no runtime codegen dependency at request time), and `sessionStorage`-backed token storage (`auth.ts`).
+- `src/routes/LoginPage.tsx` (dev-login), `OnlineWorkspacePage.tsx` (project grid, inline create), `ProjectWorkspacePage.tsx` (the guided workspace shell itself).
+- `src/components/`: `JourneyRail.tsx` (10-section nav, lock/unlock, progress bar), `AccordionGroup.tsx` + `SubpointRow.tsx` (numbered groups/subpoints, status chips, draft/complete/request_review/not_applicable actions, system-derived items show "Completes automatically" instead of a button a user can't actually press), `StatusChip.tsx` (9 statuses, text + color, never color-alone), `Toast.tsx`/`useToast.ts`, `RequireAuth.tsx`, `GlobalHeader.tsx`.
+- Loading/error/empty/offline/permission-denied states are all real, not placeholders: `navigator.onLine` + `online`/`offline` listeners for the offline banner; `ApiError.status === 403` renders a permission-denied message distinct from a generic failure.
+- `apps/api/schemas.py`/`routers/journey.py`: added `JourneyGroupResponse.system_managed` (additive field) so the client can tell a system-derived `validate` subpoint apart from a manual one without re-deriving `completion_check.kind` client-side.
+- **Bug found and fixed while building this** (not a frontend bug): a plain org member creating their own project could never complete the journey's mandatory first section. See DEC-032 and migration `a9fb5bf54591`.
+- **Tests:** 25 Vitest/Testing-Library tests (`apps/web/tests/`) covering `StatusChip`, `JourneyRail` (lock/unlock, `aria-current`), `SubpointRow` (every action/state combination, pending-disables-all), `AccordionGroup` (open/close, not-applicable body, pending targets the right row), and a mocked-API integration test of `ProjectWorkspacePage` (load → act → continue → advance; 403 → permission-denied copy). One Playwright E2E smoke spec (`apps/web/e2e/guided-workspace.spec.ts`: sign in → create project → complete a subpoint) runs locally against a real API + Postgres (DEC-031: not yet wired into CI). 2 new backend regression tests lock in `system_managed` and the project-creator capability fix. TypeScript strict, ESLint (typescript-eslint + react-hooks + react-refresh) and the full backend suite are all clean (`npx tsc -b`, `npx eslint .`, `pytest` at 201 passed, `ruff check .`).
+- Not yet built (deferred to GW3 per the Streamlit-parity plan): the Studio Tools index itself (the button exists and is reachable; it currently shows a toast rather than the tool list), a task tray for async workflow runs (the backend's outbox/worker from C6 has no UI surface yet), and project settings.
+- `apps/ui` (Streamlit) is untouched and still functional; it is not deleted until GW3's parity suite passes (ADR-002).
 
 **GW3 scope:**
 - The current Streamlit views are re-implemented in React as contextual tools:

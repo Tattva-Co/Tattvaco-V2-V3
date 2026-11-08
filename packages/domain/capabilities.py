@@ -47,6 +47,14 @@ CAPABILITY_KEYS: frozenset[str] = frozenset(c.key for c in CAPABILITIES)
 #: an org owner holds every capability on every project in their org implicitly
 #: (AuthzService.require short-circuits on it) and is never looked up in this table.
 DEFAULT_ROLE_TEMPLATES: dict[str, tuple[str, ...]] = {
+    #: Auto-granted to whoever creates a project (packages/services/projects.py
+    #: ProjectService.create), so a solo creator -- the common case this product is built
+    #: for -- can complete every section of the Guided Workspace journey on their own
+    #: project without a second role being assigned to them. It is every project-scoped
+    #: capability except "project.create" itself, which is org-level and not tied to any
+    #: one project. Not meant to be assigned to anyone else by hand; use "management" (for
+    #: governance-only access) or a narrower template for that.
+    "project_owner": tuple(c.key for c in CAPABILITIES if c.key != "project.create"),
     "management": (
         "project.read",
         "project.admin",

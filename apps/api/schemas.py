@@ -440,6 +440,14 @@ class JourneyGroupResponse(BaseModel):
     studio_tools: List[str]
     requirements: List[str]
     subpoints: List[JourneySubpointResponse]
+    system_managed: bool = Field(
+        default=False,
+        description=(
+            "True when this group's 'validate' subpoint is completed automatically by a "
+            "system check (completion_check.kind == 'system') rather than by hand -- the "
+            "client hides the manual 'Mark complete' action for that subpoint."
+        ),
+    )
 
 
 class JourneySectionResponse(BaseModel):

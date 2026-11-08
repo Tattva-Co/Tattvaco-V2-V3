@@ -1,0 +1,673 @@
+/**
+ * Component styles, ported from the Guided Workspace Wireframe v1.1's single stylesheet
+ * (docs/product/ux/guided-workspace-v1.0/..._Wireframe_v1.1.html). Kept as one file,
+ * like the source, rather than split per component: the wireframe is the single visual
+ * reference, and a 1:1 class-name mapping (`.globalbar`, `.accordion`, `.stage-btn`, ...)
+ * makes a future diff against a wireframe update mechanical instead of a rewrite.
+ *
+ * Colors from the wireframe's own :root block use var(--token); a handful of one-off
+ * dark-chrome shades that never appear anywhere else (e.g. the globalbar's #0a0f16) are
+ * kept as literal hex, exactly as the wireframe has them, rather than invented into new
+ * tokens for a single use.
+ */
+
+/* -- Global header ----------------------------------------------------------- */
+.globalbar {
+  height: 66px;
+  padding: 0 26px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #0a0f16;
+  border-bottom: 1px solid #202b38;
+  color: #edf1f5;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  text-decoration: none;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  color: inherit;
+}
+.brandmark {
+  width: 34px;
+  height: 34px;
+  border: 1px solid #9d835b;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  color: #d9c39d;
+  font-weight: 800;
+  font-size: 12px;
+}
+.brandname {
+  font-size: 13px;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  display: block;
+}
+.brandsub {
+  font-size: 9px;
+  color: #8f9baa;
+  letter-spacing: 0.17em;
+  text-transform: uppercase;
+  margin-top: 2px;
+  display: block;
+}
+.global-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.top-link {
+  border: 0;
+  background: none;
+  color: #b2bdca;
+  font-size: 12px;
+  padding: 8px 10px;
+  border-radius: 7px;
+}
+.top-link:hover {
+  background: #1c2735;
+  color: white;
+}
+
+/* -- Buttons ------------------------------------------------------------------ */
+.btn {
+  border: 1px solid #cfd6df;
+  background: white;
+  color: #253447;
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-size: 11px;
+  font-weight: 700;
+}
+.btn:hover {
+  filter: brightness(0.97);
+}
+.btn.primary {
+  background: #23354a;
+  border-color: #23354a;
+  color: white;
+}
+.btn.gold {
+  background: var(--accent-dark);
+  border-color: var(--accent-dark);
+  color: #101820;
+}
+.btn.ghost {
+  background: transparent;
+}
+.btn.small {
+  padding: 7px 10px;
+  font-size: 10px;
+}
+.btn:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+/* -- Online Workspace ----------------------------------------------------------- */
+.workspace-page {
+  max-width: 1440px;
+  margin: auto;
+  padding: 34px 38px 60px;
+}
+.page-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+.eyebrow {
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #8b7758;
+  font-weight: 750;
+  margin-bottom: 9px;
+}
+.page-top h1 {
+  margin: 0;
+  font-size: 30px;
+  line-height: 1.12;
+  letter-spacing: -0.045em;
+  color: #182333;
+}
+.page-top p {
+  max-width: 700px;
+  color: #687687;
+  line-height: 1.6;
+  margin: 9px 0 0;
+  font-size: 13px;
+}
+.workspace-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(260px, 0.8fr);
+  gap: 16px;
+}
+.card {
+  background: white;
+  border: 1px solid #e0e5eb;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.card-head {
+  padding: 15px 17px;
+  border-bottom: 1px solid #edf0f3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.card-head h2,
+.card-head h3 {
+  font-size: 13px;
+  margin: 0;
+  color: #243347;
+}
+.card-body {
+  padding: 16px 17px;
+}
+.project-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.project-card {
+  border: 1px solid #e1e5eb;
+  border-radius: 11px;
+  overflow: hidden;
+  cursor: pointer;
+  background: #fff;
+  transition: 0.16s;
+  text-align: left;
+}
+.project-card:hover,
+.project-card:focus-visible {
+  border-color: #aa9168;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow);
+}
+.project-thumb {
+  height: 90px;
+  background: linear-gradient(125deg, #1a2939, #405064 52%, #a28b67);
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  padding: 12px;
+  color: #fff;
+}
+.project-thumb b {
+  font-size: 13px;
+  letter-spacing: 0.02em;
+}
+.project-content {
+  padding: 12px;
+}
+.project-content p {
+  font-size: 10px;
+  color: #778392;
+  margin: 5px 0 10px;
+}
+.project-line {
+  display: flex;
+  justify-content: space-between;
+  color: #647184;
+  font-size: 9px;
+  margin-bottom: 7px;
+}
+.progress {
+  height: 5px;
+  background: #edf0f3;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.progress span {
+  display: block;
+  height: 100%;
+  background: #9b8159;
+  border-radius: 10px;
+}
+.new-card {
+  border: 1px dashed #bfc8d3;
+  background: #fafbfc;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 170px;
+  color: #536174;
+  gap: 9px;
+}
+.plus {
+  width: 39px;
+  height: 39px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent-dark);
+  display: grid;
+  place-items: center;
+  font-size: 21px;
+}
+.activity {
+  display: flex;
+  gap: 9px;
+  padding: 10px 0;
+  border-bottom: 1px solid #edf0f3;
+  font-size: 10px;
+  color: #5f6c7b;
+  line-height: 1.5;
+}
+.activity:last-child {
+  border: 0;
+}
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  margin-top: 4px;
+  flex-shrink: 0;
+}
+
+/* -- Project Workspace shell ----------------------------------------------------- */
+.project-shell {
+  display: grid;
+  grid-template-columns: 292px minmax(0, 1fr);
+  min-height: calc(100vh - 66px);
+}
+.journey {
+  background: #111a25;
+  border-right: 1px solid #283545;
+  color: #e5eaf0;
+  padding: 18px 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.journey-top {
+  padding: 4px 7px 13px;
+  border-bottom: 1px solid #2b3746;
+}
+.journey-top .back {
+  border: 0;
+  background: none;
+  color: #a6b3c1;
+  font-size: 10px;
+  padding: 4px 0;
+  margin-bottom: 10px;
+}
+.journey-top strong {
+  display: block;
+  font-size: 13px;
+}
+.journey-top small {
+  color: #8c9aaa;
+  font-size: 10px;
+}
+.journey-progress {
+  padding: 7px 8px 13px;
+}
+.journey-progress .line {
+  height: 5px;
+  background: #29384a;
+  border-radius: 8px;
+  overflow: hidden;
+  margin: 8px 0;
+}
+.journey-progress .line span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+}
+.journey-progress small {
+  font-size: 9px;
+  color: #98a6b6;
+}
+.stage-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow: auto;
+}
+.stage-btn {
+  display: grid;
+  grid-template-columns: 29px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #bdc7d3;
+  padding: 9px 8px;
+  border-radius: 8px;
+}
+.stage-btn:hover:not(:disabled) {
+  background: #192736;
+}
+.stage-btn.active {
+  background: #243246;
+  border-color: #415169;
+  color: #fff;
+}
+.stage-btn:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+.stage-num {
+  font-size: 10px;
+  color: #c6ab7c;
+  font-weight: 800;
+}
+.stage-title {
+  font-size: 10px;
+  font-weight: 650;
+  line-height: 1.35;
+}
+.stage-status {
+  font-size: 10px;
+}
+.project-main {
+  min-width: 0;
+  background: var(--canvas);
+  padding: 26px 30px 52px;
+}
+.project-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 17px;
+}
+.project-top h1 {
+  font-size: 25px;
+  letter-spacing: -0.04em;
+  margin: 0;
+  color: #192536;
+}
+.project-meta {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: 12px 0 16px;
+}
+.tag {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid #e0e4e9;
+  background: #f8f9fa;
+  border-radius: 5px;
+  padding: 4px 6px;
+  font-size: 9px;
+  color: #657284;
+}
+.tag.green {
+  background: var(--green-bg);
+  border-color: #d2e6da;
+  color: var(--green);
+}
+.tag.amber {
+  background: var(--amber-bg);
+  border-color: #eadfbe;
+  color: var(--amber);
+}
+.tag.blue {
+  background: var(--blue-bg);
+  border-color: #d9e3ee;
+  color: var(--blue);
+}
+.section-progress {
+  background: white;
+  border: 1px solid #e1e5eb;
+  border-radius: 11px;
+  padding: 13px 15px;
+  margin-bottom: 16px;
+}
+.section-progress-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 10px;
+  color: #69788a;
+}
+.section-progress .progress {
+  margin-top: 9px;
+}
+.stage-intro {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin: 16px 0;
+}
+.stage-intro h2 {
+  margin: 0;
+  font-size: 19px;
+  letter-spacing: -0.03em;
+  color: #1b293b;
+}
+.stage-intro p {
+  font-size: 11px;
+  color: #738092;
+  line-height: 1.55;
+  max-width: 760px;
+  margin: 6px 0 0;
+}
+
+/* -- Accordions and subpoints ---------------------------------------------------- */
+.accordion-list {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.accordion {
+  background: white;
+  border: 1px solid #e0e5eb;
+  border-radius: 11px;
+  overflow: hidden;
+}
+.accordion-head {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr) auto 20px;
+  gap: 10px;
+  align-items: center;
+  text-align: left;
+  background: white;
+  border: 0;
+  padding: 14px 15px;
+}
+.accordion-head:hover {
+  background: #fbfcfd;
+}
+.acc-number {
+  font-size: 10px;
+  font-weight: 800;
+  color: #92764c;
+  background: #f3eee5;
+  padding: 7px 8px;
+  border-radius: 6px;
+  text-align: center;
+}
+.acc-title {
+  font-size: 12px;
+  font-weight: 750;
+  color: #2b3a4e;
+}
+.acc-sub {
+  font-size: 10px;
+  color: #818d9b;
+  margin-top: 4px;
+}
+.chev {
+  color: #8491a0;
+  font-size: 14px;
+  transition: transform 0.14s;
+}
+.accordion.open .chev {
+  transform: rotate(180deg);
+}
+.accordion.open {
+  border-color: #c9b18b;
+  box-shadow: 0 5px 16px rgba(44, 55, 68, 0.04);
+}
+.accordion-body {
+  border-top: 1px solid #edf0f3;
+  padding: 14px 16px;
+  background: #fcfcfd;
+}
+.subpoint {
+  display: grid;
+  grid-template-columns: 74px minmax(0, 1fr) auto;
+  gap: 11px;
+  padding: 12px 0;
+  border-bottom: 1px solid #edf0f3;
+  align-items: start;
+}
+.subpoint:last-child {
+  border-bottom: 0;
+}
+.sub-num {
+  font-size: 10px;
+  font-weight: 750;
+  color: #68788a;
+  padding-top: 2px;
+}
+.sub-title {
+  font-size: 11px;
+  color: #28384b;
+  font-weight: 700;
+}
+.sub-desc {
+  font-size: 10px;
+  line-height: 1.55;
+  color: #788594;
+  margin-top: 4px;
+  max-width: 850px;
+}
+.sub-actions {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.status {
+  border-radius: 5px;
+  padding: 4px 7px;
+  font-size: 9px;
+  font-weight: 700;
+  border: 1px solid #e0e4e9;
+  background: #f7f8f9;
+  color: #768292;
+  white-space: nowrap;
+  display: inline-block;
+}
+.status.done {
+  background: var(--green-bg);
+  border-color: #cde2d5;
+  color: var(--green);
+}
+.status.progress {
+  background: var(--blue-bg);
+  border-color: #d7e2ef;
+  color: var(--blue);
+}
+.status.review {
+  background: var(--amber-bg);
+  border-color: #eadfbe;
+  color: var(--amber);
+}
+.status.blocked,
+.status.changes {
+  background: var(--red-bg);
+  border-color: #ebd4d4;
+  color: var(--red);
+}
+.status.na {
+  background: #f1eef7;
+  border-color: #e0d9eb;
+  color: #70618e;
+}
+.tiny-btn {
+  border: 1px solid #d8dee6;
+  background: white;
+  color: #4e5e72;
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 9px;
+  font-weight: 700;
+}
+.tiny-btn:hover:not(:disabled) {
+  background: #f5f7f9;
+}
+.tiny-btn:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+.tiny-btn.primary {
+  background: #23354a;
+  border-color: #23354a;
+  color: white;
+}
+
+/* -- States (loading / empty / error) --------------------------------------------- */
+.state-panel {
+  background: white;
+  border: 1px solid #e1e5eb;
+  border-radius: 11px;
+  padding: 32px 24px;
+  text-align: center;
+  color: #687687;
+  font-size: 12px;
+}
+.state-panel.error {
+  border-color: #ebd4d4;
+  background: var(--red-bg);
+  color: var(--red);
+}
+
+/* -- Login ------------------------------------------------------------------------ */
+.login-screen {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background: var(--bg);
+}
+.login-card {
+  width: 360px;
+  background: var(--panel);
+  border: 1px solid var(--line-dark);
+  border-radius: var(--radius-lg);
+  padding: 32px;
+  color: #e7ebf1;
+}
+.login-card h1 {
+  font-size: 20px;
+  margin: 0 0 6px;
+}
+.login-card p {
+  font-size: 12px;
+  color: #9aa6b5;
+  margin: 0 0 20px;
+  line-height: 1.5;
+}
+.login-card input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line-dark);
+  background: #0f1721;
+  color: #e7ebf1;
+  margin-bottom: 14px;
+  font-size: 13px;
+}
+.login-card .btn {
+  width: 100%;
+}

@@ -58,6 +58,16 @@ data/checkpoints/
 
 # Database files (sqlite if used locally for quick testing)
 *.db
+
+# Node / frontend (apps/web)
+node_modules/
+dist-ssr/
+*.local
+coverage/
+playwright-report/
+test-results/
+blob-report/
+.vite/
 *.sqlite3
 
 # Product source documents (PRD, IA, wireframes, mockups) are kept locally only.

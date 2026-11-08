@@ -79,15 +79,19 @@ class ProjectService:
             )
         )
         self.db.flush()
-        # Grant the creator a director role on their own new project. An org owner
-        # wouldn't need this (AuthzService bypasses project_memberships for owners), but
-        # a plain 'member' creating their first project otherwise couldn't act on it at
-        # all -- there is no separate "invite yourself" step.
-        director_template = self.role_templates.get_by_key(actor.org_id, "director")
-        if director_template is not None:
+        # Grant the creator the project_owner role on their own new project. An org owner
+        # wouldn't need this (AuthzService bypasses project_memberships for owners), but a
+        # plain 'member' creating their first project otherwise couldn't act on it at all
+        # -- there is no separate "invite yourself" step. 'project_owner' (not 'director')
+        # specifically: JRN-01 (Guided Workspace section 1, which every project must pass
+        # before anything else unlocks) is act_capability=project.admin throughout, which
+        # 'director' does not grant -- a creator holding only 'director' could create a
+        # project and then never be able to complete its own setup.
+        owner_template = self.role_templates.get_by_key(actor.org_id, "project_owner")
+        if owner_template is not None:
             self.project_memberships.add(
                 ProjectMembershipModel(
-                    user_id=actor.user_id, project_id=project.id, role_template_id=director_template.id
+                    user_id=actor.user_id, project_id=project.id, role_template_id=owner_template.id
                 )
             )
         self.projects.add_version(

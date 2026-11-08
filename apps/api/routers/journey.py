@@ -65,6 +65,7 @@ def _group_response(view: GroupView) -> JourneyGroupResponse:
             )
             for sp in view.subpoints
         ],
+        system_managed=g.completion_check.get("kind") == "system",
     )
 
 

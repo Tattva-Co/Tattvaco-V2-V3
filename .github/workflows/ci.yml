@@ -68,3 +68,36 @@ jobs:
       - name: Mypy (report only until burn-down completes; see docs/audit/09)
         continue-on-error: true
         run: mypy packages apps
+
+  frontend:
+    name: Frontend (typecheck, lint, unit tests)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: apps/web
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Typecheck
+        run: npx tsc -b
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm test
+
+      # Playwright E2E against a live API + Postgres is not wired into CI yet (it needs a
+      # running backend service alongside the dev server); see docs/audit/10, DEC-031.
+      # `npm run e2e` is runnable locally with the stack from docker compose.

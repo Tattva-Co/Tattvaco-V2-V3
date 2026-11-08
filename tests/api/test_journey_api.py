@@ -114,6 +114,10 @@ def test_system_check_completes_automatically_from_real_script_intelligence_data
 
     before = _group(_journey(client, tenant, project["id"]), "JRN-02.1")
     assert before["subpoints"][1]["status"] == "not_started"
+    assert before["system_managed"] is True, (
+        "the web client (apps/web/src/components/SubpointRow.tsx) hides the manual "
+        "'Mark complete' action for the validate subpoint using this flag"
+    )
 
     forced = client.post(
         f"/api/v1/projects/{project['id']}/journey/items/JRN-02.1.2", json={"action": "complete"}, headers=headers
@@ -125,6 +129,12 @@ def test_system_check_completes_automatically_from_real_script_intelligence_data
     after = _group(_journey(client, tenant, project["id"]), "JRN-02.1")
     assert after["subpoints"][1]["status"] == "completed"
     assert after["status"] in ("in_progress", "completed")
+
+
+def test_system_managed_is_false_for_manually_validated_groups(client, tenant):
+    project = create_project(client, tenant)
+    group = _group(_journey(client, tenant, project["id"]), "JRN-05.3")
+    assert group["system_managed"] is False
 
 
 def test_capture_plan_group_is_not_applicable_for_fully_ai_projects(client, tenant):

@@ -1,0 +1,98 @@
+/**
+ * Design tokens, extracted verbatim from the Guided Workspace Wireframe v1.1
+ * (docs/product/ux/guided-workspace-v1.0/Tattva_AI_Film_Director_Guided_Workspace_Wireframe_v1.1.html,
+ * its :root block). This file is the single source of color/spacing truth for apps/web;
+ * components reference these variables, never hardcoded hex values.
+ */
+:root {
+  /* Chrome (dark) */
+  --bg: #0c1118;
+  --panel: #121a24;
+  --panel-2: #182331;
+  --line-dark: #283342;
+
+  /* Canvas (light content area) */
+  --canvas: #f4f5f7;
+  --white: #fff;
+  --ink: #192331;
+  --muted: #788493;
+  --muted-2: #9aa6b5;
+  --line: #dfe4ea;
+
+  /* Accent (warm gold) */
+  --accent: #b99a66;
+  --accent-dark: #8c7045;
+  --accent-soft: #efe7d9;
+
+  /* Semantic */
+  --green: #2e7052;
+  --green-bg: #e8f3ed;
+  --blue: #506b8b;
+  --blue-bg: #eaf0f7;
+  --amber: #906e2f;
+  --amber-bg: #f6f0e3;
+  --red: #9a4f4f;
+  --red-bg: #f7eaea;
+
+  /* Effects */
+  --shadow: 0 12px 38px rgba(12, 19, 28, 0.08);
+  --radius: 14px;
+  --radius-sm: 8px;
+  --radius-lg: 13px;
+
+  /* Typography */
+  --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  font-family: var(--font-sans);
+  color: var(--ink);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+a {
+  color: inherit;
+}
+
+/* Focus visibility (WCAG 2.2 AA; UX strategy §14). Never remove outline without a
+   replacement -- keyboard users are a primary audience for a long-session production
+   tool. */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

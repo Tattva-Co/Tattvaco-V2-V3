@@ -72,7 +72,10 @@ def test_member_with_no_project_membership_cannot_read_an_existing_project(clien
 
 def test_member_with_no_project_membership_can_still_create_their_own_project(client, tenant):
     """project.create is an org-level capability; it doesn't require a pre-existing
-    project_membership, and the creator is auto-granted 'director' on what they create."""
+    project_membership, and the creator is auto-granted 'project_owner' on what they
+    create -- not 'director', which lacks project.admin (see
+    test_journey_authorization.py::test_a_plain_member_project_creator_can_complete_the_
+    first_required_journey_section for why that distinction matters)."""
     outsider_member = _add_org_member(tenant.org_id)
 
     resp = client.post(

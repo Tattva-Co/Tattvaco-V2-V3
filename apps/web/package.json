@@ -1,0 +1,42 @@
+{
+  "name": "@tattva/web",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "e2e": "playwright test",
+    "generate-api-types": "python3 ../../apps/web/scripts/dump_openapi.py && openapi-typescript openapi.json -o src/api/schema.ts"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "5.56.2",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-router-dom": "6.30.6"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.39.5",
+    "@playwright/test": "1.55.1",
+    "@testing-library/jest-dom": "6.5.0",
+    "@testing-library/react": "16.0.1",
+    "@testing-library/user-event": "14.5.2",
+    "@types/react": "18.3.5",
+    "@types/react-dom": "18.3.0",
+    "@vitejs/plugin-react": "4.3.1",
+    "eslint": "9.39.5",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "eslint-plugin-react-refresh": "0.5.7",
+    "globals": "16.4.0",
+    "jsdom": "25.0.0",
+    "openapi-typescript": "7.4.0",
+    "typescript": "5.5.4",
+    "typescript-eslint": "8.72.1",
+    "vite": "5.4.21",
+    "vitest": "2.1.9"
+  }
+}
