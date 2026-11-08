@@ -1,7 +1,7 @@
 """tenant_id_on_canon_tables_unique_version
 
 Revision ID: ab1dac6edef2
-Revises: 5915e59b2818
+Revises: a9fb5bf54591
 Create Date: 2026-11-06 09:00:00+00:00
 
 Closes the two C4/C5 leftovers (plan TFD-ENG-002 C4/C5 scope; TFD-IAM-009, TFD-VER-001):
@@ -24,7 +24,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = 'ab1dac6edef2'
-down_revision: Union[str, Sequence[str], None] = '5915e59b2818'
+down_revision: Union[str, Sequence[str], None] = 'a9fb5bf54591'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
