@@ -20,5 +20,8 @@ export default defineConfig({
     environment: "jsdom",
     globals: true,
     setupFiles: ["./tests/setup.ts"],
+    // e2e/ holds Playwright specs (run by `npx playwright test`, DEC-031). Vitest must not
+    // collect them, or `npm test` (the CI unit-test step) fails on Playwright's test().
+    exclude: ["**/node_modules/**", "**/dist/**", "e2e/**"],
   },
 });
