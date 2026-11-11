@@ -17,5 +17,96 @@ services:
       timeout: 5s
       retries: 5
 
+  # C9: the full stack in containers. Dev-only settings throughout (the SECRET_KEY below,
+  # ENVIRONMENT=development enabling the /auth/dev-login route) -- this is for local
+  # end-to-end verification and demos, not a production manifest (no secrets management,
+  # no TLS termination, a single API/worker replica each).
+
+  # One-shot: brings a fresh `db` volume to the current schema before api/worker ever
+  # start, reusing the api image rather than building a 4th one just to run `alembic`.
+  migrate:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: tattva-migrate
+    environment:
+      DATABASE_URL: postgresql+psycopg://postgres:postgres@db:5432/tattva_film_director
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["alembic", "upgrade", "head"]
+    restart: "no"
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: tattva-api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      ENVIRONMENT: development
+      DATABASE_URL: postgresql+psycopg://postgres:postgres@db:5432/tattva_film_director
+      SECRET_KEY: compose-dev-only-secret-change-before-any-real-deployment
+      CORS_ALLOW_ORIGINS: http://localhost:8080
+      STORAGE_LOCAL_ROOT: /data/storage
+      LOG_FORMAT: json
+    volumes:
+      - tattva_storage:/data/storage
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/live', timeout=3)",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  worker:
+    build:
+      context: .
+      dockerfile: apps/worker/Dockerfile
+    container_name: tattva-worker
+    restart: unless-stopped
+    environment:
+      ENVIRONMENT: development
+      DATABASE_URL: postgresql+psycopg://postgres:postgres@db:5432/tattva_film_director
+      SECRET_KEY: compose-dev-only-secret-change-before-any-real-deployment
+      STORAGE_LOCAL_ROOT: /data/storage
+      LOG_FORMAT: json
+      # Distinct from the API's default (packages/core/config.py), so a trace spanning
+      # both processes shows two different services, not "tattva-api" twice.
+      OTEL_SERVICE_NAME: tattva-worker
+    volumes:
+      - tattva_storage:/data/storage
+    depends_on:
+      db:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+    container_name: tattva-web
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    depends_on:
+      api:
+        condition: service_healthy
+
 volumes:
   tattva_pgdata:
+  tattva_storage:

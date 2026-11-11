@@ -24,6 +24,16 @@ class Settings(BaseSettings):
     environment: Literal["development", "test", "staging", "production"] = "development"
     log_level: str = "INFO"
     debug: bool = False
+    # "json" for a real log pipeline (ELK/Loki/CloudWatch); "text" is a local-debugging
+    # convenience (C9, packages/core/logging.py).
+    log_format: Literal["json", "text"] = "json"
+
+    # Tracing (C9). No tracing backend is wired up in this repo -- spans export to the
+    # console/logs by default; set otel_exporter_otlp_endpoint to point at a real
+    # collector (Tempo, Honeycomb, Jaeger, ...) without any code change.
+    otel_enabled: bool = True
+    otel_service_name: str = "tattva-api"
+    otel_exporter_otlp_endpoint: str = ""
 
     # API
     api_host: str = "0.0.0.0"

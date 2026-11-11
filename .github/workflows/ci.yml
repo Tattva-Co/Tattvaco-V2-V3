@@ -101,3 +101,25 @@ jobs:
       # Playwright E2E against a live API + Postgres is not wired into CI yet (it needs a
       # running backend service alongside the dev server); see docs/audit/10, DEC-031.
       # `npm run e2e` is runnable locally with the stack from docker compose.
+
+  docker-build:
+    name: Docker images build (C9)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build API image
+        run: docker build -f apps/api/Dockerfile -t tattva-api:ci .
+
+      - name: Build worker image
+        run: docker build -f apps/worker/Dockerfile -t tattva-worker:ci .
+
+      - name: Build web image
+        run: docker build -f apps/web/Dockerfile -t tattva-web:ci apps/web
+
+      # Not a full `docker compose up` (that needs the Postgres service container this
+      # job doesn't have): building all three images is still real, useful CI coverage --
+      # it catches a broken Dockerfile or a file the build forgot to COPY before anyone
+      # tries to run the real stack.

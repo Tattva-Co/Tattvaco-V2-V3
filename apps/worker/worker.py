@@ -18,7 +18,8 @@ from datetime import timedelta
 from typing import Callable, Dict
 
 from packages.core.config import Settings, get_settings
-from packages.core.logging import configure_logging, get_logger
+from packages.core.logging import configure_logging, get_logger, run_id_var
+from packages.core.tracing import configure_tracing, continue_trace
 from packages.domain.enums import (
     FILM_BIBLE_GRAPH_ID,
     HISTORICAL_RESEARCH_GRAPH_ID,
@@ -129,27 +130,45 @@ def process_one_task(worker_id: str | None = None) -> bool:
         if task is None:
             return False
         task_id, task_type, run_id = task.id, task.task_type, task.workflow_run_id
+        # The trace context the API captured when it enqueued this task (C9;
+        # packages/core/tracing.py): `inject_trace_context` writes `traceparent` (and
+        # `tracestate`, if any) directly into the same payload dict passed to enqueue(),
+        # not under a nested key -- the whole payload is the carrier `extract()` reads,
+        # the same way `inject()` wrote it. Absent for a task enqueued before this
+        # carried it, or with tracing disabled -- continue_trace below falls back to a
+        # fresh root span either way.
+        trace_context = task.payload or {}
         db.commit()
 
-    logger.info("Claimed task %s (type=%s, run=%s)", task_id, task_type, run_id)
-    handler = TASK_HANDLERS.get(task_type)
-    if handler is None:
-        logger.error("No handler for task type %r (task %s); dead-lettering", task_type, task_id)
-        _finish_task_failed(task_id, ValueError(f"no handler registered for task_type={task_type!r}"), settings)
-        return True
-
+    # run_id_var, not just a log argument: every log line for the rest of this task's
+    # processing -- including ones logged deep inside the graph/service code, which
+    # never sees `run_id` passed to it explicitly -- picks it up automatically (C9).
+    run_token = run_id_var.set(run_id)
     try:
-        handler(run_id)
-    except Exception as exc:
-        # The service has already marked the workflow run failed and logged the cause;
-        # this records the outbox-level retry/dead-letter decision.
-        logger.exception("Task %s failed", task_id)
-        _finish_task_failed(task_id, exc, settings)
-        return True
+        with continue_trace(trace_context, span_name=f"worker.process_task:{task_type}", tracer_name="worker"):
+            logger.info("Claimed task %s (type=%s, run=%s)", task_id, task_type, run_id)
+            handler = TASK_HANDLERS.get(task_type)
+            if handler is None:
+                logger.error("No handler for task type %r (task %s); dead-lettering", task_type, task_id)
+                _finish_task_failed(
+                    task_id, ValueError(f"no handler registered for task_type={task_type!r}"), settings
+                )
+                return True
 
-    _finish_task_ok(task_id)
-    logger.info("Completed task %s", task_id)
-    return True
+            try:
+                handler(run_id)
+            except Exception as exc:
+                # The service has already marked the workflow run failed and logged the
+                # cause; this records the outbox-level retry/dead-letter decision.
+                logger.exception("Task %s failed", task_id)
+                _finish_task_failed(task_id, exc, settings)
+                return True
+
+            _finish_task_ok(task_id)
+            logger.info("Completed task %s", task_id)
+            return True
+    finally:
+        run_id_var.reset(run_token)
 
 
 def run_worker_loop(poll_interval: float | None = None, max_iterations: int | None = None) -> None:
@@ -164,6 +183,8 @@ def run_worker_loop(poll_interval: float | None = None, max_iterations: int | No
 
 
 if __name__ == "__main__":
-    configure_logging(get_settings().log_level)
+    _settings = get_settings()
+    configure_logging(_settings.log_level, json_logs=_settings.log_format == "json")
+    configure_tracing(_settings)
     setup_checkpointer_schema()
     run_worker_loop()

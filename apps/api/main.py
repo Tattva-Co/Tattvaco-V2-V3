@@ -8,7 +8,9 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 
+from apps.api.correlation_middleware import CorrelationIdMiddleware
 from apps.api.dependencies import resolve_actor
 from apps.api.errors import register_exception_handlers
 from apps.api.idempotency import IdempotencyMiddleware
@@ -26,6 +28,7 @@ from apps.api.routers import (
 )
 from packages.core.config import Settings, get_settings
 from packages.core.logging import configure_logging
+from packages.core.tracing import configure_tracing
 from packages.workflows.checkpointer import setup_checkpointer_schema
 
 
@@ -38,7 +41,8 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or get_settings()
-    configure_logging(settings.log_level)
+    configure_logging(settings.log_level, json_logs=settings.log_format == "json")
+    configure_tracing(settings)
 
     app = FastAPI(
         title="Tattva AI Film Director API",
@@ -48,7 +52,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         debug=settings.debug,
         lifespan=lifespan,
     )
-    # Added first so CORS (added next) stays the outermost layer.
+    # Middleware stack, innermost added first: Idempotency -> CORS -> correlation IDs
+    # (outermost, so every request -- even a CORS preflight or a request idempotency
+    # rejects -- gets a request_id and appears in the logs under it).
     app.add_middleware(IdempotencyMiddleware, actor_resolver=resolve_actor)
     app.add_middleware(
         CORSMiddleware,
@@ -58,7 +64,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         allow_headers=["Content-Type", "X-Actor-ID", "Authorization", "Idempotency-Key"],
         expose_headers=["Idempotent-Replayed"],
     )
+    app.add_middleware(CorrelationIdMiddleware)
     register_exception_handlers(app)
+    if settings.otel_enabled:
+        FastAPIInstrumentor.instrument_app(app)
 
     app.include_router(health.router)
     for module in (projects, assets, workflows, approvals, research, storyboard, film_bible, journey):

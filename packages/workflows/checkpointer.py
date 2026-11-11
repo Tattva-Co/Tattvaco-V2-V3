@@ -56,5 +56,6 @@ def has_existing_checkpoint(checkpointer: PostgresSaver, run_id: str) -> bool:
 if __name__ == "__main__":
     from packages.core.logging import configure_logging
 
-    configure_logging(get_settings().log_level)
+    _settings = get_settings()
+    configure_logging(_settings.log_level, json_logs=_settings.log_format == "json")
     setup_checkpointer_schema()

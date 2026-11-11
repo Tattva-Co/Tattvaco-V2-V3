@@ -9,6 +9,7 @@ from langgraph.types import Command
 from sqlalchemy.orm import Session
 
 from packages.core.logging import get_logger
+from packages.core.tracing import inject_trace_context
 from packages.domain.enums import (
     FILM_BIBLE_GRAPH_ID,
     FILM_BIBLE_GRAPH_VERSION,
@@ -95,7 +96,7 @@ class FilmBibleSynthesisService:
         )
         if not sync:
             OutboxRepository(self.db).enqueue(
-                run.id, FILM_BIBLE_GRAPH_ID, {"workflow_run_id": run.id}
+                run.id, FILM_BIBLE_GRAPH_ID, inject_trace_context({"workflow_run_id": run.id})
             )
         self.db.commit()
 

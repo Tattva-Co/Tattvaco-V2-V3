@@ -1,0 +1,28 @@
+# Keeps the build context small and never ships local dev state into an image.
+.git/
+.github/
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+data/
+docs/
+tests/
+.env
+.env.*
+!.env.example
+.DS_Store
+
+# Node (apps/web) -- each image only needs its own subtree; apps/web/Dockerfile re-copies
+# apps/web explicitly rather than relying on the root context for its own build stage.
+node_modules/
+apps/web/node_modules/
+apps/web/dist/
+apps/web/test-results/
+apps/web/playwright-report/
+
+"Tattva V3 Lang updated UI "/
