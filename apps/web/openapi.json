@@ -2607,6 +2607,10 @@
             "type": "string",
             "title": "Uploaded By"
           },
+          "scan_status": {
+            "type": "string",
+            "title": "Scan Status"
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -2625,6 +2629,7 @@
           "asset_type",
           "is_original",
           "uploaded_by",
+          "scan_status",
           "created_at"
         ],
         "title": "AssetResponse"

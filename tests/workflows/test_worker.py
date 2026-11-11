@@ -42,7 +42,12 @@ def test_queued_run_is_executed_by_worker(client, tenant):
 def test_failed_run_marks_task_and_run_failed(client, tenant):
     headers = as_actor(tenant.user_id)
     project = create_project(client, tenant)
-    asset_id = upload_script(client, tenant, project["id"], filename="s.pdf", mime="application/pdf").json()["asset_id"]
+    # application/json is upload-allowed but not a format Script Intelligence (or its C7
+    # text-extraction additions) supports -- a reliable, deterministic way to make the
+    # *workflow* fail business-rule validation without the *upload* itself being rejected.
+    asset_id = upload_script(client, tenant, project["id"], filename="s.json", mime="application/json").json()[
+        "asset_id"
+    ]
 
     run_id = client.post(
         f"/api/v1/projects/{project['id']}/workflows/script-intelligence",

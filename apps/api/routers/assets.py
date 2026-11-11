@@ -7,7 +7,6 @@ from sqlalchemy.orm import Session
 
 from apps.api.dependencies import Settings, StorageService, get_actor, get_db, get_settings, get_storage
 from apps.api.schemas import AssetResponse, AssetUploadResponse
-from packages.domain.errors import PayloadTooLargeError
 from packages.services.assets import AssetService
 from packages.services.identity import ActorContext
 
@@ -15,7 +14,7 @@ router = APIRouter(prefix="/projects/{project_id}/assets", tags=["assets"])
 
 
 @router.post("/upload", response_model=AssetUploadResponse)
-async def upload_asset(
+def upload_asset(
     project_id: str,
     file: UploadFile = File(...),
     actor: ActorContext = Depends(get_actor),
@@ -23,17 +22,18 @@ async def upload_asset(
     storage: StorageService = Depends(get_storage),
     settings: Settings = Depends(get_settings),
 ):
-    # Read at most limit+1 bytes so an oversized upload is rejected without buffering it all.
-    content = await file.read(settings.storage_max_upload_bytes + 1)
-    if len(content) > settings.storage_max_upload_bytes:
-        raise PayloadTooLargeError(
-            f"File exceeds the {settings.storage_max_upload_bytes} byte upload limit."
-        )
-    asset = AssetService(db, storage, settings).upload(
+    # `file.file` is Starlette's underlying spooled file (in memory up to its own small
+    # threshold, then disk-backed) -- AssetService.upload_stream reads it in bounded
+    # chunks from here on, so the request body is never materialised as one giant `bytes`
+    # object (C7: a 2GB upload must not spike API process memory). Not `async def`: every
+    # layer below (the SQLAlchemy session, the storage/scan/extraction calls) is already
+    # synchronous, same as every other route in this file -- making only this one `async`
+    # bought nothing but a confusing read-vs-everything-else split.
+    asset = AssetService(db, storage, settings).upload_stream(
         actor,
         project_id,
         filename=file.filename or "script.fountain",
-        content=content,
+        stream=file.file,
         declared_mime=file.content_type,
     )
     return AssetUploadResponse(

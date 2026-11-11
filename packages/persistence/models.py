@@ -123,7 +123,33 @@ class AssetModel(Base):
     parent_asset_id = Column(String(36), ForeignKey("assets.id"), nullable=True)
     uploaded_by = Column(String(36), ForeignKey("users.id"), nullable=False)
     asset_metadata = Column("metadata", JSON, default=dict, nullable=False)
+    # Malware-scan lifecycle (C7; packages.domain.enums.AssetScanStatus). No workflow may
+    # read an asset's content before this is "clean" (packages/services/scanning.py).
+    scan_status = Column(String(20), nullable=False)
+    scanned_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+
+class AssetDerivativeModel(Base):
+    """Extracted plain text from a non-plain-text asset (PDF, DOCX, Final Draft .fdx;
+    C7, packages/services/extraction.py). One row per (asset, derivative_type): a
+    re-extraction overwrites rather than appends (see AssetService.upload_stream)."""
+
+    __tablename__ = "asset_derivatives"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    asset_id = Column(String(36), ForeignKey("assets.id"), nullable=False, index=True)
+    project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id"), nullable=False, index=True)
+    derivative_type = Column(String(50), nullable=False)
+    extractor = Column(String(50), nullable=False)
+    content = Column(Text, nullable=False)
+    extraction_error = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+    __table_args__ = (
+        Index("uq_asset_derivatives_asset_type", "asset_id", "derivative_type", unique=True),
+    )
 
 
 class WorkflowRunModel(Base):

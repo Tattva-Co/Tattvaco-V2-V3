@@ -539,6 +539,8 @@ export interface components {
             is_original: boolean;
             /** Uploaded By */
             uploaded_by: string;
+            /** Scan Status */
+            scan_status: string;
             /**
              * Created At
              * Format: date-time

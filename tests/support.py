@@ -11,6 +11,7 @@ from typing import List
 from packages.persistence.database import SessionLocal
 from packages.persistence.models import (
     ApprovalRequestModel,
+    AssetDerivativeModel,
     AssetModel,
     AuditEventModel,
     EntityCandidateModel,
@@ -90,6 +91,7 @@ def purge_organization(org_id: str) -> None:
                 FilmBibleRuleCandidateModel,
                 AuditEventModel,
                 ApprovalRequestModel,
+                AssetDerivativeModel,
                 ResearchConflictModel,
                 ResearchClaimModel,
                 ResearchQuestionModel,

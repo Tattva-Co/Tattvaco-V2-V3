@@ -16,19 +16,30 @@ export function ScriptIntelligenceTool({
   onRunStarted: (runId: string, label: string) => void;
 }) {
   const assets = useAssets(projectId);
+  // The server refuses a quarantined asset outright (AssetNotReadyError); only offering
+  // 'clean' ones here means the dropdown never leads to a guaranteed-to-fail submit (in
+  // practice every asset is clean by the time this list renders, since the no-op scanner
+  // runs synchronously at upload -- this still future-proofs for a real, slower scanner).
+  const cleanAssets = assets.data?.filter((a) => a.scan_status === "clean") ?? [];
   const [selectedAssetId, setSelectedAssetId] = useState("");
   const trigger = useMutation({
     mutationFn: (assetId: string) => api.workflows.triggerScriptIntelligence(projectId, assetId),
     onSuccess: (result, assetId) => {
-      const asset = assets.data?.find((a) => a.id === assetId);
+      const asset = cleanAssets.find((a) => a.id === assetId);
       onRunStarted(result.workflow_run_id, `Script Intelligence: ${asset?.filename ?? "screenplay"}`);
     },
   });
 
   if (assets.isLoading) return <div className="state-panel">Loading script assets…</div>;
 
-  if (!assets.data || assets.data.length === 0) {
-    return <div className="state-panel">Upload a script asset first, under the Assets tool.</div>;
+  if (cleanAssets.length === 0) {
+    return (
+      <div className="state-panel">
+        {assets.data && assets.data.length > 0
+          ? "No scanned-clean script asset yet. Check the Assets tool."
+          : "Upload a script asset first, under the Assets tool."}
+      </div>
+    );
   }
 
   return (
@@ -41,7 +52,7 @@ export function ScriptIntelligenceTool({
         <label htmlFor="script-asset-select">Script asset</label>
         <select id="script-asset-select" value={selectedAssetId} onChange={(e) => setSelectedAssetId(e.target.value)}>
           <option value="">Select a script asset…</option>
-          {assets.data.map((a) => (
+          {cleanAssets.map((a) => (
             <option key={a.id} value={a.id}>
               {a.filename}
             </option>

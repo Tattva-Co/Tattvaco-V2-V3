@@ -38,4 +38,9 @@ class PayloadTooLargeError(ValidationFailure):
 
 
 class UnsupportedMediaTypeError(ValidationFailure):
-    """An upload's media type is not in the configured allowlist."""
+    """An upload's media type is not in the configured allowlist, or its content's
+    magic-byte signature does not match what it claims to be."""
+
+
+class AssetNotReadyError(InvalidStateError):
+    """An asset exists but cannot be used yet (still quarantined, or scanned infected)."""

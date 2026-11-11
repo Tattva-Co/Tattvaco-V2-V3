@@ -88,6 +88,7 @@ class AssetResponse(_ORM):
     asset_type: str
     is_original: bool
     uploaded_by: str
+    scan_status: str
     created_at: datetime
 
 

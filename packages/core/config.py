@@ -44,18 +44,35 @@ class Settings(BaseSettings):
     # LangGraph checkpointer (defaults to the canonical database)
     checkpoint_database_url: str | None = None
 
-    # Object storage
-    storage_provider: Literal["local"] = "local"
+    # Object storage (C7). "s3" speaks the S3 API, so it works against real AWS S3 or any
+    # S3-compatible endpoint (set storage_s3_endpoint_url) -- see docs/audit/10 DEC-034 for
+    # why this isn't paired with a MinIO docker-compose service (MinIO retired its free
+    # Docker Hub/Quay images in Sept 2026; the adapter is tested against a `moto` mock
+    # instead, which needs no container at all).
+    storage_provider: Literal["local", "s3"] = "local"
     storage_local_root: str = "./data/storage"
     storage_max_upload_bytes: int = 100 * 1024 * 1024
+    storage_stream_chunk_bytes: int = 1024 * 1024
     storage_allowed_mime_types: CommaList = Field(
         default_factory=lambda: [
             "text/plain",
             "application/pdf",
             "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             "application/json",
+            "application/x-final-draft",
         ]
     )
+    storage_s3_bucket: str = ""
+    storage_s3_region: str = "us-east-1"
+    # Empty uses the real AWS endpoint; set to a non-AWS S3-compatible provider's URL
+    # (Cloudflare R2, Backblaze B2, a self-hosted MinIO/Garage) to point elsewhere.
+    storage_s3_endpoint_url: str = ""
+    storage_s3_access_key_id: str = ""
+    storage_s3_secret_access_key: str = ""
+
+    # Malware scanning (C7). "noop" always reports clean -- a labelled stub seam for a
+    # real scanner (e.g. ClamAV) later; see packages/services/scanning.py.
+    malware_scanner_provider: Literal["noop"] = "noop"
 
     # Worker (C6: lease/retry/dead-letter, docs/audit/08 PERF-04)
     worker_poll_interval_seconds: float = 1.0

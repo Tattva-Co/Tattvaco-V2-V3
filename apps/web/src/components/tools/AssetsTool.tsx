@@ -8,6 +8,20 @@ function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+/** C7's malware-scan lifecycle (packages.domain.enums.AssetScanStatus). Today every asset
+ * clears this instantly (the no-op scanner), but the UI reports the real status rather
+ * than assuming clean, so a future real (possibly async) scanner needs no client change. */
+const SCAN_STATUS_LABEL: Record<string, string> = {
+  quarantined: "Scanning…",
+  clean: "Clean",
+  infected: "Blocked (flagged)",
+};
+const SCAN_STATUS_CLASS: Record<string, string> = {
+  quarantined: "progress",
+  clean: "done",
+  infected: "blocked",
+};
+
 /** Maps to JRN-02.1 (Import screenplay): upload screenplays into immutable storage. Every
  * asset is SHA-256 checksummed server-side (packages/services/assets.py) before any
  * workflow can read it. */
@@ -31,15 +45,16 @@ export function AssetsTool({ projectId }: { projectId: string }) {
   return (
     <div>
       <p className="sub-desc" style={{ marginBottom: 14 }}>
-        Upload screenplays (.fountain, .txt, .pdf) into private, immutable storage. Each file is verified with a
-        SHA-256 digest before any workflow can read it.
+        Upload screenplays (.fountain, .txt, .pdf, .docx, .fdx) into private, immutable storage. Each file is
+        verified with a SHA-256 digest, its content checked against its declared type, and scanned before any
+        workflow can read it.
       </p>
 
       <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 18 }}>
         <input
           ref={inputRef}
           type="file"
-          accept=".fountain,.txt,.pdf"
+          accept=".fountain,.txt,.pdf,.docx,.fdx"
           aria-label="Choose a screenplay file"
           onChange={(e) => setPendingFile(e.target.files?.[0] ?? null)}
         />
@@ -63,7 +78,12 @@ export function AssetsTool({ projectId }: { projectId: string }) {
       {assets.data && assets.data.length === 0 && <div className="state-panel">No script assets uploaded yet.</div>}
       {assets.data?.map((asset) => (
         <div key={asset.id} className="tool-list-item">
-          <h4>{asset.filename}</h4>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+            <h4 style={{ margin: 0 }}>{asset.filename}</h4>
+            <span className={`status ${SCAN_STATUS_CLASS[asset.scan_status] ?? ""}`.trim()}>
+              {SCAN_STATUS_LABEL[asset.scan_status] ?? asset.scan_status}
+            </span>
+          </div>
           <p>
             {formatBytes(asset.size_bytes)} &middot; {asset.mime_type}
           </p>

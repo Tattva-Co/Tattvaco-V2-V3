@@ -31,6 +31,7 @@ function makeAsset(overrides: Partial<Record<string, unknown>> = {}) {
     asset_type: "script",
     is_original: true,
     uploaded_by: "user-1",
+    scan_status: "clean",
     created_at: "2026-01-01T00:00:00Z",
     ...overrides,
   };
@@ -53,6 +54,12 @@ describe("AssetsTool", () => {
     renderTool();
     expect(await screen.findByText("chronicle.fountain")).toBeInTheDocument();
     expect(screen.getByText(/2\.0 KB/)).toBeInTheDocument();
+  });
+
+  it("shows the real scan status rather than assuming every asset is clean", async () => {
+    vi.mocked(api.assets.list).mockResolvedValue([makeAsset({ scan_status: "quarantined" }) as never]);
+    renderTool();
+    expect(await screen.findByText("Scanning…")).toBeInTheDocument();
   });
 
   it("uploads the chosen file and refreshes the list", async () => {

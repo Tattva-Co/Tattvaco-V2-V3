@@ -19,6 +19,7 @@ from packages.domain.enums import ApprovalStatus, AuditAction, OutboxStatus
 from packages.domain.errors import NotFoundError
 from packages.persistence.models import (
     ApprovalRequestModel,
+    AssetDerivativeModel,
     AssetModel,
     AuditEventModel,
     EntityCandidateModel,
@@ -176,6 +177,33 @@ class AssetRepository(_Repository):
             .order_by(AssetModel.created_at.desc())
         )
         return list(self.db.scalars(stmt))
+
+
+class AssetDerivativeRepository(_Repository):
+    def upsert(self, derivative: AssetDerivativeModel) -> AssetDerivativeModel:
+        """Replace any existing derivative of the same (asset_id, derivative_type) --
+        a re-extraction (e.g. a future re-run with a better extractor) overwrites rather
+        than accumulating duplicate rows, per uq_asset_derivatives_asset_type."""
+        existing = self.db.scalars(
+            select(AssetDerivativeModel).where(
+                AssetDerivativeModel.asset_id == derivative.asset_id,
+                AssetDerivativeModel.derivative_type == derivative.derivative_type,
+            )
+        ).first()
+        if existing is not None:
+            existing.extractor = derivative.extractor
+            existing.content = derivative.content
+            existing.extraction_error = derivative.extraction_error
+            self.db.flush()
+            return existing
+        return self._add(derivative)
+
+    def get_for_asset(self, asset_id: str, derivative_type: str) -> AssetDerivativeModel | None:
+        stmt = select(AssetDerivativeModel).where(
+            AssetDerivativeModel.asset_id == asset_id,
+            AssetDerivativeModel.derivative_type == derivative_type,
+        )
+        return self.db.scalars(stmt).first()
 
 
 class WorkflowRunRepository(_Repository):

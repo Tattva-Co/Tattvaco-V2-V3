@@ -38,9 +38,12 @@ def test_oversized_upload_is_rejected(client, tenant):
     assert resp.status_code == 413
 
 
-def test_script_intelligence_refuses_non_text_assets(client, tenant):
+def test_script_intelligence_refuses_assets_with_no_supported_extraction(client, tenant):
+    """application/json is upload-allowed (e.g. for structured metadata attachments) but
+    is neither plain-text/Fountain nor one of the formats C7 added extraction for
+    (PDF/DOCX/FDX) -- Script Intelligence must still refuse it, with a clear reason."""
     project = create_project(client, tenant)
-    upload = upload_script(client, tenant, project["id"], filename="script.pdf", mime="application/pdf")
+    upload = upload_script(client, tenant, project["id"], filename="script.json", mime="application/json")
     assert upload.status_code == 200
 
     resp = client.post(

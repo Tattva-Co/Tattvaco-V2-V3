@@ -23,6 +23,18 @@ class AssetType(str, Enum):
     PRODUCTION_PACKAGE = "production_package"
 
 
+class AssetScanStatus(str, Enum):
+    """Malware-scan lifecycle for an uploaded asset (C7). An asset is unusable by any
+    workflow (packages/services/script_review.py::load_script_text) until CLEAN -- today
+    that happens synchronously at upload time (packages/services/scanning.py's NoOpScanner
+    always reports clean), but the state model is real so a future async scanner has
+    somewhere to report INFECTED without a schema change."""
+
+    QUARANTINED = "quarantined"
+    CLEAN = "clean"
+    INFECTED = "infected"
+
+
 class WorkflowStatus(str, Enum):
     QUEUED = "queued"
     RUNNING = "running"

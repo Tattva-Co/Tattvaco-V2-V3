@@ -16,11 +16,12 @@ from packages.domain.enums import (
     SCRIPT_INTELLIGENCE_APPROVAL_SCOPE,
     ApprovalDecision,
     ApprovalStatus,
+    AssetScanStatus,
     AuditAction,
     CandidateStatus,
     WorkflowStatus,
 )
-from packages.domain.errors import ValidationFailure
+from packages.domain.errors import AssetNotReadyError, ValidationFailure
 from packages.domain.invariants import assert_expected_version
 from packages.persistence.models import (
     ApprovalRequestModel,
@@ -32,6 +33,7 @@ from packages.persistence.models import (
 )
 from packages.persistence.repositories import (
     ApprovalRepository,
+    AssetDerivativeRepository,
     AssetRepository,
     AuditRepository,
     CandidateRepository,
@@ -39,6 +41,8 @@ from packages.persistence.repositories import (
     ProjectRepository,
     WorkflowRunRepository,
 )
+from packages.services.assets import DERIVATIVE_TYPE_EXTRACTED_TEXT
+from packages.services.extraction import EXTRACTABLE_MIME_TYPES
 from packages.storage.service import StorageService
 
 SUPPORTED_SCRIPT_MIME_PREFIX = "text/"
@@ -84,11 +88,24 @@ class ScriptReviewService:
         asset = AssetRepository(self.db).get(asset_id)
         if asset is None:
             raise ValidationFailure(f"Script asset '{asset_id}' no longer exists.")
-        if not asset.mime_type.startswith(SUPPORTED_SCRIPT_MIME_PREFIX):
-            raise ValidationFailure(
-                f"Script Intelligence supports plain-text/Fountain scripts; got '{asset.mime_type}'."
+        if asset.scan_status != AssetScanStatus.CLEAN.value:
+            raise AssetNotReadyError(
+                f"Script asset '{asset_id}' is not usable yet (scan_status={asset.scan_status!r})."
             )
-        return storage.get_bytes(asset.storage_path).decode("utf-8", errors="replace")
+        if asset.mime_type.startswith(SUPPORTED_SCRIPT_MIME_PREFIX):
+            return storage.get_bytes(asset.storage_path).decode("utf-8", errors="replace")
+        if asset.mime_type in EXTRACTABLE_MIME_TYPES:
+            derivative = AssetDerivativeRepository(self.db).get_for_asset(asset.id, DERIVATIVE_TYPE_EXTRACTED_TEXT)
+            if derivative is None or derivative.extraction_error:
+                detail = derivative.extraction_error if derivative else "no extraction was recorded for this asset"
+                raise ValidationFailure(
+                    f"Could not extract text from '{asset.filename}' ({asset.mime_type}): {detail}"
+                )
+            return derivative.content
+        raise ValidationFailure(
+            f"Script Intelligence supports plain-text/Fountain, PDF, DOCX and Final Draft "
+            f"(.fdx) scripts; got '{asset.mime_type}'."
+        )
 
     # -- propose -------------------------------------------------------------
 
