@@ -12,12 +12,13 @@ from typing import Any, Dict, Literal
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import interrupt
 
+from packages.ai.gateway import get_model_gateway
+from packages.core.config import get_settings
 from packages.domain.enums import ApprovalDecision
 from packages.domain.errors import ValidationFailure
 from packages.persistence.database import session_scope
 from packages.services.script_review import RunScope, ScriptReviewService
 from packages.storage.factory import get_storage
-from packages.workflows.script_intelligence.parser import ScreenplayParser
 from packages.workflows.script_intelligence.state import ScriptIntelligenceState
 
 
@@ -38,8 +39,11 @@ def parse_script_node(state: ScriptIntelligenceState) -> Dict[str, Any]:
     if not raw_text.strip():
         raise ValidationFailure("Script text is empty.")
 
-    scenes, entities = ScreenplayParser().parse(raw_text)
-    return {"extracted_scenes": scenes, "extracted_entities": entities}
+    result = get_model_gateway(get_settings()).parse_screenplay(raw_text)
+    return {
+        "extracted_scenes": [s.model_dump() for s in result.scenes],
+        "extracted_entities": [e.model_dump() for e in result.entities],
+    }
 
 
 def generate_candidates_node(state: ScriptIntelligenceState) -> Dict[str, Any]:

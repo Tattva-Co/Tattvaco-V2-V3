@@ -2954,6 +2954,10 @@
           "status": {
             "type": "string",
             "title": "Status"
+          },
+          "generator_mode": {
+            "type": "string",
+            "title": "Generator Mode"
           }
         },
         "type": "object",
@@ -2964,7 +2968,8 @@
           "category",
           "description",
           "confidence",
-          "status"
+          "status",
+          "generator_mode"
         ],
         "title": "EntityCandidateResponse"
       },
@@ -3079,6 +3084,10 @@
           "status": {
             "type": "string",
             "title": "Status"
+          },
+          "generator_mode": {
+            "type": "string",
+            "title": "Generator Mode"
           }
         },
         "type": "object",
@@ -3093,7 +3102,8 @@
           "suggested_claim_statement",
           "confidence",
           "conflict_warning",
-          "status"
+          "status",
+          "generator_mode"
         ],
         "title": "FilmBibleRuleCandidateResponse"
       },
@@ -3871,6 +3881,10 @@
           "status": {
             "type": "string",
             "title": "Status"
+          },
+          "generator_mode": {
+            "type": "string",
+            "title": "Generator Mode"
           }
         },
         "type": "object",
@@ -3885,7 +3899,8 @@
           "source_title",
           "source_tier",
           "source_locator",
-          "status"
+          "status",
+          "generator_mode"
         ],
         "title": "ResearchClaimCandidateResponse"
       },
@@ -4068,6 +4083,10 @@
           "status": {
             "type": "string",
             "title": "Status"
+          },
+          "generator_mode": {
+            "type": "string",
+            "title": "Generator Mode"
           }
         },
         "type": "object",
@@ -4076,7 +4095,8 @@
           "workflow_run_id",
           "text",
           "category",
-          "status"
+          "status",
+          "generator_mode"
         ],
         "title": "ResearchQuestionCandidateResponse"
       },
@@ -4392,6 +4412,10 @@
           "status": {
             "type": "string",
             "title": "Status"
+          },
+          "generator_mode": {
+            "type": "string",
+            "title": "Generator Mode"
           }
         },
         "type": "object",
@@ -4405,7 +4429,8 @@
           "time_of_day",
           "summary",
           "characters_present",
-          "status"
+          "status",
+          "generator_mode"
         ],
         "title": "SceneCandidateResponse"
       },
@@ -4532,6 +4557,10 @@
           "status": {
             "type": "string",
             "title": "Status"
+          },
+          "generator_mode": {
+            "type": "string",
+            "title": "Generator Mode"
           }
         },
         "type": "object",
@@ -4545,7 +4574,8 @@
           "visual_notes",
           "dialogue_snippet",
           "confidence",
-          "status"
+          "status",
+          "generator_mode"
         ],
         "title": "StoryboardPanelCandidateResponse"
       },
@@ -4757,6 +4787,10 @@
             ],
             "title": "Error Message"
           },
+          "generator_mode": {
+            "type": "string",
+            "title": "Generator Mode"
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -4779,6 +4813,7 @@
           "input_asset_ids",
           "output_refs",
           "error_message",
+          "generator_mode",
           "created_at",
           "updated_at"
         ],

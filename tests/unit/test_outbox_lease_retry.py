@@ -32,6 +32,7 @@ def _enqueue_task(db, tenant, *, max_attempts: int = 3) -> tuple[str, str]:
             actor_id=tenant.user_id,
             expected_project_version=1,
             status="queued",
+            generator_mode="deterministic",
         )
     )
     db.flush()

@@ -116,6 +116,7 @@ class ScriptReviewService:
         scenes: Sequence[Dict[str, Any]],
         entities: Sequence[Dict[str, Any]],
     ) -> ProposedCandidates:
+        run = self.runs.get(scope.run_id)
         scene_rows = [
             self.candidates.add_scene(
                 SceneCandidateModel(
@@ -131,6 +132,7 @@ class ScriptReviewService:
                     source_locator=s["source_locator"],
                     characters_present=s["characters_present"],
                     status=CandidateStatus.PROPOSED.value,
+                    generator_mode=run.generator_mode,
                 )
             )
             for s in scenes
@@ -147,6 +149,7 @@ class ScriptReviewService:
                     source_locator=e["source_locator"],
                     confidence=e.get("confidence", 0.9),
                     status=CandidateStatus.PROPOSED.value,
+                    generator_mode=run.generator_mode,
                 )
             )
             for e in entities

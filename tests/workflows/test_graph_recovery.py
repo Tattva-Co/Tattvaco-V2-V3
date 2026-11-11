@@ -42,6 +42,7 @@ def run_context(tenant):
             actor_id=tenant.user_id,
             expected_project_version=1,
             status="running",
+            generator_mode="deterministic",
         )
     )
     db.commit()

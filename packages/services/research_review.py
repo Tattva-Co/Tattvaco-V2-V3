@@ -43,6 +43,7 @@ class RunScope:
     run_id: str
     project_id: str
     org_id: str
+    generator_mode: str
 
 
 @dataclass
@@ -65,7 +66,12 @@ class ResearchReviewService:
         run = self.runs.get(run_id)
         project = self.projects.get_scoped(run.project_id, run.organization_id)
         assert_expected_version(project.current_version, run.expected_project_version)
-        return RunScope(run_id=run.id, project_id=project.id, org_id=project.organization_id)
+        return RunScope(
+            run_id=run.id,
+            project_id=project.id,
+            org_id=project.organization_id,
+            generator_mode=run.generator_mode,
+        )
 
     def propose_candidates(
         self,
@@ -96,6 +102,7 @@ class ResearchReviewService:
                 source_tier=c.get("source_tier", "tier_2_scholarly"),
                 source_locator=c.get("source_locator"),
                 status=CandidateStatus.PROPOSED.value,
+                generator_mode=scope.generator_mode,
             )
             self.candidates.add_claim(row)
             claim_rows.append(row)
@@ -109,6 +116,7 @@ class ResearchReviewService:
                 text=q["text"],
                 category=q.get("category", "general"),
                 status=CandidateStatus.PROPOSED.value,
+                generator_mode=scope.generator_mode,
             )
             self.candidates.add_question(row)
             question_rows.append(row)

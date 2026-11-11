@@ -13,6 +13,8 @@ from typing import Sequence
 from langgraph.types import Command
 from sqlalchemy.orm import Session
 
+from packages.ai.gateway import get_model_gateway
+from packages.core.config import get_settings
 from packages.core.logging import get_logger
 from packages.core.tracing import inject_trace_context
 from packages.domain.enums import (
@@ -82,6 +84,7 @@ class HistoricalResearchService:
                 status=(WorkflowStatus.RUNNING if sync else WorkflowStatus.QUEUED).value,
                 input_asset_ids=[],
                 output_refs={"topic": topic, "seed_text": seed_text},
+                generator_mode=get_model_gateway(get_settings()).mode,
             )
         )
         self.audit.record(

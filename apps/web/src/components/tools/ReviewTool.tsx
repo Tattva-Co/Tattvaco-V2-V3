@@ -45,6 +45,14 @@ function ApprovalCard({
   const panels = (candidates.storyboard_panels ?? []).filter((p) => p.workflow_run_id === runId && p.status === "proposed");
   const rules = (candidates.film_bible_rules ?? []).filter((r) => r.workflow_run_id === runId && r.status === "proposed");
 
+  const generatorMode =
+    scenes[0]?.generator_mode ??
+    entities[0]?.generator_mode ??
+    claims[0]?.generator_mode ??
+    questions[0]?.generator_mode ??
+    panels[0]?.generator_mode ??
+    rules[0]?.generator_mode;
+
   const sceneIds = useCheckedIds(scenes.map((s) => s.id));
   const entityIds = useCheckedIds(entities.map((e) => e.id));
   const claimIds = useCheckedIds(claims.map((c) => c.id));
@@ -69,7 +77,27 @@ function ApprovalCard({
 
   return (
     <div className="tool-list-item">
-      <h4>{SCOPE_LABEL[approval.scope] ?? approval.scope}</h4>
+      <h4>
+        {SCOPE_LABEL[approval.scope] ?? approval.scope}
+        {generatorMode && (
+          <span
+            title="Which generator produced these candidates"
+            style={{
+              marginLeft: 8,
+              fontSize: 9,
+              fontWeight: 700,
+              padding: "2px 6px",
+              borderRadius: 4,
+              border: "1px solid var(--line)",
+              color: "var(--muted)",
+              textTransform: "uppercase",
+              verticalAlign: "middle",
+            }}
+          >
+            {generatorMode}
+          </span>
+        )}
+      </h4>
       <p className="meta" style={{ marginBottom: 10 }}>
         {approval.workflow_run_id ? (
           <>

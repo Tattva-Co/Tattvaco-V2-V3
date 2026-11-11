@@ -13,11 +13,12 @@ from typing import Any, Literal
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import interrupt
 
+from packages.ai.gateway import get_model_gateway
+from packages.core.config import get_settings
 from packages.domain.enums import ApprovalDecision
 from packages.domain.errors import ValidationFailure
 from packages.persistence.database import session_scope
 from packages.services.research_review import ResearchReviewService
-from packages.workflows.historical_research.investigator import HistoricalInvestigator
 from packages.workflows.historical_research.state import HistoricalResearchState
 
 
@@ -27,8 +28,11 @@ def investigate_node(state: HistoricalResearchState) -> dict[str, Any]:
     if not topic or not topic.strip():
         raise ValidationFailure("Research topic cannot be empty.")
 
-    claims, questions = HistoricalInvestigator().investigate(topic, state.get("seed_text"))
-    return {"candidate_claims": claims, "candidate_questions": questions}
+    result = get_model_gateway(get_settings()).investigate_history(topic, state.get("seed_text"))
+    return {
+        "candidate_claims": [c.model_dump() for c in result.claims],
+        "candidate_questions": [q.model_dump() for q in result.questions],
+    }
 
 
 def generate_candidates_node(state: HistoricalResearchState) -> dict[str, Any]:

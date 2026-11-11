@@ -13,11 +13,12 @@ from typing import Any, Literal
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import interrupt
 
+from packages.ai.gateway import get_model_gateway
+from packages.core.config import get_settings
 from packages.domain.enums import ApprovalDecision
 from packages.persistence.database import session_scope
 from packages.persistence.repositories import CanonicalRepository
 from packages.services.storyboard_review import StoryboardReviewService
-from packages.workflows.storyboard_intelligence.aligner import StoryboardAligner
 from packages.workflows.storyboard_intelligence.state import StoryboardIntelligenceState
 
 
@@ -35,8 +36,8 @@ def generate_panels_node(state: StoryboardIntelligenceState) -> dict[str, Any]:
             }
             for s in scenes
         ]
-    panels = StoryboardAligner().generate_panels(scenes_data, brief=state.get("brief"))
-    return {"candidate_panels": panels}
+    result = get_model_gateway(get_settings()).align_storyboard(scenes_data, brief=state.get("brief"))
+    return {"candidate_panels": [p.model_dump() for p in result.panels]}
 
 
 def generate_candidates_node(state: StoryboardIntelligenceState) -> dict[str, Any]:

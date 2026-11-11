@@ -166,6 +166,9 @@ class WorkflowRunModel(Base):
     input_asset_ids = Column(JSON, default=list, nullable=False)
     output_refs = Column(JSON, default=dict, nullable=False)
     error_message = Column(Text, nullable=True)
+    # C10: which ModelGateway produced this run's candidates (packages.ai.gateway
+    # GENERATOR_MODE_*) -- "the mode is visible in the UI" exit criterion.
+    generator_mode = Column(String(20), nullable=False)
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
     updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
 
@@ -275,6 +278,8 @@ class SceneCandidateModel(Base):
     source_locator = Column(String(100), nullable=False)
     characters_present = Column(JSON, default=list, nullable=False)
     status = Column(String(50), default="proposed", nullable=False)  # proposed, approved, rejected
+    # C10: which ModelGateway produced this candidate (packages.ai.gateway GENERATOR_MODE_*).
+    generator_mode = Column(String(20), nullable=False)
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
 
 
@@ -292,6 +297,7 @@ class EntityCandidateModel(Base):
     source_locator = Column(String(100), nullable=False)
     confidence = Column(Float, default=0.9, nullable=False)
     status = Column(String(50), default="proposed", nullable=False)  # proposed, approved, rejected
+    generator_mode = Column(String(20), nullable=False)
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
 
 
@@ -415,6 +421,7 @@ class ResearchClaimCandidateModel(Base):
     source_tier = Column(String(50), default="tier_2_scholarly", nullable=False)
     source_locator = Column(String(255), nullable=True)
     status = Column(String(50), default="proposed", nullable=False)  # proposed, approved, rejected
+    generator_mode = Column(String(20), nullable=False)
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
 
 
@@ -429,6 +436,7 @@ class ResearchQuestionCandidateModel(Base):
     text = Column(Text, nullable=False)
     category = Column(String(50), default="general", nullable=False)
     status = Column(String(50), default="proposed", nullable=False)  # proposed, approved, rejected
+    generator_mode = Column(String(20), nullable=False)
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
 
 
@@ -467,6 +475,7 @@ class StoryboardPanelCandidateModel(Base):
     dialogue_snippet = Column(Text, nullable=True)
     confidence = Column(Float, default=0.9, nullable=False)
     status = Column(String(50), default="proposed", nullable=False)  # proposed, approved, rejected
+    generator_mode = Column(String(20), nullable=False)
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
 
 
@@ -506,6 +515,7 @@ class FilmBibleRuleCandidateModel(Base):
     confidence = Column(Float, default=0.9, nullable=False)
     conflict_warning = Column(Text, nullable=True)
     status = Column(String(50), default="proposed", nullable=False)
+    generator_mode = Column(String(20), nullable=False)
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
 
 

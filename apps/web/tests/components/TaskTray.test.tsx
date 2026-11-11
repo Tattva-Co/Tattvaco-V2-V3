@@ -30,6 +30,7 @@ function makeRun(overrides: Partial<{ status: string; error_message: string | nu
     input_asset_ids: [],
     output_refs: {},
     error_message: null,
+    generator_mode: "deterministic",
     created_at: "2026-01-01T00:00:00Z",
     updated_at: "2026-01-01T00:00:00Z",
     ...overrides,

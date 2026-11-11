@@ -114,9 +114,13 @@ class Settings(BaseSettings):
     # Idempotency-Key (TFD-OPS-004): how long a stored response can be replayed.
     idempotency_ttl_hours: int = 24
 
-    # Reserved for upcoming provider adapters (see docs/implementation/OPEN_DECISIONS.md).
-    # Declared so they are validated and documented; not yet consumed by any code path.
-    model_gateway_provider: Literal["mock"] = "mock"
+    # ModelGateway (C10; packages/ai/gateway.py). "deterministic" wraps the 4 pre-existing
+    # rule-based generators (parser/investigator/aligner/synthesizer) behind a validated,
+    # typed interface -- real logic, not a placeholder, just not an LLM call (yet). "llm"
+    # is reserved for a future real adapter behind the exact same interface (see
+    # docs/implementation/OPEN_DECISIONS.md); the provider keys below are declared now so
+    # they are validated and documented ahead of that, not yet consumed by any code path.
+    model_gateway_provider: Literal["deterministic", "llm"] = "deterministic"
     openai_api_key: str = ""
     anthropic_api_key: str = ""
     gemini_api_key: str = ""

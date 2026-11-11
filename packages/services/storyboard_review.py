@@ -42,6 +42,7 @@ class RunScope:
     run_id: str
     project_id: str
     org_id: str
+    generator_mode: str
 
 
 @dataclass
@@ -65,7 +66,12 @@ class StoryboardReviewService:
         run = self.runs.get(run_id)
         project = self.projects.get_scoped(run.project_id, run.organization_id)
         assert_expected_version(project.current_version, run.expected_project_version)
-        return RunScope(run_id=run.id, project_id=project.id, org_id=project.organization_id)
+        return RunScope(
+            run_id=run.id,
+            project_id=project.id,
+            org_id=project.organization_id,
+            generator_mode=run.generator_mode,
+        )
 
     def propose_candidates(
         self,
@@ -94,6 +100,7 @@ class StoryboardReviewService:
                 dialogue_snippet=p.get("dialogue_snippet"),
                 confidence=float(p.get("confidence", 0.9)),
                 status=CandidateStatus.PROPOSED.value,
+                generator_mode=scope.generator_mode,
             )
             self.candidates.add_storyboard_panel(row)
             panel_rows.append(row)

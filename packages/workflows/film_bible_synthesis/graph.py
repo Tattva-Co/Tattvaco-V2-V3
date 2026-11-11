@@ -11,13 +11,14 @@ from typing import Any
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import interrupt
 
+from packages.ai.gateway import get_model_gateway
+from packages.core.config import get_settings
 from packages.core.logging import get_logger
 from packages.domain.enums import ApprovalDecision
 from packages.persistence.database import session_scope
 from packages.persistence.repositories import CanonicalRepository, ResearchRepository
 from packages.services.film_bible_review import FilmBibleReviewService
 from packages.workflows.film_bible_synthesis.state import FilmBibleState
-from packages.workflows.film_bible_synthesis.synthesizer import FilmBibleSynthesizer
 
 logger = get_logger("workflows.film_bible_synthesis")
 
@@ -51,8 +52,8 @@ def synthesize_visual_rules(state: FilmBibleState) -> dict[str, Any]:
             for c in ResearchRepository(db).list_claims(project_id)
         ]
 
-    synthesizer = FilmBibleSynthesizer()
-    rules = synthesizer.synthesize_rules(scenes, claims, user_notes=user_notes)
+    result = get_model_gateway(get_settings()).synthesize_film_bible(scenes, claims, user_notes=user_notes)
+    rules = [r.model_dump() for r in result.rules]
 
     with session_scope() as db:
         service = FilmBibleReviewService(db)

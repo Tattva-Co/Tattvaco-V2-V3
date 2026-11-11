@@ -124,6 +124,7 @@ class WorkflowRunResponse(_ORM):
     input_asset_ids: List[str]
     output_refs: Dict[str, Any]
     error_message: str | None
+    generator_mode: str
     created_at: datetime
     updated_at: datetime
 
@@ -149,6 +150,7 @@ class SceneCandidateResponse(_ORM):
     summary: str
     characters_present: List[str]
     status: str
+    generator_mode: str
 
 
 class EntityCandidateResponse(_ORM):
@@ -159,6 +161,7 @@ class EntityCandidateResponse(_ORM):
     description: str | None
     confidence: float
     status: str
+    generator_mode: str
 
 
 class ResearchClaimCandidateResponse(_ORM):
@@ -173,6 +176,7 @@ class ResearchClaimCandidateResponse(_ORM):
     source_tier: str
     source_locator: str | None
     status: str
+    generator_mode: str
 
 
 class ResearchQuestionCandidateResponse(_ORM):
@@ -181,6 +185,7 @@ class ResearchQuestionCandidateResponse(_ORM):
     text: str
     category: str
     status: str
+    generator_mode: str
 
 
 class StoryboardPanelCandidateResponse(_ORM):
@@ -194,6 +199,7 @@ class StoryboardPanelCandidateResponse(_ORM):
     dialogue_snippet: str | None
     confidence: float
     status: str
+    generator_mode: str
 
 
 class FilmBibleRuleCandidateResponse(_ORM):
@@ -208,6 +214,7 @@ class FilmBibleRuleCandidateResponse(_ORM):
     confidence: float
     conflict_warning: str | None
     status: str
+    generator_mode: str
 
 
 class ApprovalResponse(_ORM):

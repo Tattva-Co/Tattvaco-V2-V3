@@ -694,6 +694,8 @@ export interface components {
             confidence: number;
             /** Status */
             status: string;
+            /** Generator Mode */
+            generator_mode: string;
         };
         /** EntityResponse */
         EntityResponse: {
@@ -734,6 +736,8 @@ export interface components {
             conflict_warning: string | null;
             /** Status */
             status: string;
+            /** Generator Mode */
+            generator_mode: string;
         };
         /** FilmBibleRuleCreateRequest */
         FilmBibleRuleCreateRequest: {
@@ -1017,6 +1021,8 @@ export interface components {
             source_locator: string | null;
             /** Status */
             status: string;
+            /** Generator Mode */
+            generator_mode: string;
         };
         /** ResearchClaimResponse */
         ResearchClaimResponse: {
@@ -1084,6 +1090,8 @@ export interface components {
             category: string;
             /** Status */
             status: string;
+            /** Generator Mode */
+            generator_mode: string;
         };
         /** ResearchQuestionCreateRequest */
         ResearchQuestionCreateRequest: {
@@ -1194,6 +1202,8 @@ export interface components {
             characters_present: string[];
             /** Status */
             status: string;
+            /** Generator Mode */
+            generator_mode: string;
         };
         /** SceneResponse */
         SceneResponse: {
@@ -1240,6 +1250,8 @@ export interface components {
             confidence: number;
             /** Status */
             status: string;
+            /** Generator Mode */
+            generator_mode: string;
         };
         /** StoryboardPanelResponse */
         StoryboardPanelResponse: {
@@ -1316,6 +1328,8 @@ export interface components {
             };
             /** Error Message */
             error_message: string | null;
+            /** Generator Mode */
+            generator_mode: string;
             /**
              * Created At
              * Format: date-time
