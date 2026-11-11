@@ -671,3 +671,230 @@
 .login-card .btn {
   width: 100%;
 }
+
+/* -- Studio Tools (GW3) ------------------------------------------------------------ */
+.studio-tools-menu {
+  position: relative;
+}
+.studio-tools-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 40;
+  width: 300px;
+  background: white;
+  border: 1px solid #e0e5eb;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow);
+  padding: 8px;
+}
+.studio-tools-dropdown .tool-link {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: none;
+  padding: 9px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #2b3a4e;
+}
+.studio-tools-dropdown .tool-link:hover:not(:disabled) {
+  background: #f5f7f9;
+}
+.studio-tools-dropdown .tool-link:disabled {
+  color: var(--muted);
+  cursor: not-allowed;
+}
+.studio-tools-dropdown .tool-link small {
+  display: block;
+  color: var(--muted);
+  font-size: 10px;
+  margin-top: 2px;
+}
+.studio-tools-empty {
+  padding: 10px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.tool-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(12, 19, 28, 0.45);
+  display: grid;
+  place-items: center;
+  z-index: 80;
+  padding: 24px;
+}
+.tool-modal {
+  width: min(880px, 100%);
+  max-height: min(820px, 90vh);
+  background: var(--canvas);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.tool-modal-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 18px 22px;
+  background: white;
+  border-bottom: 1px solid var(--line);
+}
+.tool-modal-head h2 {
+  margin: 0;
+  font-size: 17px;
+  color: #1b293b;
+  letter-spacing: -0.02em;
+}
+.tool-modal-head p {
+  margin: 6px 0 0;
+  font-size: 11px;
+  color: var(--muted);
+  max-width: 620px;
+  line-height: 1.5;
+}
+.tool-modal-close {
+  border: 0;
+  background: none;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--muted);
+  padding: 4px 6px;
+  border-radius: 6px;
+}
+.tool-modal-close:hover {
+  background: #f1f3f5;
+  color: var(--ink);
+}
+.tool-modal-body {
+  padding: 18px 22px 24px;
+  overflow-y: auto;
+}
+
+.tool-tabs {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 16px;
+}
+.tool-tab {
+  border: 0;
+  background: none;
+  padding: 9px 12px;
+  font-size: 11px;
+  font-weight: 650;
+  color: var(--muted);
+  border-bottom: 2px solid transparent;
+}
+.tool-tab.active {
+  color: var(--accent-dark);
+  border-bottom-color: var(--accent);
+}
+
+.tool-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 480px;
+}
+.tool-form label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.tool-form input,
+.tool-form select,
+.tool-form textarea {
+  width: 100%;
+  padding: 9px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  font-size: 12px;
+}
+.tool-form textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+.tool-list-item {
+  background: white;
+  border: 1px solid #e0e5eb;
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 9px;
+}
+.tool-list-item h4 {
+  margin: 0 0 4px;
+  font-size: 12px;
+  color: #28384b;
+}
+.tool-list-item p {
+  margin: 0;
+  font-size: 11px;
+  color: #58667a;
+  line-height: 1.5;
+}
+.tool-list-item .meta {
+  font-size: 9px;
+  color: var(--muted);
+  margin-top: 6px;
+}
+
+/* -- Task tray (GW3; C6 async-by-default workflow runs) ---------------------------- */
+.task-tray {
+  position: fixed;
+  /* Above .toast's bottom:18px so a transient toast never overlaps a persistent task. */
+  bottom: 70px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 70;
+  width: 300px;
+}
+.task-tray-item {
+  background: #1b2a3c;
+  color: white;
+  border-radius: 10px;
+  padding: 10px 12px;
+  box-shadow: var(--shadow);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.task-tray-item > div:first-child {
+  flex: 1;
+  min-width: 0;
+}
+.task-tray-label {
+  font-size: 11px;
+  font-weight: 650;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.task-tray-error {
+  font-size: 10px;
+  color: #e3b8b8;
+  margin-top: 2px;
+}
+.task-tray-dismiss {
+  border: 0;
+  background: none;
+  color: #9fb0c3;
+  font-size: 16px;
+  line-height: 1;
+  padding: 2px 4px;
+}
+.task-tray-dismiss:hover {
+  color: white;
+}

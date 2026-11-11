@@ -1,4 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 /**
  * Local-only E2E config (DEC-031, docs/audit/10): it starts a real API process against
@@ -13,7 +15,9 @@ import { defineConfig, devices } from "@playwright/test";
  */
 const API_PORT = 8000;
 const WEB_PORT = 5173;
-const REPO_ROOT = "../..";
+// Absolute, not a relative string: each webServer entry's `cwd` is resolved independently,
+// so a relative "../.." would otherwise need re-deriving per entry instead of reusing one value.
+const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 
 export default defineConfig({
   testDir: "./e2e",
@@ -26,7 +30,7 @@ export default defineConfig({
   },
   webServer: [
     {
-      command: `${REPO_ROOT}/.venv/bin/uvicorn apps.api.main:app --port ${API_PORT}`,
+      command: `.venv/bin/uvicorn apps.api.main:app --port ${API_PORT}`,
       cwd: REPO_ROOT,
       url: `http://localhost:${API_PORT}/health`,
       reuseExistingServer: true,
@@ -43,6 +47,21 @@ export default defineConfig({
       url: `http://localhost:${WEB_PORT}`,
       reuseExistingServer: true,
       timeout: 30_000,
+    },
+    {
+      // Workflow triggers are async by default (C6): a queued run only progresses once a
+      // worker claims it from the outbox. No readiness URL exists for a worker loop, so
+      // this entry has neither `url` nor `port` -- Playwright starts it and moves on.
+      command: `.venv/bin/python -m apps.worker.worker`,
+      cwd: REPO_ROOT,
+      reuseExistingServer: true,
+      env: {
+        ENVIRONMENT: "development",
+        DATABASE_URL: "postgresql+psycopg://postgres:postgres@localhost:55432/tattva_film_director_test",
+        SECRET_KEY: "e2e-local-only-secret-never-used-outside-this-run",
+        STORAGE_LOCAL_ROOT: "/tmp/tattva-e2e-storage",
+        WORKER_POLL_INTERVAL_SECONDS: "0.5",
+      },
     },
   ],
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],

@@ -6,7 +6,36 @@ import { JourneyRail } from "../components/JourneyRail";
 import { AccordionGroup } from "../components/AccordionGroup";
 import { Toast } from "../components/Toast";
 import { useToast } from "../hooks/useToast";
-import { ApiError, UnauthenticatedError, type JourneyItemAction, type JourneySection } from "../api/client";
+import { useTaskTray } from "../hooks/useTaskTray";
+import { TaskTray } from "../components/TaskTray";
+import { StudioToolsMenu } from "../components/StudioToolsMenu";
+import type { ToolKey } from "../lib/studioTools";
+import { StudioToolPanel } from "../components/StudioToolPanel";
+import { AssetsTool } from "../components/tools/AssetsTool";
+import { ScriptIntelligenceTool } from "../components/tools/ScriptIntelligenceTool";
+import { ReviewTool } from "../components/tools/ReviewTool";
+import { HistoricalResearchTool } from "../components/tools/HistoricalResearchTool";
+import { StoryboardTool } from "../components/tools/StoryboardTool";
+import { FilmBibleTool } from "../components/tools/FilmBibleTool";
+import { AuditTool } from "../components/tools/AuditTool";
+import type { JourneyItemAction, JourneySection } from "../api/client";
+import { describeError } from "../lib/describeError";
+
+const TOOL_TITLES: Record<ToolKey, { title: string; subtitle: string }> = {
+  assets: { title: "Assets", subtitle: "Upload screenplays into private, immutable storage." },
+  script_intelligence: {
+    title: "Script Intelligence",
+    subtitle: "Extract scenes, characters and locations from the screenplay.",
+  },
+  review: { title: "Candidate Review", subtitle: "Approve or reject AI-extracted candidates before they become canon." },
+  historical_research: {
+    title: "Historical Research",
+    subtitle: "Investigate, record and verify historical evidence.",
+  },
+  storyboard: { title: "Storyboard", subtitle: "Generate and review the visual shot sequence." },
+  film_bible: { title: "Film Bible", subtitle: "Canonical visual-world rules, scenes and entities." },
+  audit: { title: "Audit Trail", subtitle: "Every project lifecycle action and decision." },
+};
 
 /** The server is authoritative on `can_continue`; this local pick only decides which
  * section opens by default -- the first one not yet past the gate, or the last one if
@@ -24,15 +53,6 @@ function sectionProgress(section: JourneySection) {
   const done = required.filter((g) => g.status === "completed" || g.status === "not_applicable").length;
   const total = required.length;
   return { done, total, pct: total ? Math.round((done / total) * 100) : 100 };
-}
-
-function describeError(err: unknown): string {
-  if (err instanceof UnauthenticatedError) return "Your session has expired. Please sign in again.";
-  if (err instanceof ApiError) {
-    if (err.status === 403) return "You don't have permission to do that on this project.";
-    return err.message || "Something went wrong.";
-  }
-  return "Something went wrong.";
 }
 
 function useOnlineStatus(): boolean {
@@ -58,6 +78,8 @@ export function ProjectWorkspacePage() {
   const continueSection = useContinueSection(projectId ?? "");
   const { message, showToast } = useToast();
   const isOnline = useOnlineStatus();
+  const taskTray = useTaskTray();
+  const [openTool, setOpenTool] = useState<ToolKey | null>(null);
 
   const sections = journey.data ?? [];
   const [openGroupIds, setOpenGroupIds] = useState<Set<string>>(new Set());
@@ -169,13 +191,7 @@ export function ProjectWorkspacePage() {
             <p>{currentProject.logline || "No logline set yet."}</p>
           </div>
           <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
-            <button
-              type="button"
-              className="btn"
-              onClick={() => showToast("Studio Tools will open the project's connected screens here (coming soon).")}
-            >
-              Studio Tools
-            </button>
+            <StudioToolsMenu activeSectionId={activeSectionId ?? sections[0].id} onOpenTool={setOpenTool} />
             <button type="button" className="btn" onClick={() => showToast("Project settings aren't built yet.")}>
               Project Settings
             </button>
@@ -264,6 +280,28 @@ export function ProjectWorkspacePage() {
           </>
         )}
       </main>
+
+      {openTool && (
+        <StudioToolPanel
+          title={TOOL_TITLES[openTool].title}
+          subtitle={TOOL_TITLES[openTool].subtitle}
+          onClose={() => setOpenTool(null)}
+        >
+          {openTool === "assets" && <AssetsTool projectId={projectId} />}
+          {openTool === "script_intelligence" && (
+            <ScriptIntelligenceTool projectId={projectId} onRunStarted={taskTray.trackRun} />
+          )}
+          {openTool === "review" && <ReviewTool projectId={projectId} />}
+          {openTool === "historical_research" && (
+            <HistoricalResearchTool projectId={projectId} onRunStarted={taskTray.trackRun} />
+          )}
+          {openTool === "storyboard" && <StoryboardTool projectId={projectId} onRunStarted={taskTray.trackRun} />}
+          {openTool === "film_bible" && <FilmBibleTool projectId={projectId} onRunStarted={taskTray.trackRun} />}
+          {openTool === "audit" && <AuditTool projectId={projectId} />}
+        </StudioToolPanel>
+      )}
+
+      <TaskTray tasks={taskTray.tasks} onDismiss={taskTray.dismiss} onOpenReview={() => setOpenTool("review")} />
       <Toast message={message} />
     </div>
   );
