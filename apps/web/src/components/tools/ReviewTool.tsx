@@ -71,7 +71,15 @@ function ApprovalCard({
     <div className="tool-list-item">
       <h4>{SCOPE_LABEL[approval.scope] ?? approval.scope}</h4>
       <p className="meta" style={{ marginBottom: 10 }}>
-        Workflow run <code>{approval.workflow_run_id.slice(0, 8)}</code>
+        {approval.workflow_run_id ? (
+          <>
+            Workflow run <code>{approval.workflow_run_id.slice(0, 8)}</code>
+          </>
+        ) : (
+          <>
+            {approval.target_type ?? "Target"} <code>{(approval.target_id ?? "unknown").slice(0, 8)}</code>
+          </>
+        )}
       </p>
 
       {scenes.length > 0 && (

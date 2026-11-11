@@ -215,10 +215,23 @@ class OutboxTaskModel(Base):
 
 
 class ApprovalRequestModel(Base):
+    """Every approval to date originates from one of the 4 graphs' candidate-review gate
+    (`workflow_run_id`, `scope`, `candidate_summary`). C8 widens the table so a FUTURE
+    approval needn't originate from a workflow run at all -- e.g. D2's screenplay-lock
+    decision, which approves a director's manual revision, not a graph's output.
+    `workflow_run_id` becomes nullable; `target_type`/`target_id` are the generic
+    alternative a non-workflow-run approval would use instead. Nothing creates one of
+    those yet (every row today still has `workflow_run_id` set and `target_type` NULL) --
+    the routing logic in apps/api/routers/approvals.py stays scope-based until D2 actually
+    defines what a non-workflow approval's decision path looks like, rather than guessing
+    it now with no real consumer to validate against."""
+
     __tablename__ = "approval_requests"
 
     id = Column(String(36), primary_key=True, default=generate_uuid)
-    workflow_run_id = Column(String(36), ForeignKey("workflow_runs.id"), nullable=False, index=True)
+    workflow_run_id = Column(String(36), ForeignKey("workflow_runs.id"), nullable=True, index=True)
+    target_type = Column(String(100), nullable=True)
+    target_id = Column(String(36), nullable=True)
     project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, index=True)
     organization_id = Column(String(36), ForeignKey("organizations.id"), nullable=False, index=True)
     scope = Column(String(100), default="script_intelligence_candidates", nullable=False)

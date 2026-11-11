@@ -212,7 +212,13 @@ class FilmBibleRuleCandidateResponse(_ORM):
 
 class ApprovalResponse(_ORM):
     id: str
-    workflow_run_id: str
+    # Nullable since C8 (approval_requests.workflow_run_id widened so a future approval
+    # can target something other than a workflow run's output); every row created by the
+    # 4 existing graphs still has one -- this is forward compatibility, not a behaviour
+    # change for anything that exists today.
+    workflow_run_id: str | None
+    target_type: str | None = None
+    target_id: str | None = None
     scope: str
     status: str
     decision: str | None

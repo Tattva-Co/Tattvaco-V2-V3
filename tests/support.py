@@ -8,6 +8,8 @@ import uuid
 from dataclasses import dataclass
 from typing import List
 
+from sqlalchemy import text
+
 from packages.persistence.database import SessionLocal
 from packages.persistence.models import (
     ApprovalRequestModel,
@@ -74,6 +76,10 @@ def purge_organization(org_id: str) -> None:
     """Delete every row owned by an organization, children first."""
     db = SessionLocal()
     try:
+        # audit_events is append-only (C8: a BEFORE UPDATE OR DELETE trigger raises
+        # unconditionally otherwise) -- this is the one legitimate, deliberate exception,
+        # scoped (SET LOCAL) to just this transaction so no other code path gets it.
+        db.execute(text("SET LOCAL tattva.allow_audit_mutation = 'true'"))
         project_ids: List[str] = [
             pid for (pid,) in db.query(ProjectModel.id).filter_by(organization_id=org_id).all()
         ]

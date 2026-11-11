@@ -501,7 +501,11 @@ export interface components {
             /** Id */
             id: string;
             /** Workflow Run Id */
-            workflow_run_id: string;
+            workflow_run_id: string | null;
+            /** Target Type */
+            target_type?: string | null;
+            /** Target Id */
+            target_id?: string | null;
             /** Scope */
             scope: string;
             /** Status */
