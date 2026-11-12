@@ -44,6 +44,47 @@ class ProjectScale(str, Enum):
     LARGE = "large"
 
 
+class ScreenplayVersionStatus(str, Enum):
+    """D2 (TFD-SCR-002/003, PRD §3.1 state diagram):
+    draft -> in_review -> approved_locked -> superseded
+                 |---------> rejected
+                 <---------  (management requests changes, back to draft)
+    """
+
+    DRAFT = "draft"
+    IN_REVIEW = "in_review"
+    APPROVED_LOCKED = "approved_locked"
+    REJECTED = "rejected"
+    SUPERSEDED = "superseded"
+
+
+class SuggestionKind(str, Enum):
+    """D2 (TFD-SCR-005): the 7 kinds of AI creative suggestion (PRD §3 Workflow 2 /
+    SCREEN_INVENTORY_AND_BEHAVIOUR.md S-SCR-04)."""
+
+    ALTERNATIVE_SCENE = "alternative_scene"
+    DIALOGUE_IMPROVEMENT = "dialogue_improvement"
+    TRANSITION = "transition"
+    STORYTELLING_OPPORTUNITY = "storytelling_opportunity"
+    DRAMATIC_IMPROVEMENT = "dramatic_improvement"
+    CHARACTER_DEVELOPMENT = "character_development"
+    PACING = "pacing"
+
+
+class SuggestionDisposition(str, Enum):
+    PENDING = "pending"
+    ACCEPTED_FOR_REVISION = "accepted_for_revision"
+    REJECTED = "rejected"
+    DEFERRED = "deferred"
+
+
+#: D2 (TFD-SCR-010, PRD §3.1 invariant 4): a canonical item an impact analysis flagged
+#: for human review after the screenplay version producing it was superseded. Nothing
+#: else changes about the row -- no content, no status transition of its own -- "nothing
+#: propagates automatically".
+REVIEW_STATUS_REQUIRED = "review_required"
+
+
 class AssetType(str, Enum):
     SCRIPT = "script"
     DOCUMENT = "document"
@@ -82,6 +123,12 @@ class ApprovalStatus(str, Enum):
 class ApprovalDecision(str, Enum):
     APPROVED = "approved"
     REJECTED = "rejected"
+    # D2 (TFD-SCR-007/AT-SCR-007.3): management review of a screenplay revision has a
+    # third, non-terminal outcome -- the revision returns to `draft` for more editing,
+    # rather than being approved or permanently rejected. The 4 pre-existing LangGraph
+    # review flows (script/research/storyboard/film-bible) never construct this value,
+    # so their own APPROVED/else-REJECTED routing is unaffected by adding it here.
+    CHANGES_REQUESTED = "changes_requested"
 
 
 class CandidateStatus(str, Enum):
@@ -126,6 +173,18 @@ class AuditAction(str, Enum):
     OUTPUT_PROFILE_UPDATED = "output_profile_updated"
     OUTPUT_PROFILE_DELETED = "output_profile_deleted"
     EPISODE_CREATED = "episode_created"
+    SCREENPLAY_VERSION_IMPORTED = "screenplay_version_imported"
+    SCREENPLAY_REVISION_CREATED = "screenplay_revision_created"
+    SCREENPLAY_REVISION_EDITED = "screenplay_revision_edited"
+    SCREENPLAY_REVISION_SUBMITTED = "screenplay_revision_submitted"
+    SCREENPLAY_REVISION_APPROVED = "screenplay_revision_approved"
+    SCREENPLAY_REVISION_REJECTED = "screenplay_revision_rejected"
+    SCREENPLAY_REVISION_CHANGES_REQUESTED = "screenplay_revision_changes_requested"
+    SCREENPLAY_LOCKED_MUTATION_BLOCKED = "screenplay_locked_mutation_blocked"
+    SCREENPLAY_LEGACY_LOCK_CONFIRMED = "screenplay_legacy_lock_confirmed"
+    SCREENPLAY_SUGGESTIONS_GENERATED = "screenplay_suggestions_generated"
+    SCREENPLAY_SUGGESTION_DECIDED = "screenplay_suggestion_decided"
+    IMPACT_ANALYSIS_CREATED = "impact_analysis_created"
 
 
 class ShotType(str, Enum):

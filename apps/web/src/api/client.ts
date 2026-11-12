@@ -110,6 +110,17 @@ export type ProjectMember = Schemas["ProjectMemberResponse"];
 export type ProjectMemberAddBody = Schemas["ProjectMemberAddRequest"];
 export type ProjectMemberRoleUpdateBody = Schemas["ProjectMemberRoleUpdateRequest"];
 export type ProjectSummary = Schemas["ProjectSummaryResponse"];
+export type ScreenplayVersion = Schemas["ScreenplayVersionResponse"];
+export type ScreenplayVersionImportBody = Schemas["ScreenplayVersionImportRequest"];
+export type ScreenplayVersionUpdateBody = Schemas["ScreenplayVersionUpdateRequest"];
+export type ScreenplayDiff = Schemas["ScreenplayDiffResponse"];
+export type ScreenplayDecisionBody = Schemas["ScreenplayDecisionRequest"];
+export type ScreenplayDecisionResult = Schemas["ScreenplayDecisionResponse"];
+export type ScreenplaySuggestion = Schemas["ScreenplaySuggestionResponse"];
+export type ScreenplaySuggestionGenerateBody = Schemas["ScreenplaySuggestionGenerateRequest"];
+export type ScreenplaySuggestionDecisionBody = Schemas["ScreenplaySuggestionDecisionRequest"];
+export type ImpactAnalysis = Schemas["ImpactAnalysisResponse"];
+export type ImpactPreview = Schemas["ImpactPreviewResponse"];
 
 export const api = {
   auth: {
@@ -202,9 +213,9 @@ export const api = {
     },
   },
   workflows: {
-    triggerScriptIntelligence: (projectId: string, scriptAssetId: string) =>
+    triggerScriptIntelligence: (projectId: string, screenplayVersionId: string) =>
       request<WorkflowTriggerResult>("POST", `/api/v1/projects/${projectId}/workflows/script-intelligence`, {
-        script_asset_id: scriptAssetId,
+        screenplay_version_id: screenplayVersionId,
       }),
     triggerHistoricalResearch: (projectId: string, topic: string, seedText?: string) =>
       request<WorkflowTriggerResult>("POST", `/api/v1/projects/${projectId}/workflows/historical-research`, {
@@ -232,5 +243,70 @@ export const api = {
   },
   workflowRuns: {
     get: (runId: string) => request<WorkflowRun>("GET", `/api/v1/workflow-runs/${runId}`),
+  },
+  screenplay: {
+    listVersions: (projectId: string) =>
+      request<ScreenplayVersion[]>("GET", `/api/v1/projects/${projectId}/screenplay-versions`),
+    importVersion: (projectId: string, body: ScreenplayVersionImportBody) =>
+      request<ScreenplayVersion>("POST", `/api/v1/projects/${projectId}/screenplay-versions`, body),
+    getVersion: (projectId: string, versionId: string) =>
+      request<ScreenplayVersion>("GET", `/api/v1/projects/${projectId}/screenplay-versions/${versionId}`),
+    updateVersion: (projectId: string, versionId: string, body: ScreenplayVersionUpdateBody) =>
+      request<ScreenplayVersion>(
+        "PATCH",
+        `/api/v1/projects/${projectId}/screenplay-versions/${versionId}`,
+        body
+      ),
+    diff: (projectId: string, versionId: string, against: string) =>
+      request<ScreenplayDiff>(
+        "GET",
+        `/api/v1/projects/${projectId}/screenplay-versions/${versionId}/diff?against=${against}`
+      ),
+    revise: (projectId: string, baseVersionId: string) =>
+      request<ScreenplayVersion>(
+        "POST",
+        `/api/v1/projects/${projectId}/screenplay-versions/${baseVersionId}/revise`
+      ),
+    submit: (projectId: string, versionId: string, justification: string) =>
+      request<ScreenplayVersion>(
+        "POST",
+        `/api/v1/projects/${projectId}/screenplay-versions/${versionId}/submit`,
+        { justification }
+      ),
+    decide: (projectId: string, versionId: string, body: ScreenplayDecisionBody) =>
+      request<ScreenplayDecisionResult>(
+        "POST",
+        `/api/v1/projects/${projectId}/screenplay-versions/${versionId}/decide`,
+        body
+      ),
+    confirmLegacyLock: (projectId: string, versionId: string) =>
+      request<ScreenplayVersion>(
+        "POST",
+        `/api/v1/projects/${projectId}/screenplay-versions/${versionId}/confirm-legacy-lock`
+      ),
+    previewImpact: (projectId: string, versionId: string) =>
+      request<ImpactPreview>(
+        "GET",
+        `/api/v1/projects/${projectId}/screenplay-versions/${versionId}/impact-preview`
+      ),
+    generateSuggestions: (projectId: string, versionId: string, body: ScreenplaySuggestionGenerateBody) =>
+      request<ScreenplaySuggestion[]>(
+        "POST",
+        `/api/v1/projects/${projectId}/screenplay-versions/${versionId}/suggestions/generate`,
+        body
+      ),
+    listSuggestions: (projectId: string, versionId: string) =>
+      request<ScreenplaySuggestion[]>(
+        "GET",
+        `/api/v1/projects/${projectId}/screenplay-versions/${versionId}/suggestions`
+      ),
+    decideSuggestion: (projectId: string, suggestionId: string, body: ScreenplaySuggestionDecisionBody) =>
+      request<ScreenplaySuggestion>(
+        "POST",
+        `/api/v1/projects/${projectId}/screenplay-suggestions/${suggestionId}/decide`,
+        body
+      ),
+    listImpactAnalyses: (projectId: string) =>
+      request<ImpactAnalysis[]>("GET", `/api/v1/projects/${projectId}/impact-analyses`),
   },
 };

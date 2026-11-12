@@ -87,3 +87,15 @@ class FilmBibleRuleData(BaseModel):
 
 class FilmBibleSynthesisResult(BaseModel):
     rules: list[FilmBibleRuleData] = Field(default_factory=list)
+
+
+class ScreenplaySuggestionData(BaseModel):
+    kind: str
+    anchor: str
+    suggestion_text: str
+    rationale: str | None = None
+    confidence: float = 0.75
+
+
+class ScreenplaySuggestionResult(BaseModel):
+    suggestions: list[ScreenplaySuggestionData] = Field(default_factory=list)

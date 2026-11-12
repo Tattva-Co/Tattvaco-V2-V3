@@ -34,7 +34,7 @@ def trigger_script_intelligence(
     db: Session = Depends(get_db),
 ):
     run = ScriptIntelligenceService(db).start(
-        actor, project_id, req.script_asset_id, sync=req.sync_execution
+        actor, project_id, req.screenplay_version_id, sync=req.sync_execution
     )
     approval = ApprovalRepository(db).get_pending_for_run(run.id)
     return WorkflowTriggerResponse(

@@ -202,6 +202,136 @@ class AssetDerivativeModel(Base):
     )
 
 
+# -- Screenplay governance (D2; PRD §3, docs/product/ACCEPTANCE_CRITERIA.md §3.5) ----
+
+
+class ScreenplayVersionModel(Base):
+    """One screenplay text snapshot (PRD §3.1's state machine: draft -> in_review ->
+    approved_locked -> superseded, or in_review -> rejected / back to draft). A revision
+    is a new row (``derived_from_version_id`` set), never an edit of an existing locked
+    row -- TFD-SCR-003's immutability invariant holds by construction once a row leaves
+    ``draft``: every content-mutating path checks ``status == draft`` first."""
+
+    __tablename__ = "screenplay_versions"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id"), nullable=False, index=True)
+    # D1's episodic-structure foundation (TFD-SCR-011): null for a linear-structure
+    # project; one independent version lineage and one canonical slot per episode
+    # otherwise -- see the partial unique index below.
+    episode_id = Column(String(36), ForeignKey("episodes.id"), nullable=True, index=True)
+    version_number = Column(Integer, nullable=False)
+    status = Column(String(50), default="draft", nullable=False)  # packages.domain.enums.ScreenplayVersionStatus
+    is_production_canonical = Column(Boolean, default=False, nullable=False)
+    # The asset this version was imported from (TFD-SCR-001). Null for a revision
+    # derived from another version rather than imported fresh from a file.
+    source_asset_id = Column(String(36), ForeignKey("assets.id"), nullable=True)
+    derived_from_version_id = Column(String(36), ForeignKey("screenplay_versions.id"), nullable=True)
+    content_text = Column(Text, nullable=False)
+    content_hash = Column(String(64), nullable=False)  # sha256 hex digest of content_text
+    created_by = Column(String(36), ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+    submitted_at = Column(DateTime(timezone=True), nullable=True)
+    submitted_by = Column(String(36), ForeignKey("users.id"), nullable=True)
+    locked_at = Column(DateTime(timezone=True), nullable=True)
+    locked_by = Column(String(36), ForeignKey("users.id"), nullable=True)
+
+    __table_args__ = (
+        # postgresql_nulls_not_distinct (PG15+): without it, Postgres's default
+        # NULLS DISTINCT means two rows that both have episode_id=NULL (every
+        # linear-structure, i.e. non-episodic, project) are NEVER considered duplicates
+        # by a unique index no matter what else matches -- silently defeating both
+        # constraints below for the common case. NOT NULL episode_id (episodic
+        # projects) was never affected; this only restores the intended behavior for
+        # episode_id IS NULL.
+        Index(
+            "uq_screenplay_versions_project_number",
+            "project_id",
+            "episode_id",
+            "version_number",
+            unique=True,
+            postgresql_nulls_not_distinct=True,
+        ),
+        # TFD-SCR-002/AT-SCR-002.2: a DB-level guarantee, not just an app-level check --
+        # two concurrent "approve" transactions for the same (project, episode) can't
+        # both commit a canonical row; the second's INSERT/UPDATE hits this constraint
+        # and the service maps that into a 409, never two canonical versions at once.
+        Index(
+            "uq_screenplay_versions_one_canonical",
+            "project_id",
+            "episode_id",
+            unique=True,
+            postgresql_where=text("is_production_canonical = true"),
+            postgresql_nulls_not_distinct=True,
+        ),
+    )
+
+
+class ScreenplaySuggestionModel(Base):
+    """An AI-proposed creative suggestion (TFD-SCR-005, Workflow 2 in PRD §3 -- the AI
+    may propose but never edit the screenplay itself). Disposition is a plain status
+    write with no promotion step: an accepted suggestion is available for a Director to
+    manually incorporate into a revision's ``content_text``, never auto-applied."""
+
+    __tablename__ = "screenplay_suggestions"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    screenplay_version_id = Column(String(36), ForeignKey("screenplay_versions.id"), nullable=False, index=True)
+    project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id"), nullable=False, index=True)
+    kind = Column(String(50), nullable=False)  # packages.domain.enums.SuggestionKind
+    anchor = Column(String(100), nullable=False)  # e.g. "Scene 12" -- scene/line locator
+    suggestion_text = Column(Text, nullable=False)
+    rationale = Column(Text, nullable=True)
+    disposition = Column(String(50), default="pending", nullable=False)
+    disposition_notes = Column(Text, nullable=True)
+    decided_by = Column(String(36), ForeignKey("users.id"), nullable=True)
+    decided_at = Column(DateTime(timezone=True), nullable=True)
+    # C10: which ModelGateway produced this suggestion (packages.ai.gateway GENERATOR_MODE_*).
+    generator_mode = Column(String(20), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+
+class ScreenplayChangeModel(Base):
+    """One "submit for review" event on a revision (TFD-SCR-006/008): the computed diff
+    against its base version and the Director's required justification. A revision
+    bounced back with "changes requested" and resubmitted gets a second row here, so the
+    full history of every submission attempt is retained, not just the latest."""
+
+    __tablename__ = "screenplay_changes"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    screenplay_version_id = Column(String(36), ForeignKey("screenplay_versions.id"), nullable=False, index=True)
+    project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id"), nullable=False, index=True)
+    diffed_against_version_id = Column(String(36), ForeignKey("screenplay_versions.id"), nullable=False)
+    diff_summary = Column(JSON, nullable=False)  # {"unified_diff": str, "scenes_changed": [...], ...}
+    justification = Column(Text, nullable=False)
+    submitted_by = Column(String(36), ForeignKey("users.id"), nullable=False)
+    submitted_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+
+class ImpactAnalysisModel(Base):
+    """TFD-SCR-010 (PRD §3.1 invariant 4): computed when a revision is locked, listing
+    every canonical item whose source screenplay text changed or disappeared. Nothing
+    else happens automatically -- affected rows are flagged (see SceneModel/EntityModel
+    .review_status) for a human to review, never edited or deleted by this process."""
+
+    __tablename__ = "impact_analyses"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id"), nullable=False, index=True)
+    trigger_type = Column(String(50), nullable=False)  # e.g. "screenplay_lock"
+    new_version_id = Column(String(36), ForeignKey("screenplay_versions.id"), nullable=False)
+    previous_version_id = Column(String(36), ForeignKey("screenplay_versions.id"), nullable=True)
+    affected_items = Column(JSON, default=list, nullable=False)  # [{"item_type", "item_id", "reason"}, ...]
+    created_by = Column(String(36), ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+
 class WorkflowRunModel(Base):
     __tablename__ = "workflow_runs"
 
@@ -219,6 +349,13 @@ class WorkflowRunModel(Base):
     # C10: which ModelGateway produced this run's candidates (packages.ai.gateway
     # GENERATOR_MODE_*) -- "the mode is visible in the UI" exit criterion.
     generator_mode = Column(String(20), nullable=False)
+    # D2 (TFD-SCR-004/009): the specific screenplay_version Script Intelligence (WF-01)
+    # read from. Null for every other graph (historical research, storyboard, film
+    # bible), which have no screenplay-version concept. Read back by
+    # ScriptReviewService.promote_approved to stamp newly-promoted scenes with it --
+    # the same "metadata lives on the run, not threaded through candidates/state"
+    # pattern C10's generator_mode established (DEC-040).
+    screenplay_version_id = Column(String(36), ForeignKey("screenplay_versions.id"), nullable=True)
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
     updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
 
@@ -378,6 +515,17 @@ class SceneModel(Base):
     # is D2/D3's screenplay-governance concern); this column exists now so D2/D3 need no
     # second migration to add it.
     episode_id = Column(String(36), ForeignKey("episodes.id"), nullable=True, index=True)
+    # D2 (TFD-SCR-009): which screenplay version this scene was extracted/committed
+    # from. Set once at promotion time and never retargeted when a newer version is
+    # locked (AT-SCR-009.1: "existing items still show v3 until re-anchored"). Nullable
+    # because every scene that predates this column has no real version to point at
+    # (backfilled by the same migration that creates each project's v1 screenplay_version).
+    screenplay_version_id = Column(String(36), ForeignKey("screenplay_versions.id"), nullable=True, index=True)
+    # D2 (TFD-SCR-010): set to packages.domain.enums.REVIEW_STATUS_REQUIRED by an impact
+    # analysis when the screenplay version this scene came from was superseded by a
+    # locked revision that changed or removed it. Null = no outstanding review. Nothing
+    # else about the row changes when this is set ("nothing propagates automatically").
+    review_status = Column(String(50), nullable=True)
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
 
 
@@ -393,6 +541,10 @@ class EntityModel(Base):
     description = Column(Text, nullable=True)
     source_locator = Column(String(100), nullable=False)
     project_version = Column(Integer, default=1, nullable=False)
+    # D2 (TFD-SCR-010): see SceneModel.review_status -- entities (characters) are the
+    # other canonical item type an impact analysis can flag, per PRD §3.1 invariant 4
+    # ("lists affected scenes, characters...").
+    review_status = Column(String(50), nullable=True)
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
 
 

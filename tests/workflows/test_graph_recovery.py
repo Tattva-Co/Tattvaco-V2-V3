@@ -1,5 +1,6 @@
 """Tests verifying LangGraph checkpointing, pause/interrupt, and crash resumption."""
 
+import hashlib
 import uuid
 
 import pytest
@@ -10,6 +11,7 @@ from packages.persistence.models import (
     ApprovalRequestModel,
     AuditEventModel,
     ProjectModel,
+    ScreenplayVersionModel,
     WorkflowRunModel,
 )
 from packages.workflows.checkpointer import get_checkpointer
@@ -21,6 +23,7 @@ from tests.support import SAMPLE_SCRIPT
 def run_context(tenant):
     proj_id = str(uuid.uuid4())
     run_id = str(uuid.uuid4())
+    version_id = str(uuid.uuid4())
     db = SessionLocal()
     db.add(
         ProjectModel(
@@ -28,6 +31,20 @@ def run_context(tenant):
             organization_id=tenant.org_id,
             title="Test Film",
             current_version=1,
+            created_by=tenant.user_id,
+        )
+    )
+    db.flush()
+    db.add(
+        ScreenplayVersionModel(
+            id=version_id,
+            project_id=proj_id,
+            organization_id=tenant.org_id,
+            version_number=1,
+            status="draft",
+            is_production_canonical=False,
+            content_text=SAMPLE_SCRIPT,
+            content_hash=hashlib.sha256(SAMPLE_SCRIPT.encode()).hexdigest(),
             created_by=tenant.user_id,
         )
     )
@@ -43,11 +60,18 @@ def run_context(tenant):
             expected_project_version=1,
             status="running",
             generator_mode="deterministic",
+            screenplay_version_id=version_id,
         )
     )
     db.commit()
     db.close()
-    return {"org_id": tenant.org_id, "user_id": tenant.user_id, "proj_id": proj_id, "run_id": run_id}
+    return {
+        "org_id": tenant.org_id,
+        "user_id": tenant.user_id,
+        "proj_id": proj_id,
+        "run_id": run_id,
+        "version_id": version_id,
+    }
 
 
 def _initial_state(ctx):
@@ -57,8 +81,7 @@ def _initial_state(ctx):
         "organization_id": ctx["org_id"],
         "actor_id": ctx["user_id"],
         "expected_project_version": 1,
-        "script_asset_id": "asset-test",
-        "raw_script_text": SAMPLE_SCRIPT,
+        "screenplay_version_id": ctx["version_id"],
         "approval_status": "pending",
     }
 

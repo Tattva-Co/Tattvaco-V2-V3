@@ -13,17 +13,18 @@ from __future__ import annotations
 from packages.persistence.database import SessionLocal
 from packages.persistence.models import ApprovalRequestModel, EntityCandidateModel, SceneCandidateModel
 from packages.services.script_intelligence import ScriptIntelligenceService
-from tests.support import as_actor, create_project, upload_script
+from tests.support import as_actor, create_project, import_screenplay_version, upload_script
 
 
 def test_redelivered_script_intelligence_task_does_not_duplicate_candidates(client, tenant):
     project = create_project(client, tenant)
     upload = upload_script(client, tenant, project["id"])
     assert upload.status_code == 200, upload.text
+    version = import_screenplay_version(client, tenant, project["id"], upload.json()["asset_id"])
 
     trigger = client.post(
         f"/api/v1/projects/{project['id']}/workflows/script-intelligence",
-        json={"script_asset_id": upload.json()["asset_id"], "sync_execution": False},
+        json={"screenplay_version_id": version["id"], "sync_execution": False},
         headers=as_actor(tenant.user_id),
     )
     assert trigger.status_code == 200, trigger.text

@@ -29,6 +29,7 @@ from packages.ai.schemas import (
     FilmBibleSynthesisResult,
     HistoricalResearchResult,
     ScreenplayParseResult,
+    ScreenplaySuggestionResult,
     StoryboardAlignResult,
 )
 from packages.core.config import Settings
@@ -68,9 +69,14 @@ class ModelGateway(ABC):
         self, scenes: list[dict], claims: list[dict], user_notes: str | None
     ) -> FilmBibleSynthesisResult: ...
 
+    @abstractmethod
+    def suggest_screenplay_revisions(
+        self, content_text: str, scope_notes: str | None
+    ) -> ScreenplaySuggestionResult: ...
+
 
 class DeterministicModelGateway(ModelGateway):
-    """Wraps the 4 pre-existing generators. See module docstring."""
+    """Wraps the pre-existing generators. See module docstring."""
 
     mode = GENERATOR_MODE_DETERMINISTIC
 
@@ -81,6 +87,7 @@ class DeterministicModelGateway(ModelGateway):
         # function actually running), every module involved is already fully loaded.
         from packages.workflows.film_bible_synthesis.synthesizer import FilmBibleSynthesizer
         from packages.workflows.historical_research.investigator import HistoricalInvestigator
+        from packages.workflows.screenplay_suggestions.suggester import ScreenplaySuggester
         from packages.workflows.script_intelligence.parser import ScreenplayParser
         from packages.workflows.storyboard_intelligence.aligner import StoryboardAligner
 
@@ -88,6 +95,7 @@ class DeterministicModelGateway(ModelGateway):
         self._investigator = HistoricalInvestigator()
         self._aligner = StoryboardAligner()
         self._synthesizer = FilmBibleSynthesizer()
+        self._suggester = ScreenplaySuggester()
 
     def parse_screenplay(self, text: str) -> ScreenplayParseResult:
         scenes, entities = self._parser.parse(text)
@@ -106,6 +114,12 @@ class DeterministicModelGateway(ModelGateway):
     ) -> FilmBibleSynthesisResult:
         rules = self._synthesizer.synthesize_rules(scenes, claims, user_notes=user_notes)
         return _validated(FilmBibleSynthesisResult, rules=rules)
+
+    def suggest_screenplay_revisions(
+        self, content_text: str, scope_notes: str | None
+    ) -> ScreenplaySuggestionResult:
+        suggestions = self._suggester.suggest(content_text, scope_notes=scope_notes)
+        return _validated(ScreenplaySuggestionResult, suggestions=suggestions)
 
 
 def get_model_gateway(settings: Settings) -> ModelGateway:

@@ -9,7 +9,13 @@ from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanE
 from apps.worker.worker import process_one_task
 from packages.persistence.database import session_scope
 from packages.persistence.models import OutboxTaskModel
-from tests.support import as_actor, create_project, upload_script
+from tests.support import (
+    as_actor,
+    create_draft_screenplay_version,
+    create_project,
+    import_screenplay_version,
+    upload_script,
+)
 
 
 def _drain(max_tasks: int = 20) -> None:
@@ -43,10 +49,11 @@ def test_queued_run_is_executed_by_worker(client, tenant):
     headers = as_actor(tenant.user_id)
     project = create_project(client, tenant)
     asset_id = upload_script(client, tenant, project["id"]).json()["asset_id"]
+    version_id = import_screenplay_version(client, tenant, project["id"], asset_id)["id"]
 
     trigger = client.post(
         f"/api/v1/projects/{project['id']}/workflows/script-intelligence",
-        json={"script_asset_id": asset_id, "sync_execution": False},
+        json={"screenplay_version_id": version_id, "sync_execution": False},
         headers=headers,
     )
     assert trigger.status_code == 200
@@ -69,16 +76,17 @@ def test_queued_run_is_executed_by_worker(client, tenant):
 def test_failed_run_marks_task_and_run_failed(client, tenant):
     headers = as_actor(tenant.user_id)
     project = create_project(client, tenant)
-    # application/json is upload-allowed but not a format Script Intelligence (or its C7
-    # text-extraction additions) supports -- a reliable, deterministic way to make the
-    # *workflow* fail business-rule validation without the *upload* itself being rejected.
-    asset_id = upload_script(client, tenant, project["id"], filename="s.json", mime="application/json").json()[
-        "asset_id"
-    ]
+    # An empty screenplay version's text is a reliable, deterministic way to make the
+    # *workflow* fail business-rule validation inside the worker, bypassing the normal
+    # upload/import flow (both of which already reject empty or unsupported content
+    # before a screenplay_versions row would ever exist -- see
+    # test_assets_api.py::test_empty_upload_is_rejected and
+    # test_screenplay_import_refuses_assets_with_no_supported_extraction).
+    version_id = create_draft_screenplay_version(project["id"], tenant.org_id, tenant.user_id, content_text="")
 
     run_id = client.post(
         f"/api/v1/projects/{project['id']}/workflows/script-intelligence",
-        json={"script_asset_id": asset_id, "sync_execution": False},
+        json={"screenplay_version_id": version_id, "sync_execution": False},
         headers=headers,
     ).json()["workflow_run_id"]
 
@@ -86,7 +94,7 @@ def test_failed_run_marks_task_and_run_failed(client, tenant):
 
     run = client.get(f"/api/v1/workflow-runs/{run_id}", headers=headers).json()
     assert run["status"] == "failed"
-    assert "plain-text" in run["error_message"]
+    assert "empty" in run["error_message"]
     with session_scope() as db:
         # A business-rule error (wrong file type) is dead-lettered immediately rather
         # than retried: the same file will fail identically on every attempt (C6).
@@ -189,10 +197,11 @@ def test_the_api_trigger_and_the_worker_that_processes_it_share_one_trace(client
     headers = as_actor(tenant.user_id)
     project = create_project(client, tenant)
     asset_id = upload_script(client, tenant, project["id"]).json()["asset_id"]
+    version_id = import_screenplay_version(client, tenant, project["id"], asset_id)["id"]
 
     trigger = client.post(
         f"/api/v1/projects/{project['id']}/workflows/script-intelligence",
-        json={"script_asset_id": asset_id, "sync_execution": False},
+        json={"screenplay_version_id": version_id, "sync_execution": False},
         headers=headers,
     )
     assert trigger.status_code == 200, trigger.text

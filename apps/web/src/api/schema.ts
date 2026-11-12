@@ -654,6 +654,212 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/{project_id}/screenplay-versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Screenplay Versions */
+        get: operations["list_screenplay_versions_api_v1_projects__project_id__screenplay_versions_get"];
+        put?: never;
+        /** Import Screenplay Version */
+        post: operations["import_screenplay_version_api_v1_projects__project_id__screenplay_versions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/screenplay-versions/{version_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Screenplay Version */
+        get: operations["get_screenplay_version_api_v1_projects__project_id__screenplay_versions__version_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Screenplay Version */
+        patch: operations["update_screenplay_version_api_v1_projects__project_id__screenplay_versions__version_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/screenplay-versions/{version_id}/diff": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Diff Screenplay Version */
+        get: operations["diff_screenplay_version_api_v1_projects__project_id__screenplay_versions__version_id__diff_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/screenplay-versions/{version_id}/revise": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Screenplay Revision */
+        post: operations["create_screenplay_revision_api_v1_projects__project_id__screenplay_versions__version_id__revise_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/screenplay-versions/{version_id}/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Submit Screenplay Revision */
+        post: operations["submit_screenplay_revision_api_v1_projects__project_id__screenplay_versions__version_id__submit_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/screenplay-versions/{version_id}/decide": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Decide Screenplay Revision */
+        post: operations["decide_screenplay_revision_api_v1_projects__project_id__screenplay_versions__version_id__decide_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/screenplay-versions/{version_id}/confirm-legacy-lock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirm Legacy Lock */
+        post: operations["confirm_legacy_lock_api_v1_projects__project_id__screenplay_versions__version_id__confirm_legacy_lock_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/screenplay-versions/{version_id}/impact-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Preview Impact */
+        get: operations["preview_impact_api_v1_projects__project_id__screenplay_versions__version_id__impact_preview_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/screenplay-versions/{version_id}/suggestions/generate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Generate Suggestions */
+        post: operations["generate_suggestions_api_v1_projects__project_id__screenplay_versions__version_id__suggestions_generate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/screenplay-versions/{version_id}/suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Suggestions */
+        get: operations["list_suggestions_api_v1_projects__project_id__screenplay_versions__version_id__suggestions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/screenplay-suggestions/{suggestion_id}/decide": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Decide Suggestion */
+        post: operations["decide_suggestion_api_v1_projects__project_id__screenplay_suggestions__suggestion_id__decide_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/impact-analyses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Impact Analyses */
+        get: operations["list_impact_analyses_api_v1_projects__project_id__impact_analyses_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/dev-login": {
         parameters: {
             query?: never;
@@ -679,7 +885,7 @@ export interface components {
          * ApprovalDecision
          * @enum {string}
          */
-        ApprovalDecision: "approved" | "rejected";
+        ApprovalDecision: "approved" | "rejected" | "changes_requested";
         /** ApprovalDecisionRequest */
         ApprovalDecisionRequest: {
             decision: components["schemas"]["ApprovalDecision"];
@@ -887,6 +1093,8 @@ export interface components {
             source_locator: string;
             /** Project Version */
             project_version: number;
+            /** Review Status */
+            review_status: string | null;
         };
         /** EpisodeCreateRequest */
         EpisodeCreateRequest: {
@@ -1048,6 +1256,37 @@ export interface components {
              * @default false
              */
             sync_execution: boolean;
+        };
+        /** ImpactAnalysisResponse */
+        ImpactAnalysisResponse: {
+            /** Id */
+            id: string;
+            /** Project Id */
+            project_id: string;
+            /** Trigger Type */
+            trigger_type: string;
+            /** New Version Id */
+            new_version_id: string;
+            /** Previous Version Id */
+            previous_version_id: string | null;
+            /** Affected Items */
+            affected_items: {
+                [key: string]: unknown;
+            }[];
+            /** Created By */
+            created_by: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** ImpactPreviewResponse */
+        ImpactPreviewResponse: {
+            /** Affected Items */
+            affected_items: {
+                [key: string]: unknown;
+            }[];
         };
         /** JourneyGroupResponse */
         JourneyGroupResponse: {
@@ -1693,6 +1932,145 @@ export interface components {
             characters_present: string[];
             /** Project Version */
             project_version: number;
+            /** Screenplay Version Id */
+            screenplay_version_id: string | null;
+            /** Review Status */
+            review_status: string | null;
+        };
+        /** ScreenplayDecisionRequest */
+        ScreenplayDecisionRequest: {
+            decision: components["schemas"]["ApprovalDecision"];
+            /** Notes */
+            notes?: string | null;
+        };
+        /** ScreenplayDecisionResponse */
+        ScreenplayDecisionResponse: {
+            /** Approval Id */
+            approval_id: string;
+            /** Decision */
+            decision: string;
+            /** Version Status */
+            version_status: string;
+            /** Is Canonical */
+            is_canonical: boolean;
+        };
+        /** ScreenplayDiffResponse */
+        ScreenplayDiffResponse: {
+            /** Unified Diff */
+            unified_diff: string;
+            /** Scenes Changed */
+            scenes_changed: {
+                [key: string]: unknown;
+            }[];
+            /** Lines Added */
+            lines_added: number;
+            /** Lines Removed */
+            lines_removed: number;
+        };
+        /** ScreenplaySubmitRequest */
+        ScreenplaySubmitRequest: {
+            /** Justification */
+            justification: string;
+        };
+        /** ScreenplaySuggestionDecisionRequest */
+        ScreenplaySuggestionDecisionRequest: {
+            /**
+             * Disposition
+             * @description accepted_for_revision | rejected | deferred
+             */
+            disposition: string;
+            /** Notes */
+            notes?: string | null;
+        };
+        /** ScreenplaySuggestionGenerateRequest */
+        ScreenplaySuggestionGenerateRequest: {
+            /** Scope Notes */
+            scope_notes?: string | null;
+        };
+        /** ScreenplaySuggestionResponse */
+        ScreenplaySuggestionResponse: {
+            /** Id */
+            id: string;
+            /** Screenplay Version Id */
+            screenplay_version_id: string;
+            /** Kind */
+            kind: string;
+            /** Anchor */
+            anchor: string;
+            /** Suggestion Text */
+            suggestion_text: string;
+            /** Rationale */
+            rationale: string | null;
+            /** Disposition */
+            disposition: string;
+            /** Disposition Notes */
+            disposition_notes: string | null;
+            /** Decided By */
+            decided_by: string | null;
+            /** Decided At */
+            decided_at: string | null;
+            /** Generator Mode */
+            generator_mode: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** ScreenplayVersionImportRequest */
+        ScreenplayVersionImportRequest: {
+            /** Source Asset Id */
+            source_asset_id: string;
+            /** Episode Id */
+            episode_id?: string | null;
+        };
+        /** ScreenplayVersionResponse */
+        ScreenplayVersionResponse: {
+            /** Id */
+            id: string;
+            /** Project Id */
+            project_id: string;
+            /** Episode Id */
+            episode_id: string | null;
+            /** Version Number */
+            version_number: number;
+            /** Status */
+            status: string;
+            /** Is Production Canonical */
+            is_production_canonical: boolean;
+            /** Source Asset Id */
+            source_asset_id: string | null;
+            /** Derived From Version Id */
+            derived_from_version_id: string | null;
+            /** Content Text */
+            content_text: string;
+            /** Content Hash */
+            content_hash: string;
+            /** Created By */
+            created_by: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Submitted At */
+            submitted_at: string | null;
+            /** Submitted By */
+            submitted_by: string | null;
+            /** Locked At */
+            locked_at: string | null;
+            /** Locked By */
+            locked_by: string | null;
+        };
+        /** ScreenplayVersionUpdateRequest */
+        ScreenplayVersionUpdateRequest: {
+            /** Content Text */
+            content_text: string;
         };
         /** StoryboardPanelCandidateResponse */
         StoryboardPanelCandidateResponse: {
@@ -1796,6 +2174,8 @@ export interface components {
             error_message: string | null;
             /** Generator Mode */
             generator_mode: string;
+            /** Screenplay Version Id */
+            screenplay_version_id: string | null;
             /**
              * Created At
              * Format: date-time
@@ -1809,8 +2189,8 @@ export interface components {
         };
         /** WorkflowTriggerRequest */
         WorkflowTriggerRequest: {
-            /** Script Asset Id */
-            script_asset_id: string;
+            /** Screenplay Version Id */
+            screenplay_version_id: string;
             /**
              * Sync Execution
              * @default false
@@ -3454,6 +3834,519 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JourneySectionContinueResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_screenplay_versions_api_v1_projects__project_id__screenplay_versions_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Actor-ID"?: string | null;
+            };
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScreenplayVersionResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_screenplay_version_api_v1_projects__project_id__screenplay_versions_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Actor-ID"?: string | null;
+            };
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScreenplayVersionImportRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScreenplayVersionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_screenplay_version_api_v1_projects__project_id__screenplay_versions__version_id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Actor-ID"?: string | null;
+            };
+            path: {
+                project_id: string;
+                version_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScreenplayVersionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_screenplay_version_api_v1_projects__project_id__screenplay_versions__version_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Actor-ID"?: string | null;
+            };
+            path: {
+                project_id: string;
+                version_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScreenplayVersionUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScreenplayVersionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    diff_screenplay_version_api_v1_projects__project_id__screenplay_versions__version_id__diff_get: {
+        parameters: {
+            query: {
+                against: string;
+            };
+            header?: {
+                authorization?: string | null;
+                "X-Actor-ID"?: string | null;
+            };
+            path: {
+                project_id: string;
+                version_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScreenplayDiffResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_screenplay_revision_api_v1_projects__project_id__screenplay_versions__version_id__revise_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Actor-ID"?: string | null;
+            };
+            path: {
+                project_id: string;
+                version_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScreenplayVersionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    submit_screenplay_revision_api_v1_projects__project_id__screenplay_versions__version_id__submit_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Actor-ID"?: string | null;
+            };
+            path: {
+                project_id: string;
+                version_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScreenplaySubmitRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScreenplayVersionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    decide_screenplay_revision_api_v1_projects__project_id__screenplay_versions__version_id__decide_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Actor-ID"?: string | null;
+            };
+            path: {
+                project_id: string;
+                version_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScreenplayDecisionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScreenplayDecisionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    confirm_legacy_lock_api_v1_projects__project_id__screenplay_versions__version_id__confirm_legacy_lock_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Actor-ID"?: string | null;
+            };
+            path: {
+                project_id: string;
+                version_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScreenplayVersionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_impact_api_v1_projects__project_id__screenplay_versions__version_id__impact_preview_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Actor-ID"?: string | null;
+            };
+            path: {
+                project_id: string;
+                version_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImpactPreviewResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    generate_suggestions_api_v1_projects__project_id__screenplay_versions__version_id__suggestions_generate_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Actor-ID"?: string | null;
+            };
+            path: {
+                project_id: string;
+                version_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScreenplaySuggestionGenerateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScreenplaySuggestionResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_suggestions_api_v1_projects__project_id__screenplay_versions__version_id__suggestions_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Actor-ID"?: string | null;
+            };
+            path: {
+                project_id: string;
+                version_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScreenplaySuggestionResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    decide_suggestion_api_v1_projects__project_id__screenplay_suggestions__suggestion_id__decide_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Actor-ID"?: string | null;
+            };
+            path: {
+                project_id: string;
+                suggestion_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScreenplaySuggestionDecisionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScreenplaySuggestionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_impact_analyses_api_v1_projects__project_id__impact_analyses_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Actor-ID"?: string | null;
+            };
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImpactAnalysisResponse"][];
                 };
             };
             /** @description Validation Error */

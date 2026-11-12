@@ -12,7 +12,7 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from typing import Any, Dict, Iterable, List
 
-from sqlalchemy import or_, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from packages.domain.enums import ApprovalStatus, AuditAction, OutboxStatus, ProjectStatus
@@ -27,6 +27,7 @@ from packages.persistence.models import (
     EpisodeModel,
     FilmBibleRuleCandidateModel,
     FilmBibleRuleModel,
+    ImpactAnalysisModel,
     JourneyItemStateModel,
     JourneySectionEventModel,
     JourneyStalenessModel,
@@ -47,6 +48,9 @@ from packages.persistence.models import (
     RoleTemplateModel,
     SceneCandidateModel,
     SceneModel,
+    ScreenplayChangeModel,
+    ScreenplaySuggestionModel,
+    ScreenplayVersionModel,
     StoryboardPanelCandidateModel,
     StoryboardPanelModel,
     UserModel,
@@ -435,6 +439,16 @@ class ApprovalRepository(_Repository):
         )
         return self.db.scalars(stmt).first()
 
+    def get_pending_for_target(self, target_type: str, target_id: str) -> ApprovalRequestModel | None:
+        """D2's non-workflow-run approvals (C8's generalized target, used for the first
+        time here): a screenplay revision's management decision."""
+        stmt = select(ApprovalRequestModel).where(
+            ApprovalRequestModel.target_type == target_type,
+            ApprovalRequestModel.target_id == target_id,
+            ApprovalRequestModel.status == ApprovalStatus.PENDING.value,
+        )
+        return self.db.scalars(stmt).first()
+
     def get_for_run(self, run_id: str) -> ApprovalRequestModel | None:
         stmt = (
             select(ApprovalRequestModel)
@@ -584,6 +598,94 @@ class CanonicalRepository(_Repository):
             select(EntityModel)
             .where(EntityModel.project_id == project_id)
             .order_by(EntityModel.category, EntityModel.name)
+        )
+        return list(self.db.scalars(stmt))
+
+    def scenes_for_screenplay_version(self, screenplay_version_id: str) -> List[SceneModel]:
+        """D2 (TFD-SCR-010): the canonical scenes an impact analysis checks against a
+        superseded screenplay version's text."""
+        stmt = select(SceneModel).where(SceneModel.screenplay_version_id == screenplay_version_id)
+        return list(self.db.scalars(stmt))
+
+
+class ScreenplayRepository(_Repository):
+    """D2: screenplay_versions, screenplay_suggestions, screenplay_changes and
+    impact_analyses -- the screenplay governance entities."""
+
+    def add_version(self, version: ScreenplayVersionModel) -> ScreenplayVersionModel:
+        return self._add(version)
+
+    def get_version_scoped(self, version_id: str, project_id: str) -> ScreenplayVersionModel:
+        stmt = select(ScreenplayVersionModel).where(
+            ScreenplayVersionModel.id == version_id, ScreenplayVersionModel.project_id == project_id
+        )
+        version = self.db.scalars(stmt).first()
+        if version is None:
+            raise NotFoundError(f"Screenplay version '{version_id}' not found.")
+        return version
+
+    def list_versions_for_project(self, project_id: str) -> List[ScreenplayVersionModel]:
+        stmt = (
+            select(ScreenplayVersionModel)
+            .where(ScreenplayVersionModel.project_id == project_id)
+            .order_by(ScreenplayVersionModel.version_number.desc())
+        )
+        return list(self.db.scalars(stmt))
+
+    def get_canonical(self, project_id: str, episode_id: str | None) -> ScreenplayVersionModel | None:
+        stmt = select(ScreenplayVersionModel).where(
+            ScreenplayVersionModel.project_id == project_id,
+            ScreenplayVersionModel.episode_id == episode_id,
+            ScreenplayVersionModel.is_production_canonical.is_(True),
+        )
+        return self.db.scalars(stmt).first()
+
+    def next_version_number(self, project_id: str, episode_id: str | None) -> int:
+        stmt = select(func.max(ScreenplayVersionModel.version_number)).where(
+            ScreenplayVersionModel.project_id == project_id, ScreenplayVersionModel.episode_id == episode_id
+        )
+        current_max = self.db.scalar(stmt)
+        return (current_max or 0) + 1
+
+    def add_suggestion(self, suggestion: ScreenplaySuggestionModel) -> ScreenplaySuggestionModel:
+        return self._add(suggestion)
+
+    def list_suggestions_for_version(self, screenplay_version_id: str) -> List[ScreenplaySuggestionModel]:
+        stmt = (
+            select(ScreenplaySuggestionModel)
+            .where(ScreenplaySuggestionModel.screenplay_version_id == screenplay_version_id)
+            .order_by(ScreenplaySuggestionModel.created_at.asc())
+        )
+        return list(self.db.scalars(stmt))
+
+    def get_suggestion_scoped(self, suggestion_id: str, project_id: str) -> ScreenplaySuggestionModel:
+        stmt = select(ScreenplaySuggestionModel).where(
+            ScreenplaySuggestionModel.id == suggestion_id, ScreenplaySuggestionModel.project_id == project_id
+        )
+        suggestion = self.db.scalars(stmt).first()
+        if suggestion is None:
+            raise NotFoundError(f"Screenplay suggestion '{suggestion_id}' not found.")
+        return suggestion
+
+    def add_change(self, change: ScreenplayChangeModel) -> ScreenplayChangeModel:
+        return self._add(change)
+
+    def list_changes_for_version(self, screenplay_version_id: str) -> List[ScreenplayChangeModel]:
+        stmt = (
+            select(ScreenplayChangeModel)
+            .where(ScreenplayChangeModel.screenplay_version_id == screenplay_version_id)
+            .order_by(ScreenplayChangeModel.submitted_at.asc())
+        )
+        return list(self.db.scalars(stmt))
+
+    def add_impact_analysis(self, analysis: ImpactAnalysisModel) -> ImpactAnalysisModel:
+        return self._add(analysis)
+
+    def list_impact_analyses_for_project(self, project_id: str) -> List[ImpactAnalysisModel]:
+        stmt = (
+            select(ImpactAnalysisModel)
+            .where(ImpactAnalysisModel.project_id == project_id)
+            .order_by(ImpactAnalysisModel.created_at.desc())
         )
         return list(self.db.scalars(stmt))
 

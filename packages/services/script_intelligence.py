@@ -29,10 +29,10 @@ from packages.domain.errors import InvalidStateError, NotFoundError
 from packages.persistence.models import ApprovalRequestModel, WorkflowRunModel
 from packages.persistence.repositories import (
     ApprovalRepository,
-    AssetRepository,
     AuditRepository,
     OutboxRepository,
     ProjectRepository,
+    ScreenplayRepository,
     WorkflowRunRepository,
 )
 from packages.services.authz import AuthzService
@@ -58,6 +58,7 @@ class ScriptIntelligenceService:
         self.projects = ProjectRepository(db)
         self.runs = WorkflowRunRepository(db)
         self.approvals = ApprovalRepository(db)
+        self.screenplay = ScreenplayRepository(db)
         self.audit = AuditRepository(db)
         self.authz = AuthzService(db)
 
@@ -67,14 +68,16 @@ class ScriptIntelligenceService:
         self,
         actor: ActorContext,
         project_id: str,
-        script_asset_id: str,
+        screenplay_version_id: str,
         *,
         sync: bool,
     ) -> WorkflowRunModel:
-        """Create a run. Executes inline when ``sync``; otherwise queues it for the worker."""
+        """Create a run. Executes inline when ``sync``; otherwise queues it for the
+        worker. TFD-SCR-004: reads only from this specific screenplay version -- never
+        an asset directly, and never writes screenplay text."""
         project = self.projects.get_scoped(project_id, actor.org_id)
         self.authz.require(actor, "workflow.run", project)
-        asset = AssetRepository(self.db).get_for_project(script_asset_id, project.id)
+        version = self.screenplay.get_version_scoped(screenplay_version_id, project.id)
 
         run = self.runs.add(
             WorkflowRunModel(
@@ -85,7 +88,8 @@ class ScriptIntelligenceService:
                 actor_id=actor.user_id,
                 expected_project_version=project.current_version,
                 status=(WorkflowStatus.RUNNING if sync else WorkflowStatus.QUEUED).value,
-                input_asset_ids=[asset.id],
+                input_asset_ids=[],
+                screenplay_version_id=version.id,
                 generator_mode=get_model_gateway(get_settings()).mode,
             )
         )
@@ -96,7 +100,11 @@ class ScriptIntelligenceService:
             action=AuditAction.WORKFLOW_STARTED,
             target_type="workflow_run",
             target_id=run.id,
-            details={"graph_id": run.graph_id, "script_asset_id": asset.id, "mode": "sync" if sync else "queued"},
+            details={
+                "graph_id": run.graph_id,
+                "screenplay_version_id": version.id,
+                "mode": "sync" if sync else "queued",
+            },
         )
         if not sync:
             OutboxRepository(self.db).enqueue(
@@ -124,7 +132,7 @@ class ScriptIntelligenceService:
             "organization_id": run.organization_id,
             "actor_id": run.actor_id,
             "expected_project_version": run.expected_project_version,
-            "script_asset_id": run.input_asset_ids[0],
+            "screenplay_version_id": run.screenplay_version_id,
             "approval_status": "pending",
         }
         # C6: a redelivered outbox task (worker crashed before this execution's

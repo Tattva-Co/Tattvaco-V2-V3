@@ -38,20 +38,18 @@ def test_oversized_upload_is_rejected(client, tenant):
     assert resp.status_code == 413
 
 
-def test_script_intelligence_refuses_assets_with_no_supported_extraction(client, tenant):
+def test_screenplay_import_refuses_assets_with_no_supported_extraction(client, tenant):
     """application/json is upload-allowed (e.g. for structured metadata attachments) but
     is neither plain-text/Fountain nor one of the formats C7 added extraction for
-    (PDF/DOCX/FDX) -- Script Intelligence must still refuse it, with a clear reason."""
+    (PDF/DOCX/FDX). D2: this check now runs at screenplay import time (the asset's text
+    is read once, there, not again every time Script Intelligence is triggered)."""
     project = create_project(client, tenant)
     upload = upload_script(client, tenant, project["id"], filename="script.json", mime="application/json")
     assert upload.status_code == 200
 
     resp = client.post(
-        f"/api/v1/projects/{project['id']}/workflows/script-intelligence",
-        # Explicit: this test checks a validation error surfaced synchronously in the
-        # response. Workflows are async by default (C6); the error would otherwise only
-        # appear later in the outbox task, not in this request.
-        json={"script_asset_id": upload.json()["asset_id"], "sync_execution": True},
+        f"/api/v1/projects/{project['id']}/screenplay-versions",
+        json={"source_asset_id": upload.json()["asset_id"]},
         headers=as_actor(tenant.user_id),
     )
     assert resp.status_code == 422
@@ -61,8 +59,8 @@ def test_script_intelligence_refuses_assets_with_no_supported_extraction(client,
 def test_unknown_asset_is_not_found(client, tenant):
     project = create_project(client, tenant)
     resp = client.post(
-        f"/api/v1/projects/{project['id']}/workflows/script-intelligence",
-        json={"script_asset_id": "missing"},
+        f"/api/v1/projects/{project['id']}/screenplay-versions",
+        json={"source_asset_id": "missing"},
         headers=as_actor(tenant.user_id),
     )
     assert resp.status_code == 404

@@ -65,8 +65,13 @@ def decide_approval(
             approved_entity_ids=req.approved_entity_ids,
         )
     else:
-        # SEC-08 (docs/audit/08): an unrecognised scope must not be silently routed to
-        # whichever service happens to be the fallback branch.
+        # D2's "screenplay_lock" scope (ApprovalRequestModel rows created by
+        # ScreenplayGovernanceService.submit_for_review) is deliberately NOT routed
+        # here: its decision result has no run_status/new_project_version to report
+        # (ApprovalDecisionResponse's shape), and its own screen (S-SCR-03 Revision
+        # Workspace) decides through POST /projects/{pid}/screenplay-versions/{vid}/decide
+        # instead. SEC-08 (docs/audit/08): any other unrecognised scope must not be
+        # silently routed to whichever service happens to be the fallback branch.
         raise ValidationFailure(f"Unknown approval scope: {approval.scope!r}")
     return ApprovalDecisionResponse(
         approval_id=result.approval_id,

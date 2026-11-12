@@ -4,7 +4,8 @@ parse → propose candidates → human approval interrupt → commit | reject
 
 Nodes orchestrate only. Canonical writes go through ``ScriptReviewService`` (ADR-001
 invariant 2), and graph state carries references and compact candidate data, not the
-script body (invariant 6) — the script is loaded from storage by asset id when parsed.
+script body (invariant 6) — the script text itself lives on the screenplay_version row
+(D2, TFD-SCR-004) and is read once, by id, when parsing.
 """
 
 from typing import Any, Dict, Literal
@@ -17,8 +18,8 @@ from packages.core.config import get_settings
 from packages.domain.enums import ApprovalDecision
 from packages.domain.errors import ValidationFailure
 from packages.persistence.database import session_scope
+from packages.persistence.repositories import ScreenplayRepository
 from packages.services.script_review import RunScope, ScriptReviewService
-from packages.storage.factory import get_storage
 from packages.workflows.script_intelligence.state import ScriptIntelligenceState
 
 
@@ -31,13 +32,12 @@ def _scope(state: ScriptIntelligenceState) -> RunScope:
 
 
 def parse_script_node(state: ScriptIntelligenceState) -> Dict[str, Any]:
-    """Parse the script into scene and entity candidates."""
-    raw_text = state.get("raw_script_text")
-    if raw_text is None:
-        with session_scope() as db:
-            raw_text = ScriptReviewService(db).load_script_text(state["script_asset_id"], get_storage())
+    """Parse the screenplay version's own text into scene and entity candidates."""
+    with session_scope() as db:
+        version = ScreenplayRepository(db).get_version_scoped(state["screenplay_version_id"], state["project_id"])
+        raw_text = version.content_text
     if not raw_text.strip():
-        raise ValidationFailure("Script text is empty.")
+        raise ValidationFailure("Screenplay version text is empty.")
 
     result = get_model_gateway(get_settings()).parse_screenplay(raw_text)
     return {

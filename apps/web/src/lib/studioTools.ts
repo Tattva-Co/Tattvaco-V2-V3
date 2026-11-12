@@ -2,6 +2,7 @@ export type ToolKey =
   | "overview"
   | "assets"
   | "script_intelligence"
+  | "screenplay_governance"
   | "review"
   | "historical_research"
   | "storyboard"
@@ -42,6 +43,12 @@ export const TOOL_REGISTRY: ToolDescriptor[] = [
     name: "Script Intelligence",
     description: "Extract scenes, characters and locations from the screenplay.",
     sections: ["JRN-01", "JRN-02"],
+  },
+  {
+    key: "screenplay_governance",
+    name: "Screenplay Governance",
+    description: "Versions, director revisions, AI suggestions, management lock and impact analysis.",
+    sections: ["JRN-02"],
   },
   {
     key: "review",

@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import io
 import uuid
 from dataclasses import dataclass
@@ -22,6 +23,7 @@ from packages.persistence.models import (
     FilmBibleRuleCandidateModel,
     FilmBibleRuleModel,
     IdempotencyKeyModel,
+    ImpactAnalysisModel,
     JourneyItemStateModel,
     JourneySectionEventModel,
     JourneyStalenessModel,
@@ -42,6 +44,9 @@ from packages.persistence.models import (
     RoleTemplateModel,
     SceneCandidateModel,
     SceneModel,
+    ScreenplayChangeModel,
+    ScreenplaySuggestionModel,
+    ScreenplayVersionModel,
     StoryboardPanelCandidateModel,
     StoryboardPanelModel,
     UserModel,
@@ -100,6 +105,10 @@ def purge_organization(org_id: str) -> None:
                 AuditEventModel,
                 ApprovalRequestModel,
                 AssetDerivativeModel,
+                # Children of screenplay_versions go first.
+                ScreenplayChangeModel,
+                ScreenplaySuggestionModel,
+                ImpactAnalysisModel,
                 ResearchConflictModel,
                 ResearchClaimModel,
                 ResearchQuestionModel,
@@ -135,6 +144,10 @@ def purge_organization(org_id: str) -> None:
         db.query(MembershipModel).filter_by(organization_id=org_id).delete(synchronize_session=False)
         db.query(RoleTemplateModel).filter_by(organization_id=org_id).delete(synchronize_session=False)
         db.query(WorkflowRunModel).filter_by(organization_id=org_id).delete(synchronize_session=False)
+        # screenplay_versions.source_asset_id references assets, and scenes/workflow_runs
+        # (both already gone by now) referenced screenplay_versions -- this must go
+        # after both of those and before assets.
+        db.query(ScreenplayVersionModel).filter_by(organization_id=org_id).delete(synchronize_session=False)
         db.query(AssetModel).filter_by(organization_id=org_id).delete(synchronize_session=False)
         db.query(ProjectModel).filter_by(organization_id=org_id).delete(synchronize_session=False)
         db.query(UserModel).filter_by(organization_id=org_id).delete(synchronize_session=False)
@@ -212,13 +225,54 @@ def upload_script(client, tenant, project_id, content: str = SAMPLE_SCREENPLAY, 
     )
 
 
+def import_screenplay_version(client, tenant, project_id, asset_id) -> dict:
+    """D2 (TFD-SCR-001/004): WF-01 reads a screenplay_version, not an asset directly --
+    every test that used to trigger Script Intelligence straight off an uploaded asset
+    now imports it as a screenplay version first."""
+    resp = client.post(
+        f"/api/v1/projects/{project_id}/screenplay-versions",
+        json={"source_asset_id": asset_id},
+        headers=as_actor(tenant.user_id),
+    )
+    assert resp.status_code == 201, resp.text
+    return resp.json()
+
+
+def create_draft_screenplay_version(project_id: str, org_id: str, actor_id: str, content_text: str = "") -> str:
+    """Insert a draft screenplay_versions row directly, bypassing the import endpoint --
+    for tests that need a specific (e.g. deliberately empty) content_text the normal
+    upload-then-import flow can't produce (uploads/imports reject empty/unsupported
+    content before a version would ever exist)."""
+    version_id = str(uuid.uuid4())
+    db = SessionLocal()
+    try:
+        db.add(
+            ScreenplayVersionModel(
+                id=version_id,
+                project_id=project_id,
+                organization_id=org_id,
+                version_number=1,
+                status="draft",
+                is_production_canonical=False,
+                content_text=content_text,
+                content_hash=hashlib.sha256(content_text.encode()).hexdigest(),
+                created_by=actor_id,
+            )
+        )
+        db.commit()
+    finally:
+        db.close()
+    return version_id
+
+
 def project_with_pending_approval(client, tenant):
     project = create_project(client, tenant)
     upload = upload_script(client, tenant, project["id"])
     assert upload.status_code == 200, upload.text
+    version = import_screenplay_version(client, tenant, project["id"], upload.json()["asset_id"])
     trigger = client.post(
         f"/api/v1/projects/{project['id']}/workflows/script-intelligence",
-        json={"script_asset_id": upload.json()["asset_id"], "sync_execution": True},
+        json={"screenplay_version_id": version["id"], "sync_execution": True},
         headers=as_actor(tenant.user_id),
     )
     assert trigger.status_code == 200, trigger.text

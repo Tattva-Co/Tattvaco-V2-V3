@@ -24,6 +24,7 @@ from apps.api.routers import (
     project_templates,
     projects,
     research,
+    screenplay,
     storyboard,
     workflows,
 )
@@ -81,6 +82,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         storyboard,
         film_bible,
         journey,
+        screenplay,
     ):
         app.include_router(module.router, prefix=settings.api_v1_str)
 

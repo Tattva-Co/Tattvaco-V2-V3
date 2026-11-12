@@ -10,7 +10,7 @@ import io
 
 import docx
 
-from tests.support import as_actor, create_project
+from tests.support import as_actor, create_project, import_screenplay_version
 
 SCREENPLAY_LINES = [
     "INT. WAR COUNCIL CHAMBER - NIGHT",
@@ -88,9 +88,10 @@ def _run_script_intelligence_on(client, tenant, project_id, filename, content, m
     asset = client.get(f"/api/v1/projects/{project_id}/assets", headers=headers).json()[0]
     assert asset["scan_status"] == "clean"
 
+    version = import_screenplay_version(client, tenant, project_id, upload.json()["asset_id"])
     trigger = client.post(
         f"/api/v1/projects/{project_id}/workflows/script-intelligence",
-        json={"script_asset_id": upload.json()["asset_id"], "sync_execution": True},
+        json={"screenplay_version_id": version["id"], "sync_execution": True},
         headers=headers,
     )
     assert trigger.status_code == 200, trigger.text
@@ -148,13 +149,15 @@ def test_a_corrupt_pdf_fails_extraction_with_a_specific_message_not_a_crash(clie
     )
     assert upload.status_code == 200, upload.text
 
-    trigger = client.post(
-        f"/api/v1/projects/{project['id']}/workflows/script-intelligence",
-        json={"script_asset_id": upload.json()["asset_id"], "sync_execution": True},
+    # D2: extraction now happens when the screenplay is imported as a version, not when
+    # Script Intelligence is later triggered against it.
+    import_resp = client.post(
+        f"/api/v1/projects/{project['id']}/screenplay-versions",
+        json={"source_asset_id": upload.json()["asset_id"]},
         headers=headers,
     )
-    assert trigger.status_code == 422, trigger.text
-    assert "Could not extract text" in trigger.json()["detail"]
+    assert import_resp.status_code == 422, import_resp.text
+    assert "Could not extract text" in import_resp.json()["detail"]
 
 
 def test_upload_rejects_a_file_whose_bytes_do_not_match_its_declared_type(client, tenant):

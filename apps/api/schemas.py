@@ -267,7 +267,10 @@ class AssetUploadResponse(BaseModel):
 
 
 class WorkflowTriggerRequest(BaseModel):
-    script_asset_id: str
+    # D2 (TFD-SCR-004): Script Intelligence reads a specific screenplay_version, never
+    # an asset directly -- import it first (POST /screenplay-versions), then trigger
+    # against the resulting version id.
+    screenplay_version_id: str
     # False (default, C6): queues the run for the background worker and returns
     # immediately with status="queued". True runs the graph inline in this request and
     # returns only once it reaches the approval interrupt or fails -- useful for a
@@ -287,6 +290,7 @@ class WorkflowRunResponse(_ORM):
     output_refs: Dict[str, Any]
     error_message: str | None
     generator_mode: str
+    screenplay_version_id: str | None
     created_at: datetime
     updated_at: datetime
 
@@ -566,6 +570,12 @@ class SceneResponse(_ORM):
     source_locator: str
     characters_present: List[str]
     project_version: int
+    # D2 (TFD-SCR-009): which screenplay version this scene was extracted/committed
+    # from; null for scenes committed before this column existed and never backfilled.
+    screenplay_version_id: str | None
+    # D2 (TFD-SCR-010): set by an impact analysis when the screenplay text this scene
+    # came from was superseded by a locked revision that changed or removed it.
+    review_status: str | None
 
 
 class EntityResponse(_ORM):
@@ -575,6 +585,7 @@ class EntityResponse(_ORM):
     description: str | None
     source_locator: str
     project_version: int
+    review_status: str | None
 
 
 class HealthResponse(BaseModel):
@@ -646,3 +657,101 @@ class JourneySectionContinueResponse(BaseModel):
     section_id: str
     status: str
     group_statuses: Dict[str, str]
+
+
+# -- Screenplay governance (D2) -----------------------------------------------
+
+
+class ScreenplayVersionImportRequest(BaseModel):
+    source_asset_id: str
+    episode_id: str | None = None
+
+
+class ScreenplayRevisionCreateRequest(BaseModel):
+    base_version_id: str
+
+
+class ScreenplayVersionUpdateRequest(BaseModel):
+    content_text: str
+
+
+class ScreenplaySubmitRequest(BaseModel):
+    justification: str
+
+
+class ScreenplayDecisionRequest(BaseModel):
+    decision: ApprovalDecision
+    notes: str | None = None
+
+
+class ScreenplayDecisionResponse(BaseModel):
+    approval_id: str
+    decision: str
+    version_status: str
+    is_canonical: bool
+
+
+class ScreenplayVersionResponse(_ORM):
+    id: str
+    project_id: str
+    episode_id: str | None
+    version_number: int
+    status: str
+    is_production_canonical: bool
+    source_asset_id: str | None
+    derived_from_version_id: str | None
+    content_text: str
+    content_hash: str
+    created_by: str
+    created_at: datetime
+    updated_at: datetime
+    submitted_at: datetime | None
+    submitted_by: str | None
+    locked_at: datetime | None
+    locked_by: str | None
+
+
+class ScreenplayDiffResponse(BaseModel):
+    unified_diff: str
+    scenes_changed: List[Dict[str, Any]]
+    lines_added: int
+    lines_removed: int
+
+
+class ScreenplaySuggestionGenerateRequest(BaseModel):
+    scope_notes: str | None = None
+
+
+class ScreenplaySuggestionResponse(_ORM):
+    id: str
+    screenplay_version_id: str
+    kind: str
+    anchor: str
+    suggestion_text: str
+    rationale: str | None
+    disposition: str
+    disposition_notes: str | None
+    decided_by: str | None
+    decided_at: datetime | None
+    generator_mode: str
+    created_at: datetime
+
+
+class ScreenplaySuggestionDecisionRequest(BaseModel):
+    disposition: str = Field(..., description="accepted_for_revision | rejected | deferred")
+    notes: str | None = None
+
+
+class ImpactAnalysisResponse(_ORM):
+    id: str
+    project_id: str
+    trigger_type: str
+    new_version_id: str
+    previous_version_id: str | None
+    affected_items: List[Dict[str, Any]]
+    created_by: str
+    created_at: datetime
+
+
+class ImpactPreviewResponse(BaseModel):
+    affected_items: List[Dict[str, Any]]

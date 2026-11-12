@@ -228,6 +228,11 @@ class ScriptReviewService:
         project = projects.get_scoped(scope.project_id, scope.org_id, for_update=True)
         assert_expected_version(project.current_version, expected_version)
         next_version = project.current_version + 1
+        # D2 (TFD-SCR-009): stamp every newly-promoted scene with the screenplay
+        # version Script Intelligence actually read from -- off the run row, the same
+        # "metadata lives on the run" pattern C10's generator_mode established.
+        run = self.runs.get(scope.run_id)
+        screenplay_version_id = run.screenplay_version_id if run else None
 
         def selected(candidate_id: str, chosen: Sequence[str] | None) -> bool:
             return chosen is None or candidate_id in set(chosen)
@@ -249,6 +254,7 @@ class ScriptReviewService:
                         source_locator=sc.source_locator,
                         characters_present=sc.characters_present,
                         project_version=next_version,
+                        screenplay_version_id=screenplay_version_id,
                     )
                 )
             else:

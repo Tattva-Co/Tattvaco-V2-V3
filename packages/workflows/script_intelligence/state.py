@@ -16,10 +16,10 @@ class ScriptIntelligenceState(TypedDict, total=False):
     actor_id: str
     expected_project_version: int
 
-    # Inputs. ``raw_script_text`` is optional: when absent the parse node loads the
-    # script from storage by ``script_asset_id`` (production path).
-    script_asset_id: str
-    raw_script_text: str | None
+    # Input: the specific screenplay version to read (D2, TFD-SCR-004) -- never an
+    # asset directly. The parse node reads screenplay_versions.content_text, already a
+    # plain string snapshot; no storage/extraction lookup happens here anymore.
+    screenplay_version_id: str
 
     # Extracted candidate structures
     extracted_scenes: List[Dict[str, Any]]

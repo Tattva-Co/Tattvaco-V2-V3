@@ -31,6 +31,7 @@ function makeRun(overrides: Partial<{ status: string; error_message: string | nu
     output_refs: {},
     error_message: null,
     generator_mode: "deterministic",
+    screenplay_version_id: null,
     created_at: "2026-01-01T00:00:00Z",
     updated_at: "2026-01-01T00:00:00Z",
     ...overrides,

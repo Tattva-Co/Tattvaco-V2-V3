@@ -13,6 +13,7 @@ import type { ToolKey } from "../lib/studioTools";
 import { StudioToolPanel } from "../components/StudioToolPanel";
 import { AssetsTool } from "../components/tools/AssetsTool";
 import { ScriptIntelligenceTool } from "../components/tools/ScriptIntelligenceTool";
+import { ScreenplayGovernanceTool } from "../components/tools/ScreenplayGovernanceTool";
 import { ReviewTool } from "../components/tools/ReviewTool";
 import { HistoricalResearchTool } from "../components/tools/HistoricalResearchTool";
 import { StoryboardTool } from "../components/tools/StoryboardTool";
@@ -30,6 +31,10 @@ const TOOL_TITLES: Record<ToolKey, { title: string; subtitle: string }> = {
   script_intelligence: {
     title: "Script Intelligence",
     subtitle: "Extract scenes, characters and locations from the screenplay.",
+  },
+  screenplay_governance: {
+    title: "Screenplay Governance",
+    subtitle: "Versions, director revisions, AI suggestions, management lock and impact analysis.",
   },
   review: { title: "Candidate Review", subtitle: "Approve or reject AI-extracted candidates before they become canon." },
   historical_research: {
@@ -297,6 +302,7 @@ export function ProjectWorkspacePage() {
           {openTool === "script_intelligence" && (
             <ScriptIntelligenceTool projectId={projectId} onRunStarted={taskTray.trackRun} />
           )}
+          {openTool === "screenplay_governance" && <ScreenplayGovernanceTool projectId={projectId} />}
           {openTool === "review" && <ReviewTool projectId={projectId} />}
           {openTool === "historical_research" && (
             <HistoricalResearchTool projectId={projectId} onRunStarted={taskTray.trackRun} />

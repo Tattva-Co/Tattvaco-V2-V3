@@ -30,6 +30,7 @@ CAPABILITIES: tuple[Capability, ...] = (
     Capability("canon.propose", "Write a canonical record directly (manual research source, film-bible rule)."),
     Capability("approval.creative", "Approve or reject a pending candidate review."),
     Capability("screenplay.approve_lock", "Lock a screenplay version as production-authoritative."),
+    Capability("screenplay.propose_revision", "Create or edit a director-led screenplay revision (draft only)."),
     Capability("cost.approve", "Approve spend on an external, credit-consuming action."),
     Capability("consent.manage", "Record or revoke a performer's consent/likeness authorization."),
     Capability("likeness.view", "View a performer's sensitive identity references."),
@@ -77,6 +78,7 @@ DEFAULT_ROLE_TEMPLATES: dict[str, tuple[str, ...]] = {
         "approval.creative",
         "package.export",
         "provider.submit",
+        "screenplay.propose_revision",
     ),
     "producer": (
         "project.read",

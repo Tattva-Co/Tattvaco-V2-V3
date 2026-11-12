@@ -9,7 +9,13 @@ from datetime import timedelta
 from apps.api.idempotency import IdempotencyStore, fingerprint
 from packages.persistence.database import SessionLocal
 from packages.persistence.models import WorkflowRunModel
-from tests.support import SAMPLE_SCREENPLAY, as_actor, create_project, upload_script
+from tests.support import (
+    SAMPLE_SCREENPLAY,
+    as_actor,
+    create_project,
+    import_screenplay_version,
+    upload_script,
+)
 
 PROJECT = {"title": "Idempotent Film", "logline": "Once.", "genre": "Drama"}
 
@@ -96,8 +102,9 @@ def test_multipart_upload_retry_replays_despite_a_new_boundary(client, tenant):
 def test_workflow_trigger_retry_starts_one_run(client, tenant):
     project = create_project(client, tenant)
     asset_id = upload_script(client, tenant, project["id"]).json()["asset_id"]
+    version_id = import_screenplay_version(client, tenant, project["id"], asset_id)["id"]
     headers = {**as_actor(tenant.user_id), "Idempotency-Key": "trigger-1"}
-    body = {"script_asset_id": asset_id}
+    body = {"screenplay_version_id": version_id}
     first = client.post(f"/api/v1/projects/{project['id']}/workflows/script-intelligence", json=body, headers=headers)
     second = client.post(f"/api/v1/projects/{project['id']}/workflows/script-intelligence", json=body, headers=headers)
     assert first.status_code == second.status_code
