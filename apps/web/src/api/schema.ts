@@ -98,6 +98,58 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
+        /** Update Project */
+        patch: operations["update_project_api_v1_projects__project_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Archive Project */
+        post: operations["archive_project_api_v1_projects__project_id__archive_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/unarchive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Unarchive Project */
+        post: operations["unarchive_project_api_v1_projects__project_id__unarchive_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Project Summary */
+        get: operations["get_project_summary_api_v1_projects__project_id__summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
         patch?: never;
         trace?: never;
     };
@@ -178,6 +230,130 @@ export interface paths {
         };
         /** Get Canonical Entities */
         get: operations["get_canonical_entities_api_v1_projects__project_id__entities_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/output-profiles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Output Profiles */
+        get: operations["list_output_profiles_api_v1_projects__project_id__output_profiles_get"];
+        put?: never;
+        /** Create Output Profile */
+        post: operations["create_output_profile_api_v1_projects__project_id__output_profiles_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/output-profiles/{profile_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Output Profile */
+        delete: operations["delete_output_profile_api_v1_projects__project_id__output_profiles__profile_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Output Profile */
+        patch: operations["update_output_profile_api_v1_projects__project_id__output_profiles__profile_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/episodes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Episodes */
+        get: operations["list_episodes_api_v1_projects__project_id__episodes_get"];
+        put?: never;
+        /** Create Episode */
+        post: operations["create_episode_api_v1_projects__project_id__episodes_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/role-templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Role Templates */
+        get: operations["list_role_templates_api_v1_projects__project_id__role_templates_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Members */
+        get: operations["list_members_api_v1_projects__project_id__members_get"];
+        put?: never;
+        /** Add Member */
+        post: operations["add_member_api_v1_projects__project_id__members_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/members/{user_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove Member */
+        delete: operations["remove_member_api_v1_projects__project_id__members__user_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Member Role */
+        patch: operations["update_member_role_api_v1_projects__project_id__members__user_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/project-templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Project Templates */
+        get: operations["list_project_templates_api_v1_project_templates_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -712,6 +888,29 @@ export interface components {
             /** Project Version */
             project_version: number;
         };
+        /** EpisodeCreateRequest */
+        EpisodeCreateRequest: {
+            /** Episode Number */
+            episode_number: number;
+            /** Title */
+            title?: string | null;
+        };
+        /** EpisodeResponse */
+        EpisodeResponse: {
+            /** Id */
+            id: string;
+            /** Project Id */
+            project_id: string;
+            /** Episode Number */
+            episode_number: number;
+            /** Title */
+            title: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
         /** FilmBibleRuleCandidateResponse */
         FilmBibleRuleCandidateResponse: {
             /** Id */
@@ -801,6 +1000,25 @@ export interface components {
              * @default false
              */
             sync_execution: boolean;
+        };
+        /** FormatTemplateResponse */
+        FormatTemplateResponse: {
+            /** Key */
+            key: string;
+            /** Name */
+            name: string;
+            /** Structure Type */
+            structure_type: string;
+            /** Required Workflow Steps */
+            required_workflow_steps: string[];
+            /** Optional Workflow Steps */
+            optional_workflow_steps: string[];
+            /** Default Output Profile */
+            default_output_profile: {
+                [key: string]: unknown;
+            };
+            /** Note */
+            note?: string | null;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -935,6 +1153,114 @@ export interface components {
             /** Notes */
             notes?: string | null;
         };
+        /** NextActionSummary */
+        NextActionSummary: {
+            /** Jrn Id */
+            jrn_id: string;
+            /** Title */
+            title: string;
+            /** Reason */
+            reason: string;
+        };
+        /** OutputProfileCreateRequest */
+        OutputProfileCreateRequest: {
+            /** Name */
+            name: string;
+            /** Resolution */
+            resolution?: string | null;
+            /** Aspect Ratio */
+            aspect_ratio?: string | null;
+            /** Fps */
+            fps?: number | null;
+            /** Duration Target Seconds */
+            duration_target_seconds?: number | null;
+            /** Audio Spec */
+            audio_spec?: string | null;
+            /**
+             * Subtitles Required
+             * @default false
+             */
+            subtitles_required: boolean;
+            /** Delivery Format */
+            delivery_format?: string | null;
+            /** Platform Notes */
+            platform_notes?: string | null;
+            /**
+             * Is Default
+             * @default false
+             */
+            is_default: boolean;
+        };
+        /** OutputProfileResponse */
+        OutputProfileResponse: {
+            /** Id */
+            id: string;
+            /** Project Id */
+            project_id: string;
+            /** Name */
+            name: string;
+            /** Resolution */
+            resolution: string | null;
+            /** Aspect Ratio */
+            aspect_ratio: string | null;
+            /** Fps */
+            fps: number | null;
+            /** Duration Target Seconds */
+            duration_target_seconds: number | null;
+            /** Audio Spec */
+            audio_spec: string | null;
+            /** Subtitles Required */
+            subtitles_required: boolean;
+            /** Delivery Format */
+            delivery_format: string | null;
+            /** Platform Notes */
+            platform_notes: string | null;
+            /** Is Default */
+            is_default: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** OutputProfileUpdateRequest */
+        OutputProfileUpdateRequest: {
+            /** Name */
+            name?: string | null;
+            /** Resolution */
+            resolution?: string | null;
+            /** Aspect Ratio */
+            aspect_ratio?: string | null;
+            /** Fps */
+            fps?: number | null;
+            /** Duration Target Seconds */
+            duration_target_seconds?: number | null;
+            /** Audio Spec */
+            audio_spec?: string | null;
+            /** Subtitles Required */
+            subtitles_required?: boolean | null;
+            /** Delivery Format */
+            delivery_format?: string | null;
+            /** Platform Notes */
+            platform_notes?: string | null;
+            /** Is Default */
+            is_default?: boolean | null;
+        };
+        /**
+         * ProductionMode
+         * @description Project/scene/(sequence/character/shot when those tables exist)-level mode
+         *     (D1, TFD-PRJ-003/004; PRD §2.2 inheritance: ``effective_mode(x) = x.mode ?? parent.mode``).
+         *     Mirrors packages.domain.journey_manifest.yaml's enums.production_modes -- validated
+         *     here too so an out-of-range value 422s at the API boundary (AT-PRJ-003.1), not just
+         *     silently falls through the journey engine's applicability resolver.
+         * @enum {string}
+         */
+        ProductionMode: "fully_ai" | "hybrid_live_action" | "mixed";
         /** ProjectCreateRequest */
         ProjectCreateRequest: {
             /** Title */
@@ -943,6 +1269,38 @@ export interface components {
             logline?: string | null;
             /** Genre */
             genre?: string | null;
+            production_mode?: components["schemas"]["ProductionMode"] | null;
+            /** Format Template Key */
+            format_template_key?: string | null;
+            quality_profile?: components["schemas"]["QualityProfile"] | null;
+            scale?: components["schemas"]["ProjectScale"] | null;
+        };
+        /** ProjectMemberAddRequest */
+        ProjectMemberAddRequest: {
+            /** Email */
+            email: string;
+            /** Role Template Key */
+            role_template_key: string;
+        };
+        /** ProjectMemberResponse */
+        ProjectMemberResponse: {
+            /** User Id */
+            user_id: string;
+            /** Email */
+            email: string;
+            /** Full Name */
+            full_name: string;
+            /** Role Template Key */
+            role_template_key: string;
+            /** Role Template Name */
+            role_template_name: string;
+            /** Capabilities */
+            capabilities: string[];
+        };
+        /** ProjectMemberRoleUpdateRequest */
+        ProjectMemberRoleUpdateRequest: {
+            /** Role Template Key */
+            role_template_key: string;
         };
         /** ProjectResponse */
         ProjectResponse: {
@@ -960,6 +1318,12 @@ export interface components {
             status: string;
             /** Production Mode */
             production_mode: string;
+            /** Format Template Key */
+            format_template_key: string | null;
+            /** Quality Profile */
+            quality_profile: string | null;
+            /** Scale */
+            scale: string | null;
             /** Current Version */
             current_version: number;
             /** Created By */
@@ -974,6 +1338,61 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+        };
+        /**
+         * ProjectScale
+         * @description Project scale (D1, TFD-PRJ-001). Same provisional status as QualityProfile.
+         * @enum {string}
+         */
+        ProjectScale: "small" | "medium" | "large";
+        /** ProjectSummaryResponse */
+        ProjectSummaryResponse: {
+            /** Project Id */
+            project_id: string;
+            /** Project Version */
+            project_version: number;
+            /** Canonical Screenplay Version */
+            canonical_screenplay_version?: number | null;
+            /**
+             * Screenplay Lock State
+             * @default none_locked
+             */
+            screenplay_lock_state: string;
+            /** Scene Count By Effective Mode */
+            scene_count_by_effective_mode: {
+                [key: string]: number;
+            };
+            /** Pending Approvals Count */
+            pending_approvals_count: number;
+            /**
+             * Unresolved High Severity Findings Count
+             * @default 0
+             */
+            unresolved_high_severity_findings_count: number;
+            /** Running Tasks */
+            running_tasks: components["schemas"]["RunningTaskSummary"][];
+            /** Recent Changes */
+            recent_changes: components["schemas"]["RecentChangeSummary"][];
+            next_action: components["schemas"]["NextActionSummary"] | null;
+        };
+        /**
+         * ProjectUpdateRequest
+         * @description PATCH /projects/{id} (TFD-PRJ-002/003). Every field is optional; only fields
+         *     actually present are changed (``exclude_unset`` at the service boundary), so
+         *     omitting a field is not the same as explicitly clearing it.
+         */
+        ProjectUpdateRequest: {
+            /** Title */
+            title?: string | null;
+            /** Logline */
+            logline?: string | null;
+            /** Genre */
+            genre?: string | null;
+            production_mode?: components["schemas"]["ProductionMode"] | null;
+            /** Format Template Key */
+            format_template_key?: string | null;
+            quality_profile?: components["schemas"]["QualityProfile"] | null;
+            scale?: components["schemas"]["ProjectScale"] | null;
         };
         /** ProjectVersionResponse */
         ProjectVersionResponse: {
@@ -991,6 +1410,30 @@ export interface components {
             snapshot_data: {
                 [key: string]: unknown;
             };
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /**
+         * QualityProfile
+         * @description Visual quality profile (D1, TFD-PRJ-001). PRD §8 names the field but not its
+         *     values (DEC-028: per-format defaults are open); this is a provisional 3-tier
+         *     placeholder pending production validation, not a specified product requirement.
+         * @enum {string}
+         */
+        QualityProfile: "draft" | "standard" | "premium";
+        /** RecentChangeSummary */
+        RecentChangeSummary: {
+            /** Action */
+            action: string;
+            /** Actor Id */
+            actor_id: string;
+            /** Target Type */
+            target_type: string;
+            /** Target Id */
+            target_id: string;
             /**
              * Created At
              * Format: date-time
@@ -1174,6 +1617,29 @@ export interface components {
             asset_id: string | null;
             /** Reliability Notes */
             reliability_notes: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** RoleTemplateResponse */
+        RoleTemplateResponse: {
+            /** Key */
+            key: string;
+            /** Name */
+            name: string;
+            /** Capabilities */
+            capabilities: string[];
+        };
+        /** RunningTaskSummary */
+        RunningTaskSummary: {
+            /** Workflow Run Id */
+            workflow_run_id: string;
+            /** Graph Id */
+            graph_id: string;
+            /** Status */
+            status: string;
             /**
              * Created At
              * Format: date-time
@@ -1435,7 +1901,9 @@ export interface operations {
     };
     list_projects_api_v1_projects_get: {
         parameters: {
-            query?: never;
+            query?: {
+                include_archived?: boolean;
+            };
             header?: {
                 authorization?: string | null;
                 "X-Actor-ID"?: string | null;
@@ -1522,6 +1990,146 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProjectResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_project_api_v1_projects__project_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Actor-ID"?: string | null;
+            };
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProjectUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    archive_project_api_v1_projects__project_id__archive_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Actor-ID"?: string | null;
+            };
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unarchive_project_api_v1_projects__project_id__unarchive_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Actor-ID"?: string | null;
+            };
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_project_summary_api_v1_projects__project_id__summary_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Actor-ID"?: string | null;
+            };
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectSummaryResponse"];
                 };
             };
             /** @description Validation Error */
@@ -1692,6 +2300,432 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EntityResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_output_profiles_api_v1_projects__project_id__output_profiles_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Actor-ID"?: string | null;
+            };
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OutputProfileResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_output_profile_api_v1_projects__project_id__output_profiles_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Actor-ID"?: string | null;
+            };
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OutputProfileCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OutputProfileResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_output_profile_api_v1_projects__project_id__output_profiles__profile_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Actor-ID"?: string | null;
+            };
+            path: {
+                project_id: string;
+                profile_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_output_profile_api_v1_projects__project_id__output_profiles__profile_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Actor-ID"?: string | null;
+            };
+            path: {
+                project_id: string;
+                profile_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OutputProfileUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OutputProfileResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_episodes_api_v1_projects__project_id__episodes_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Actor-ID"?: string | null;
+            };
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EpisodeResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_episode_api_v1_projects__project_id__episodes_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Actor-ID"?: string | null;
+            };
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EpisodeCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EpisodeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_role_templates_api_v1_projects__project_id__role_templates_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Actor-ID"?: string | null;
+            };
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleTemplateResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_members_api_v1_projects__project_id__members_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Actor-ID"?: string | null;
+            };
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectMemberResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_member_api_v1_projects__project_id__members_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Actor-ID"?: string | null;
+            };
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProjectMemberAddRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectMemberResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_member_api_v1_projects__project_id__members__user_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Actor-ID"?: string | null;
+            };
+            path: {
+                project_id: string;
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_member_role_api_v1_projects__project_id__members__user_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Actor-ID"?: string | null;
+            };
+            path: {
+                project_id: string;
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProjectMemberRoleUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectMemberResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_project_templates_api_v1_project_templates_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Actor-ID"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FormatTemplateResponse"][];
                 };
             };
             /** @description Validation Error */

@@ -24,6 +24,7 @@ CAPABILITIES: tuple[Capability, ...] = (
     Capability("project.create", "Create a new project (org-level; not scoped to a project)."),
     Capability("project.read", "View a project's details, versions, candidates and canonical state."),
     Capability("project.admin", "Change project-level settings and governance policy."),
+    Capability("project.manage_members", "Add, change the role of, or remove a project member."),
     Capability("asset.upload", "Upload a new asset to a project."),
     Capability("workflow.run", "Trigger an intelligence workflow (script, research, storyboard, film bible)."),
     Capability("canon.propose", "Write a canonical record directly (manual research source, film-bible rule)."),
@@ -58,6 +59,7 @@ DEFAULT_ROLE_TEMPLATES: dict[str, tuple[str, ...]] = {
     "management": (
         "project.read",
         "project.admin",
+        "project.manage_members",
         "approval.creative",
         "screenplay.approve_lock",
         "cost.approve",

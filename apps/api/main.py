@@ -21,6 +21,7 @@ from apps.api.routers import (
     film_bible,
     health,
     journey,
+    project_templates,
     projects,
     research,
     storyboard,
@@ -60,7 +61,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         CORSMiddleware,
         allow_origins=settings.cors_allow_origins,
         allow_credentials=False,
-        allow_methods=["GET", "POST"],
+        allow_methods=["GET", "POST", "PATCH", "DELETE"],
         allow_headers=["Content-Type", "X-Actor-ID", "Authorization", "Idempotency-Key"],
         expose_headers=["Idempotent-Replayed"],
     )
@@ -70,7 +71,17 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         FastAPIInstrumentor.instrument_app(app)
 
     app.include_router(health.router)
-    for module in (projects, assets, workflows, approvals, research, storyboard, film_bible, journey):
+    for module in (
+        projects,
+        project_templates,
+        assets,
+        workflows,
+        approvals,
+        research,
+        storyboard,
+        film_bible,
+        journey,
+    ):
         app.include_router(module.router, prefix=settings.api_v1_str)
 
     # Dev-only login: never registered outside local development (ADR-003). In every

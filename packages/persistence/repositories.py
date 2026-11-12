@@ -15,7 +15,7 @@ from typing import Any, Dict, Iterable, List
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
-from packages.domain.enums import ApprovalStatus, AuditAction, OutboxStatus
+from packages.domain.enums import ApprovalStatus, AuditAction, OutboxStatus, ProjectStatus
 from packages.domain.errors import NotFoundError
 from packages.persistence.models import (
     ApprovalRequestModel,
@@ -24,6 +24,7 @@ from packages.persistence.models import (
     AuditEventModel,
     EntityCandidateModel,
     EntityModel,
+    EpisodeModel,
     FilmBibleRuleCandidateModel,
     FilmBibleRuleModel,
     JourneyItemStateModel,
@@ -32,6 +33,7 @@ from packages.persistence.models import (
     MembershipModel,
     OrganizationModel,
     OutboxTaskModel,
+    OutputProfileModel,
     ProjectMembershipModel,
     ProjectModel,
     ProjectVersionModel,
@@ -71,6 +73,13 @@ class UserRepository(_Repository):
 
     def get(self, user_id: str) -> UserModel | None:
         return self.db.get(UserModel, user_id)
+
+    def get_by_email_in_org(self, email: str, organization_id: str) -> UserModel | None:
+        """D1 (S-TEAM-02): resolve an email to an existing org member when adding them
+        to a project -- a project member must already be an org member (ADR-003 §2's
+        layering), there is no separate "invite a stranger" flow yet (S-TEAM-01, V1)."""
+        stmt = select(UserModel).where(UserModel.email == email, UserModel.organization_id == organization_id)
+        return self.db.scalars(stmt).first()
 
     def get_by_idp_identity(self, issuer: str, subject: str) -> UserModel | None:
         """Look up a user linked to an external OIDC identity (ADR-003)."""
@@ -136,12 +145,19 @@ class ProjectRepository(_Repository):
             raise NotFoundError(f"Project '{project_id}' not found.")
         return project
 
-    def list_for_org(self, org_id: str) -> List[ProjectModel]:
-        stmt = (
-            select(ProjectModel)
-            .where(ProjectModel.organization_id == org_id)
-            .order_by(ProjectModel.created_at.desc())
-        )
+    def list_for_org(
+        self, org_id: str, *, project_ids: Iterable[str] | None = None, include_archived: bool = False
+    ) -> List[ProjectModel]:
+        """``project_ids=None`` means "every project in the org" (an org owner); a
+        caller otherwise scoped to specific project_memberships passes their own ids
+        (TFD-PRJ-002, AT-PRJ-002.1). Archived projects are hidden by default
+        (AT-PRJ-002.2)."""
+        stmt = select(ProjectModel).where(ProjectModel.organization_id == org_id)
+        if project_ids is not None:
+            stmt = stmt.where(ProjectModel.id.in_(list(project_ids)))
+        if not include_archived:
+            stmt = stmt.where(ProjectModel.status != ProjectStatus.ARCHIVED.value)
+        stmt = stmt.order_by(ProjectModel.created_at.desc())
         return list(self.db.scalars(stmt))
 
     def add_version(self, version: ProjectVersionModel) -> ProjectVersionModel:
@@ -154,6 +170,51 @@ class ProjectRepository(_Repository):
             .order_by(ProjectVersionModel.version_number.desc())
         )
         return list(self.db.scalars(stmt))
+
+
+class OutputProfileRepository(_Repository):
+    def add(self, profile: OutputProfileModel) -> OutputProfileModel:
+        return self._add(profile)
+
+    def list_for_project(self, project_id: str) -> List[OutputProfileModel]:
+        stmt = (
+            select(OutputProfileModel)
+            .where(OutputProfileModel.project_id == project_id)
+            .order_by(OutputProfileModel.created_at.asc())
+        )
+        return list(self.db.scalars(stmt))
+
+    def get_scoped(self, profile_id: str, project_id: str) -> OutputProfileModel:
+        stmt = select(OutputProfileModel).where(
+            OutputProfileModel.id == profile_id, OutputProfileModel.project_id == project_id
+        )
+        profile = self.db.scalars(stmt).first()
+        if profile is None:
+            raise NotFoundError(f"Output profile '{profile_id}' not found.")
+        return profile
+
+    def delete(self, profile: OutputProfileModel) -> None:
+        self.db.delete(profile)
+
+
+class EpisodeRepository(_Repository):
+    def add(self, episode: EpisodeModel) -> EpisodeModel:
+        return self._add(episode)
+
+    def list_for_project(self, project_id: str) -> List[EpisodeModel]:
+        stmt = (
+            select(EpisodeModel)
+            .where(EpisodeModel.project_id == project_id)
+            .order_by(EpisodeModel.episode_number.asc())
+        )
+        return list(self.db.scalars(stmt))
+
+    def get_scoped(self, episode_id: str, project_id: str) -> EpisodeModel:
+        stmt = select(EpisodeModel).where(EpisodeModel.id == episode_id, EpisodeModel.project_id == project_id)
+        episode = self.db.scalars(stmt).first()
+        if episode is None:
+            raise NotFoundError(f"Episode '{episode_id}' not found.")
+        return episode
 
 
 class AssetRepository(_Repository):
@@ -218,6 +279,17 @@ class WorkflowRunRepository(_Repository):
         if run is None or run.organization_id != org_id:
             raise NotFoundError(f"Workflow run '{run_id}' not found.")
         return run
+
+    def list_for_project(self, project_id: str, *, statuses: Iterable[str] | None = None) -> List[WorkflowRunModel]:
+        """D1 (TFD-PRJ-007): "running tasks" on the Project Overview."""
+        stmt = (
+            select(WorkflowRunModel)
+            .where(WorkflowRunModel.project_id == project_id)
+            .order_by(WorkflowRunModel.created_at.desc())
+        )
+        if statuses is not None:
+            stmt = stmt.where(WorkflowRunModel.status.in_(list(statuses)))
+        return list(self.db.scalars(stmt))
 
     def set_status(
         self,
@@ -695,6 +767,19 @@ class RoleTemplateRepository(_Repository):
         )
         return self.db.scalars(stmt).first()
 
+    def get_scoped(self, template_id: str, organization_id: str) -> RoleTemplateModel:
+        stmt = select(RoleTemplateModel).where(
+            RoleTemplateModel.id == template_id, RoleTemplateModel.organization_id == organization_id
+        )
+        template = self.db.scalars(stmt).first()
+        if template is None:
+            raise NotFoundError(f"Role template '{template_id}' not found.")
+        return template
+
+    def list_for_org(self, organization_id: str) -> List[RoleTemplateModel]:
+        stmt = select(RoleTemplateModel).where(RoleTemplateModel.organization_id == organization_id)
+        return list(self.db.scalars(stmt))
+
     def capabilities_for(self, role_template_id: str) -> set[str]:
         stmt = select(RoleTemplateCapabilityModel.capability_key).where(
             RoleTemplateCapabilityModel.role_template_id == role_template_id
@@ -740,6 +825,20 @@ class ProjectMembershipRepository(_Repository):
             ProjectMembershipModel.user_id == user_id, ProjectMembershipModel.project_id == project_id
         )
         return self.db.scalars(stmt).first()
+
+    def list_project_ids_for_user(self, user_id: str) -> List[str]:
+        """Every project a non-owner member has an explicit role on (TFD-PRJ-002,
+        AT-PRJ-002.1) -- an org owner never needs this (ProjectRepository.list_for_org
+        is called with ``project_ids=None`` for them instead)."""
+        stmt = select(ProjectMembershipModel.project_id).where(ProjectMembershipModel.user_id == user_id)
+        return list(self.db.scalars(stmt))
+
+    def list_for_project(self, project_id: str) -> List[ProjectMembershipModel]:
+        stmt = select(ProjectMembershipModel).where(ProjectMembershipModel.project_id == project_id)
+        return list(self.db.scalars(stmt))
+
+    def delete(self, membership: ProjectMembershipModel) -> None:
+        self.db.delete(membership)
 
 
 class JourneyRepository(_Repository):

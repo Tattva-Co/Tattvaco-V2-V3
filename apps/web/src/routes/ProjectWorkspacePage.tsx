@@ -18,10 +18,14 @@ import { HistoricalResearchTool } from "../components/tools/HistoricalResearchTo
 import { StoryboardTool } from "../components/tools/StoryboardTool";
 import { FilmBibleTool } from "../components/tools/FilmBibleTool";
 import { AuditTool } from "../components/tools/AuditTool";
+import { ProjectOverviewTool } from "../components/tools/ProjectOverviewTool";
+import { ProjectSettingsTool } from "../components/tools/ProjectSettingsTool";
+import { ProjectMembersTool } from "../components/tools/ProjectMembersTool";
 import type { JourneyItemAction, JourneySection } from "../api/client";
 import { describeError } from "../lib/describeError";
 
 const TOOL_TITLES: Record<ToolKey, { title: string; subtitle: string }> = {
+  overview: { title: "Project Overview", subtitle: "Status, pending approvals, running tasks and the next action." },
   assets: { title: "Assets", subtitle: "Upload screenplays into private, immutable storage." },
   script_intelligence: {
     title: "Script Intelligence",
@@ -80,6 +84,7 @@ export function ProjectWorkspacePage() {
   const isOnline = useOnlineStatus();
   const taskTray = useTaskTray();
   const [openTool, setOpenTool] = useState<ToolKey | null>(null);
+  const [settingsTab, setSettingsTab] = useState<"Settings" | "Members" | null>(null);
 
   const sections = journey.data ?? [];
   const [openGroupIds, setOpenGroupIds] = useState<Set<string>>(new Set());
@@ -192,7 +197,7 @@ export function ProjectWorkspacePage() {
           </div>
           <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
             <StudioToolsMenu activeSectionId={activeSectionId ?? sections[0].id} onOpenTool={setOpenTool} />
-            <button type="button" className="btn" onClick={() => showToast("Project settings aren't built yet.")}>
+            <button type="button" className="btn" onClick={() => setSettingsTab("Settings")}>
               Project Settings
             </button>
           </div>
@@ -287,6 +292,7 @@ export function ProjectWorkspacePage() {
           subtitle={TOOL_TITLES[openTool].subtitle}
           onClose={() => setOpenTool(null)}
         >
+          {openTool === "overview" && <ProjectOverviewTool projectId={projectId} />}
           {openTool === "assets" && <AssetsTool projectId={projectId} />}
           {openTool === "script_intelligence" && (
             <ScriptIntelligenceTool projectId={projectId} onRunStarted={taskTray.trackRun} />
@@ -298,6 +304,31 @@ export function ProjectWorkspacePage() {
           {openTool === "storyboard" && <StoryboardTool projectId={projectId} onRunStarted={taskTray.trackRun} />}
           {openTool === "film_bible" && <FilmBibleTool projectId={projectId} onRunStarted={taskTray.trackRun} />}
           {openTool === "audit" && <AuditTool projectId={projectId} />}
+        </StudioToolPanel>
+      )}
+
+      {settingsTab && (
+        <StudioToolPanel
+          title="Project Settings"
+          subtitle="Format, mode, output profiles, episodes, members and roles."
+          onClose={() => setSettingsTab(null)}
+        >
+          <div className="tool-tabs" role="tablist" style={{ marginBottom: 12 }}>
+            {(["Settings", "Members"] as const).map((t) => (
+              <button
+                key={t}
+                type="button"
+                role="tab"
+                aria-selected={settingsTab === t}
+                className={`tool-tab${settingsTab === t ? " active" : ""}`}
+                onClick={() => setSettingsTab(t)}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+          {settingsTab === "Settings" && <ProjectSettingsTool project={currentProject} />}
+          {settingsTab === "Members" && <ProjectMembersTool projectId={projectId} />}
         </StudioToolPanel>
       )}
 

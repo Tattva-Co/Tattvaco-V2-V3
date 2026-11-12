@@ -38,8 +38,11 @@ def test_a_fresh_project_has_all_ten_sections_not_started(client, tenant):
         assert section["can_continue"] is False
         for group in section["groups"]:
             if not group["applies"]:
-                # JRN-07.4 (On-set capture plan) is not_applicable by default for the
-                # project's fully_ai production mode -- correct, not "untouched".
+                # JRN-07.4 (On-set capture plan) is the only group with non-"all"
+                # applicability (hybrid_live_action/mixed only); it does not appear
+                # here for this project's default "mixed" mode (D1, AT-PRJ-001.3), but
+                # the branch is kept for whichever project configuration does exclude
+                # a group -- correct, not "untouched".
                 assert group["status"] == "not_applicable"
                 continue
             assert group["status"] == "not_started"
@@ -138,7 +141,11 @@ def test_system_managed_is_false_for_manually_validated_groups(client, tenant):
 
 
 def test_capture_plan_group_is_not_applicable_for_fully_ai_projects(client, tenant):
-    project = create_project(client, tenant)  # default production_mode is fully_ai
+    # D1 (AT-PRJ-001.3): project creation without an explicit mode now defaults to
+    # "mixed", under which JRN-07.4 DOES apply (journey_manifest.yaml:
+    # modes: [hybrid_live_action, mixed]) -- this test is specifically about fully_ai,
+    # so it must ask for that mode explicitly rather than rely on the default.
+    project = create_project(client, tenant, production_mode="fully_ai")
     group = _group(_journey(client, tenant, project["id"]), "JRN-07.4")
     assert group["status"] == "not_applicable"
     assert group["applies"] is False

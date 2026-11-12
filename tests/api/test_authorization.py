@@ -62,12 +62,16 @@ def _grant_project_role(org_id: str, user_id: str, project_id: str, role_key: st
 
 
 def test_member_with_no_project_membership_cannot_read_an_existing_project(client, tenant):
+    """D1, AT-PRJ-002.1: a project the caller has no standing relationship to reads as
+    404 (its existence is not revealed), not 403 -- this is a deliberate behavior
+    change from this project's earlier 403, which leaked that the project existed to
+    anyone in the same org."""
     project = create_project(client, tenant, title="Owner's project")
     outsider_member = _add_org_member(tenant.org_id)
 
     resp = client.get(f"/api/v1/projects/{project['id']}", headers=as_actor(outsider_member))
-    assert resp.status_code == 403, resp.text
-    assert resp.json()["error"] == "TenantAccessViolation"
+    assert resp.status_code == 404, resp.text
+    assert resp.json()["error"] == "NotFoundError"
 
 
 def test_member_with_no_project_membership_can_still_create_their_own_project(client, tenant):

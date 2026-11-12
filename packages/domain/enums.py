@@ -14,6 +14,36 @@ class ProjectStatus(str, Enum):
     ARCHIVED = "archived"
 
 
+class ProductionMode(str, Enum):
+    """Project/scene/(sequence/character/shot when those tables exist)-level mode
+    (D1, TFD-PRJ-003/004; PRD §2.2 inheritance: ``effective_mode(x) = x.mode ?? parent.mode``).
+    Mirrors packages.domain.journey_manifest.yaml's enums.production_modes -- validated
+    here too so an out-of-range value 422s at the API boundary (AT-PRJ-003.1), not just
+    silently falls through the journey engine's applicability resolver."""
+
+    FULLY_AI = "fully_ai"
+    HYBRID_LIVE_ACTION = "hybrid_live_action"
+    MIXED = "mixed"
+
+
+class QualityProfile(str, Enum):
+    """Visual quality profile (D1, TFD-PRJ-001). PRD §8 names the field but not its
+    values (DEC-028: per-format defaults are open); this is a provisional 3-tier
+    placeholder pending production validation, not a specified product requirement."""
+
+    DRAFT = "draft"
+    STANDARD = "standard"
+    PREMIUM = "premium"
+
+
+class ProjectScale(str, Enum):
+    """Project scale (D1, TFD-PRJ-001). Same provisional status as QualityProfile."""
+
+    SMALL = "small"
+    MEDIUM = "medium"
+    LARGE = "large"
+
+
 class AssetType(str, Enum):
     SCRIPT = "script"
     DOCUMENT = "document"
@@ -86,6 +116,16 @@ class AuditAction(str, Enum):
     VISUAL_RULE_CREATED = "visual_rule_created"
     FILM_BIBLE_COMMITTED = "film_bible_committed"
     FILM_BIBLE_REJECTED = "film_bible_rejected"
+    PROJECT_UPDATED = "project_updated"
+    PROJECT_ARCHIVED = "project_archived"
+    PROJECT_UNARCHIVED = "project_unarchived"
+    PROJECT_MEMBER_ADDED = "project_member_added"
+    PROJECT_MEMBER_ROLE_CHANGED = "project_member_role_changed"
+    PROJECT_MEMBER_REMOVED = "project_member_removed"
+    OUTPUT_PROFILE_CREATED = "output_profile_created"
+    OUTPUT_PROFILE_UPDATED = "output_profile_updated"
+    OUTPUT_PROFILE_DELETED = "output_profile_deleted"
+    EPISODE_CREATED = "episode_created"
 
 
 class ShotType(str, Enum):

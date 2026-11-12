@@ -81,6 +81,13 @@ class ProjectModel(Base):
     # cannot function without it. DEC-021: existing projects backfill to "fully_ai".
     # D1 owns the rest of the format/mode UI and any per-sequence/scene/shot override.
     production_mode = Column(String(50), default="fully_ai", nullable=False)
+    # D1 (TFD-PRJ-001): "decide later" fields -- null until the owner sets them, and
+    # required only before shot packaging (D11), not at creation (AT-PRJ-001.1).
+    # format_template_key references packages.domain.format_templates.FORMAT_TEMPLATES_BY_KEY
+    # (configuration data, not a DB table/FK -- see that module's docstring).
+    format_template_key = Column(String(50), nullable=True)
+    quality_profile = Column(String(50), nullable=True)  # packages.domain.enums.QualityProfile
+    scale = Column(String(50), nullable=True)  # packages.domain.enums.ProjectScale
     current_version = Column(Integer, default=1, nullable=False)
     created_by = Column(String(36), ForeignKey("users.id"), nullable=False)
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
@@ -103,6 +110,49 @@ class ProjectVersionModel(Base):
     # TFD-VER-001: one row per (project, version number). The row lock taken before every
     # version bump (C4) prevents the race; this makes a duplicate impossible at the DB level.
     __table_args__ = (Index("uq_project_versions_project_number", "project_id", "version_number", unique=True),)
+
+
+class EpisodeModel(Base):
+    """One episode of an episodic-structure project (D1, TFD-FMT-003). Only meaningful
+    for projects whose format_template_key has structure_type="episodic"
+    (packages.domain.format_templates); a linear-structure project has none."""
+
+    __tablename__ = "episodes"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id"), nullable=False, index=True)
+    episode_number = Column(Integer, nullable=False)
+    title = Column(String(255), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+
+    __table_args__ = (Index("uq_episodes_project_number", "project_id", "episode_number", unique=True),)
+
+
+class OutputProfileModel(Base):
+    """A delivery/output profile (D1, TFD-FMT-002): resolution, aspect ratio, frame
+    rate, duration target, audio, subtitles, delivery format and platform notes. A
+    project has one or more; ``is_default`` marks the one shot/post handoff packaging
+    (D11) falls back to when a shot does not name one explicitly."""
+
+    __tablename__ = "output_profiles"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id"), nullable=False, index=True)
+    name = Column(String(255), nullable=False)
+    resolution = Column(String(50), nullable=True)
+    aspect_ratio = Column(String(20), nullable=True)
+    fps = Column(Integer, nullable=True)
+    duration_target_seconds = Column(Integer, nullable=True)
+    audio_spec = Column(String(100), nullable=True)
+    subtitles_required = Column(Boolean, default=False, nullable=False)
+    delivery_format = Column(String(100), nullable=True)
+    platform_notes = Column(Text, nullable=True)
+    is_default = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
 
 
 class AssetModel(Base):
@@ -317,6 +367,17 @@ class SceneModel(Base):
     source_locator = Column(String(100), nullable=False)
     characters_present = Column(JSON, default=list, nullable=False)
     project_version = Column(Integer, default=1, nullable=False)
+    # D1 (TFD-PRJ-004): nullable mode override -- null means "inherit the project's
+    # production_mode". effective_mode(scene) = scene.production_mode ?? project.production_mode
+    # (PRD §2.2). Sequence/character/shot-level overrides are added when those tables
+    # exist (D9/D5/D9 respectively; roadmap D1 row).
+    production_mode = Column(String(50), nullable=True)
+    # D1 (TFD-FMT-003): which episode this scene belongs to, for episodic formats only
+    # (null for linear-structure projects). Nullable, not yet consumed by any scene-list
+    # filter -- Script Intelligence does not assign an episode when parsing (that wiring
+    # is D2/D3's screenplay-governance concern); this column exists now so D2/D3 need no
+    # second migration to add it.
+    episode_id = Column(String(36), ForeignKey("episodes.id"), nullable=True, index=True)
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
 
 

@@ -95,6 +95,21 @@ export type ResearchConflict = Schemas["ResearchConflictResponse"];
 export type StoryboardPanel = Schemas["StoryboardPanelResponse"];
 export type FilmBibleRule = Schemas["FilmBibleRuleResponse"];
 export type FilmBibleRuleCreateBody = Schemas["FilmBibleRuleCreateRequest"];
+export type ProjectUpdateBody = Schemas["ProjectUpdateRequest"];
+export type ProductionMode = Schemas["ProductionMode"];
+export type QualityProfile = Schemas["QualityProfile"];
+export type ProjectScale = Schemas["ProjectScale"];
+export type FormatTemplate = Schemas["FormatTemplateResponse"];
+export type OutputProfile = Schemas["OutputProfileResponse"];
+export type OutputProfileCreateBody = Schemas["OutputProfileCreateRequest"];
+export type OutputProfileUpdateBody = Schemas["OutputProfileUpdateRequest"];
+export type Episode = Schemas["EpisodeResponse"];
+export type EpisodeCreateBody = Schemas["EpisodeCreateRequest"];
+export type RoleTemplate = Schemas["RoleTemplateResponse"];
+export type ProjectMember = Schemas["ProjectMemberResponse"];
+export type ProjectMemberAddBody = Schemas["ProjectMemberAddRequest"];
+export type ProjectMemberRoleUpdateBody = Schemas["ProjectMemberRoleUpdateRequest"];
+export type ProjectSummary = Schemas["ProjectSummaryResponse"];
 
 export const api = {
   auth: {
@@ -102,13 +117,46 @@ export const api = {
       request<DevLoginResponse>("POST", "/api/v1/auth/dev-login", { email, full_name: fullName }),
   },
   projects: {
-    list: () => request<Project[]>("GET", "/api/v1/projects"),
+    list: (includeArchived = false) =>
+      request<Project[]>("GET", `/api/v1/projects${includeArchived ? "?include_archived=true" : ""}`),
     get: (id: string) => request<Project>("GET", `/api/v1/projects/${id}`),
     create: (body: ProjectCreateBody) => request<Project>("POST", "/api/v1/projects", body),
+    update: (id: string, body: ProjectUpdateBody) => request<Project>("PATCH", `/api/v1/projects/${id}`, body),
+    archive: (id: string) => request<Project>("POST", `/api/v1/projects/${id}/archive`),
+    unarchive: (id: string) => request<Project>("POST", `/api/v1/projects/${id}/unarchive`),
+    summary: (id: string) => request<ProjectSummary>("GET", `/api/v1/projects/${id}/summary`),
     versions: (id: string) => request<ProjectVersion[]>("GET", `/api/v1/projects/${id}/versions`),
     auditLog: (id: string) => request<AuditEvent[]>("GET", `/api/v1/projects/${id}/audit-log`),
     scenes: (id: string) => request<Scene[]>("GET", `/api/v1/projects/${id}/scenes`),
     entities: (id: string) => request<Entity[]>("GET", `/api/v1/projects/${id}/entities`),
+  },
+  projectTemplates: {
+    list: () => request<FormatTemplate[]>("GET", "/api/v1/project-templates"),
+  },
+  outputProfiles: {
+    list: (projectId: string) => request<OutputProfile[]>("GET", `/api/v1/projects/${projectId}/output-profiles`),
+    create: (projectId: string, body: OutputProfileCreateBody) =>
+      request<OutputProfile>("POST", `/api/v1/projects/${projectId}/output-profiles`, body),
+    update: (projectId: string, profileId: string, body: OutputProfileUpdateBody) =>
+      request<OutputProfile>("PATCH", `/api/v1/projects/${projectId}/output-profiles/${profileId}`, body),
+    delete: (projectId: string, profileId: string) =>
+      request<void>("DELETE", `/api/v1/projects/${projectId}/output-profiles/${profileId}`),
+  },
+  episodes: {
+    list: (projectId: string) => request<Episode[]>("GET", `/api/v1/projects/${projectId}/episodes`),
+    create: (projectId: string, body: EpisodeCreateBody) =>
+      request<Episode>("POST", `/api/v1/projects/${projectId}/episodes`, body),
+  },
+  members: {
+    roleTemplates: (projectId: string) =>
+      request<RoleTemplate[]>("GET", `/api/v1/projects/${projectId}/role-templates`),
+    list: (projectId: string) => request<ProjectMember[]>("GET", `/api/v1/projects/${projectId}/members`),
+    add: (projectId: string, body: ProjectMemberAddBody) =>
+      request<ProjectMember>("POST", `/api/v1/projects/${projectId}/members`, body),
+    updateRole: (projectId: string, userId: string, body: ProjectMemberRoleUpdateBody) =>
+      request<ProjectMember>("PATCH", `/api/v1/projects/${projectId}/members/${userId}`, body),
+    remove: (projectId: string, userId: string) =>
+      request<void>("DELETE", `/api/v1/projects/${projectId}/members/${userId}`),
   },
   assets: {
     list: (projectId: string) => request<Asset[]>("GET", `/api/v1/projects/${projectId}/assets`),

@@ -1,10 +1,18 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { useCreateProject, useProjects } from "../hooks/useProjects";
-import { ApiError } from "../api/client";
+import { useCreateProject, useProjects, useProjectTemplates } from "../hooks/useProjects";
+import { ApiError, type ProductionMode } from "../api/client";
+
+const PRODUCTION_MODES: { value: ProductionMode; label: string }[] = [
+  { value: "mixed", label: "Mixed (both AI and live-action)" },
+  { value: "fully_ai", label: "Fully AI-generated" },
+  { value: "hybrid_live_action", label: "Hybrid live-action + AI" },
+];
 
 export function OnlineWorkspacePage() {
-  const projects = useProjects();
+  const [includeArchived, setIncludeArchived] = useState(false);
+  const projects = useProjects(includeArchived);
+  const templates = useProjectTemplates();
   const createProject = useCreateProject();
   const navigate = useNavigate();
   const [showForm, setShowForm] = useState(false);
@@ -14,10 +22,13 @@ export function OnlineWorkspacePage() {
     const form = new FormData(event.currentTarget);
     const title = String(form.get("title") ?? "").trim();
     if (!title) return;
+    const formatTemplateKey = String(form.get("format_template_key") ?? "");
     const project = await createProject.mutateAsync({
       title,
       logline: String(form.get("logline") ?? "") || undefined,
       genre: String(form.get("genre") ?? "") || undefined,
+      production_mode: String(form.get("production_mode") ?? "mixed") as ProductionMode,
+      format_template_key: formatTemplateKey || undefined,
     });
     navigate(`/projects/${project.id}`);
   }
@@ -36,9 +47,19 @@ export function OnlineWorkspacePage() {
         <section className="card" aria-label="Projects">
           <div className="card-head">
             <h2>Projects</h2>
-            <button type="button" className="btn gold small" onClick={() => setShowForm((v) => !v)}>
-              {showForm ? "Cancel" : "+ New project"}
-            </button>
+            <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+              <label style={{ fontSize: 12, display: "flex", gap: 4, alignItems: "center" }}>
+                <input
+                  type="checkbox"
+                  checked={includeArchived}
+                  onChange={(e) => setIncludeArchived(e.target.checked)}
+                />
+                Show archived
+              </label>
+              <button type="button" className="btn gold small" onClick={() => setShowForm((v) => !v)}>
+                {showForm ? "Cancel" : "+ New project"}
+              </button>
+            </div>
           </div>
           <div className="card-body">
             {showForm && (
@@ -75,11 +96,49 @@ export function OnlineWorkspacePage() {
                   style={{
                     width: "100%",
                     padding: 10,
-                    marginBottom: 12,
+                    marginBottom: 8,
                     borderRadius: 8,
                     border: "1px solid var(--line)",
                   }}
                 />
+                <select
+                  name="production_mode"
+                  aria-label="Production mode"
+                  defaultValue="mixed"
+                  style={{
+                    width: "100%",
+                    padding: 10,
+                    marginBottom: 8,
+                    borderRadius: 8,
+                    border: "1px solid var(--line)",
+                  }}
+                >
+                  {PRODUCTION_MODES.map((m) => (
+                    <option key={m.value} value={m.value}>
+                      {m.label}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  name="format_template_key"
+                  aria-label="Format template"
+                  defaultValue=""
+                  disabled={templates.isLoading}
+                  style={{
+                    width: "100%",
+                    padding: 10,
+                    marginBottom: 12,
+                    borderRadius: 8,
+                    border: "1px solid var(--line)",
+                  }}
+                >
+                  <option value="">Format: decide later</option>
+                  {templates.data?.map((t) => (
+                    <option key={t.key} value={t.key}>
+                      {t.name}
+                    </option>
+                  ))}
+                </select>
                 {createProject.isError && (
                   <p role="alert" style={{ color: "var(--red)", fontSize: 12 }}>
                     {createProject.error instanceof ApiError

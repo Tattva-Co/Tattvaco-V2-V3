@@ -5,7 +5,7 @@ from typing import Any, Dict, List
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from packages.domain.enums import ApprovalDecision
+from packages.domain.enums import ApprovalDecision, ProductionMode, ProjectScale, QualityProfile
 
 
 class _ORM(BaseModel):
@@ -35,6 +35,29 @@ class ProjectCreateRequest(BaseModel):
     title: str = Field(..., min_length=1, max_length=255)
     logline: str | None = None
     genre: str | None = Field(default=None, max_length=100)
+    # D1 (TFD-PRJ-001): only title is truly required. ``production_mode`` defaults to
+    # ``mixed`` when omitted -- not the DB column's "fully_ai" migration-backfill
+    # default (DEC-021), which exists only for rows created before this field was
+    # settable -- so the legacy {title, logline, genre} body stays backward compatible
+    # (AT-PRJ-001.3). The rest are "decide later" (null) until set (AT-PRJ-001.1).
+    production_mode: ProductionMode | None = None
+    format_template_key: str | None = None
+    quality_profile: QualityProfile | None = None
+    scale: ProjectScale | None = None
+
+
+class ProjectUpdateRequest(BaseModel):
+    """PATCH /projects/{id} (TFD-PRJ-002/003). Every field is optional; only fields
+    actually present are changed (``exclude_unset`` at the service boundary), so
+    omitting a field is not the same as explicitly clearing it."""
+
+    title: str | None = Field(default=None, min_length=1, max_length=255)
+    logline: str | None = None
+    genre: str | None = Field(default=None, max_length=100)
+    production_mode: ProductionMode | None = None
+    format_template_key: str | None = None
+    quality_profile: QualityProfile | None = None
+    scale: ProjectScale | None = None
 
 
 class ProjectResponse(_ORM):
@@ -44,14 +67,153 @@ class ProjectResponse(_ORM):
     logline: str | None
     genre: str | None
     status: str
-    # Read-only here: defaults to "fully_ai" at creation (DEC-021). Setting it is D1
-    # scope (JRN-01.3 Production mode); GW1 only needs to report it so the journey UI
-    # can explain why a mode-excluded group (e.g. JRN-07.4) shows not_applicable.
     production_mode: str
+    format_template_key: str | None
+    quality_profile: str | None
+    scale: str | None
     current_version: int
     created_by: str
     created_at: datetime
     updated_at: datetime
+
+
+# -- Format templates, output profiles, episodes (D1) ------------------------
+
+
+class FormatTemplateResponse(BaseModel):
+    key: str
+    name: str
+    structure_type: str
+    required_workflow_steps: List[str]
+    optional_workflow_steps: List[str]
+    default_output_profile: Dict[str, Any]
+    note: str | None = None
+
+
+class OutputProfileCreateRequest(BaseModel):
+    name: str = Field(..., min_length=1, max_length=255)
+    resolution: str | None = None
+    aspect_ratio: str | None = None
+    fps: int | None = None
+    duration_target_seconds: int | None = None
+    audio_spec: str | None = None
+    subtitles_required: bool = False
+    delivery_format: str | None = None
+    platform_notes: str | None = None
+    is_default: bool = False
+
+
+class OutputProfileUpdateRequest(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=255)
+    resolution: str | None = None
+    aspect_ratio: str | None = None
+    fps: int | None = None
+    duration_target_seconds: int | None = None
+    audio_spec: str | None = None
+    subtitles_required: bool | None = None
+    delivery_format: str | None = None
+    platform_notes: str | None = None
+    is_default: bool | None = None
+
+
+class OutputProfileResponse(_ORM):
+    id: str
+    project_id: str
+    name: str
+    resolution: str | None
+    aspect_ratio: str | None
+    fps: int | None
+    duration_target_seconds: int | None
+    audio_spec: str | None
+    subtitles_required: bool
+    delivery_format: str | None
+    platform_notes: str | None
+    is_default: bool
+    created_at: datetime
+    updated_at: datetime
+
+
+class EpisodeCreateRequest(BaseModel):
+    episode_number: int = Field(..., ge=1)
+    title: str | None = Field(default=None, max_length=255)
+
+
+class EpisodeResponse(_ORM):
+    id: str
+    project_id: str
+    episode_number: int
+    title: str | None
+    created_at: datetime
+
+
+# -- Project members & roles (D1, S-TEAM-02) ----------------------------------
+
+
+class ProjectMemberAddRequest(BaseModel):
+    email: str = Field(..., min_length=3, max_length=255)
+    role_template_key: str = Field(..., min_length=1, max_length=50)
+
+
+class ProjectMemberRoleUpdateRequest(BaseModel):
+    role_template_key: str = Field(..., min_length=1, max_length=50)
+
+
+class RoleTemplateResponse(BaseModel):
+    key: str
+    name: str
+    capabilities: List[str]
+
+
+class ProjectMemberResponse(BaseModel):
+    user_id: str
+    email: str
+    full_name: str
+    role_template_key: str
+    role_template_name: str
+    capabilities: List[str]
+
+
+# -- Project overview summary (D1, TFD-PRJ-007) -------------------------------
+
+
+class RunningTaskSummary(BaseModel):
+    workflow_run_id: str
+    graph_id: str
+    status: str
+    created_at: datetime
+
+
+class RecentChangeSummary(BaseModel):
+    action: str
+    actor_id: str
+    target_type: str
+    target_id: str
+    created_at: datetime
+
+
+class NextActionSummary(BaseModel):
+    jrn_id: str
+    title: str
+    reason: str
+
+
+class ProjectSummaryResponse(BaseModel):
+    project_id: str
+    project_version: int
+    # Always null/"none_locked" until D2 adds screenplay_versions/is_production_canonical
+    # -- an honest placeholder, not a stand-in computed from an unrelated table
+    # (AT-PRJ-007 #1: no fabricated data).
+    canonical_screenplay_version: int | None = None
+    screenplay_lock_state: str = "none_locked"
+    # Scene-level proxy for "mode distribution" (PRD's literal wording is shot-level,
+    # which doesn't exist until D9): counts of canonical scenes by effective_mode.
+    scene_count_by_effective_mode: Dict[str, int]
+    pending_approvals_count: int
+    # Always 0 until D10 adds continuity_findings -- the feature does not exist yet.
+    unresolved_high_severity_findings_count: int = 0
+    running_tasks: List[RunningTaskSummary]
+    recent_changes: List[RecentChangeSummary]
+    next_action: NextActionSummary | None
 
 
 class ProjectVersionResponse(_ORM):

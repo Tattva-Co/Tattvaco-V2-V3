@@ -18,6 +18,7 @@ from packages.persistence.models import (
     AuditEventModel,
     EntityCandidateModel,
     EntityModel,
+    EpisodeModel,
     FilmBibleRuleCandidateModel,
     FilmBibleRuleModel,
     IdempotencyKeyModel,
@@ -27,6 +28,7 @@ from packages.persistence.models import (
     MembershipModel,
     OrganizationModel,
     OutboxTaskModel,
+    OutputProfileModel,
     ProjectMembershipModel,
     ProjectModel,
     ProjectVersionModel,
@@ -108,8 +110,11 @@ def purge_organization(org_id: str) -> None:
                 StoryboardPanelModel,
                 SceneCandidateModel,
                 EntityCandidateModel,
+                # scenes.episode_id references episodes, so scenes must go first.
                 SceneModel,
+                EpisodeModel,
                 EntityModel,
+                OutputProfileModel,
                 ProjectVersionModel,
                 ProjectMembershipModel,
                 JourneyItemStateModel,
@@ -190,12 +195,11 @@ def as_actor(user_id: str) -> dict:
     return {"X-Actor-ID": user_id}
 
 
-def create_project(client, tenant, title="The Himalayan Chronicle") -> dict:
-    resp = client.post(
-        "/api/v1/projects",
-        json={"title": title, "logline": "An expedition.", "genre": "Mythological Adventure"},
-        headers=as_actor(tenant.user_id),
-    )
+def create_project(client, tenant, title="The Himalayan Chronicle", production_mode: str | None = None) -> dict:
+    body = {"title": title, "logline": "An expedition.", "genre": "Mythological Adventure"}
+    if production_mode is not None:
+        body["production_mode"] = production_mode
+    resp = client.post("/api/v1/projects", json=body, headers=as_actor(tenant.user_id))
     assert resp.status_code == 201, resp.text
     return resp.json()
 

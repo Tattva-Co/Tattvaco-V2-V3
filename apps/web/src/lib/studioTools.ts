@@ -1,4 +1,5 @@
 export type ToolKey =
+  | "overview"
   | "assets"
   | "script_intelligence"
   | "review"
@@ -20,6 +21,12 @@ export interface ToolDescriptor {
 }
 
 export const TOOL_REGISTRY: ToolDescriptor[] = [
+  {
+    key: "overview",
+    name: "Project Overview",
+    description: "Screenplay/version status, pending approvals, running tasks and the next action (S-PRJ-01).",
+    sections: [],
+  },
   {
     key: "assets",
     name: "Assets",
