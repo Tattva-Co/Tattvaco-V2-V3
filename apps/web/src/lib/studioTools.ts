@@ -20,12 +20,21 @@ export interface ToolDescriptor {
 }
 
 export const TOOL_REGISTRY: ToolDescriptor[] = [
-  { key: "assets", name: "Assets", description: "Upload screenplays into immutable storage.", sections: ["JRN-02"] },
+  {
+    key: "assets",
+    name: "Assets",
+    description: "Upload screenplays into immutable storage.",
+    // Also reachable from JRN-01: section 01's 7 subpoints (format, mode, governance,
+    // delivery, team, policies) are all administrative, and gating the screenplay
+    // upload behind finishing every one of them first blocks the thing a writer
+    // actually wants to do first on a new project.
+    sections: ["JRN-01", "JRN-02"],
+  },
   {
     key: "script_intelligence",
     name: "Script Intelligence",
     description: "Extract scenes, characters and locations from the screenplay.",
-    sections: ["JRN-02"],
+    sections: ["JRN-01", "JRN-02"],
   },
   {
     key: "review",
@@ -49,7 +58,12 @@ export const TOOL_REGISTRY: ToolDescriptor[] = [
     key: "film_bible",
     name: "Film Bible",
     description: "Canonical visual-world rules, scenes and entities.",
-    sections: ["JRN-05"],
+    // Cross-stage, like Review and Audit: its Scenes/Entities/Versions tabs show canon
+    // that starts existing the moment the first Script Intelligence candidate is
+    // approved (JRN-01/02), well before Visual World (JRN-05) is reached -- gating the
+    // whole tool to JRN-05 hid that canon from a writer for most of the journey, even
+    // though the Visual World rule tabs it also holds are section-05 work.
+    sections: [],
   },
   { key: "audit", name: "Audit Trail", description: "Every project lifecycle action and decision.", sections: [] },
 ];
