@@ -20,11 +20,14 @@ from apps.api.routers import (
     auth,
     characters,
     consent,
+    costumes,
     film_bible,
     health,
     journey,
+    locations,
     project_templates,
     projects,
+    props,
     research,
     screenplay,
     storyboard,
@@ -87,9 +90,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         screenplay,
         characters,
         consent,
+        locations,
+        costumes,
+        props,
     ):
         app.include_router(module.router, prefix=settings.api_v1_str)
     app.include_router(characters.measurements_router, prefix=settings.api_v1_str)
+    app.include_router(locations.environment_states_router, prefix=settings.api_v1_str)
+    app.include_router(costumes.assignments_router, prefix=settings.api_v1_str)
+    app.include_router(costumes.continuity_findings_router, prefix=settings.api_v1_str)
 
     # Dev-only login: never registered outside local development (ADR-003). In every
     # other environment this path simply does not exist and 404s.

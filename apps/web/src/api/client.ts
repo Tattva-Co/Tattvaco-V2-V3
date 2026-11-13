@@ -146,6 +146,30 @@ export type ConsentRevokeBody = Schemas["ConsentRevokeRequest"];
 export type ConsentCheck = Schemas["ConsentCheckResponse"];
 export type VoiceProfileCreateBody = Schemas["VoiceProfileCreateRequest"];
 export type VoiceProfile = Schemas["VoiceProfileResponse"];
+export type LocationVersion = Schemas["LocationVersionResponse"];
+export type LocationDetail = Schemas["LocationDetailResponse"];
+export type LocationVersionProposeBody = Schemas["LocationVersionProposeRequest"];
+export type LocationVersionProposeResult = Schemas["LocationVersionProposeResponse"];
+export type LocationDecisionBody = Schemas["LocationDecisionRequest"];
+export type LocationAdoptResult = Schemas["LocationAdoptResponse"];
+export type EnvironmentStateCreateBody = Schemas["EnvironmentStateCreateRequest"];
+export type EnvironmentState = Schemas["EnvironmentStateResponse"];
+export type CostumeCreateBody = Schemas["CostumeCreateRequest"];
+export type Costume = Schemas["CostumeResponse"];
+export type CostumeVersion = Schemas["CostumeVersionResponse"];
+export type CostumeDetail = Schemas["CostumeDetailResponse"];
+export type CostumeVersionProposeBody = Schemas["CostumeVersionProposeRequest"];
+export type CostumeVersionProposeResult = Schemas["CostumeVersionProposeResponse"];
+export type CostumeDecisionBody = Schemas["CostumeDecisionRequest"];
+export type CostumeStateCreateBody = Schemas["CostumeStateCreateRequest"];
+export type CostumeState = Schemas["CostumeStateResponse"];
+export type CostumeAssignmentCreateBody = Schemas["CostumeAssignmentCreateRequest"];
+export type CostumeAssignment = Schemas["CostumeAssignmentResponse"];
+export type ContinuityFinding = Schemas["ContinuityFindingResponse"];
+export type PropCreateBody = Schemas["PropCreateRequest"];
+export type Prop = Schemas["PropResponse"];
+export type PropStateCreateBody = Schemas["PropStateCreateRequest"];
+export type PropState = Schemas["PropStateResponse"];
 
 export const api = {
   auth: {
@@ -416,5 +440,76 @@ export const api = {
     list: (projectId: string) => request<VoiceProfile[]>("GET", `/api/v1/projects/${projectId}/voice-profiles`),
     create: (projectId: string, body: VoiceProfileCreateBody) =>
       request<VoiceProfile>("POST", `/api/v1/projects/${projectId}/voice-profiles`, body),
+  },
+  locations: {
+    get: (projectId: string, locationId: string) =>
+      request<LocationDetail>("GET", `/api/v1/projects/${projectId}/locations/${locationId}`),
+    listVersions: (projectId: string, locationId: string) =>
+      request<LocationVersion[]>("GET", `/api/v1/projects/${projectId}/locations/${locationId}/versions`),
+    proposeVersion: (projectId: string, locationId: string, body: LocationVersionProposeBody) =>
+      request<LocationVersionProposeResult>(
+        "POST",
+        `/api/v1/projects/${projectId}/locations/${locationId}/versions`,
+        body
+      ),
+    decideVersion: (projectId: string, locationId: string, versionId: string, body: LocationDecisionBody) =>
+      request<LocationVersion>(
+        "POST",
+        `/api/v1/projects/${projectId}/locations/${locationId}/versions/${versionId}/decide`,
+        body
+      ),
+    adopt: (projectId: string, locationId: string) =>
+      request<LocationAdoptResult>("POST", `/api/v1/projects/${projectId}/locations/${locationId}/adopt`),
+  },
+  environmentStates: {
+    current: (projectId: string, sceneId: string) =>
+      request<EnvironmentState | null>(
+        "GET",
+        `/api/v1/projects/${projectId}/environment-states?scene_id=${sceneId}`
+      ),
+    create: (projectId: string, body: EnvironmentStateCreateBody) =>
+      request<EnvironmentState>("POST", `/api/v1/projects/${projectId}/environment-states`, body),
+  },
+  costumes: {
+    list: (projectId: string) => request<Costume[]>("GET", `/api/v1/projects/${projectId}/costumes`),
+    create: (projectId: string, body: CostumeCreateBody) =>
+      request<Costume>("POST", `/api/v1/projects/${projectId}/costumes`, body),
+    get: (projectId: string, costumeId: string) =>
+      request<CostumeDetail>("GET", `/api/v1/projects/${projectId}/costumes/${costumeId}`),
+    listVersions: (projectId: string, costumeId: string) =>
+      request<CostumeVersion[]>("GET", `/api/v1/projects/${projectId}/costumes/${costumeId}/versions`),
+    proposeVersion: (projectId: string, costumeId: string, body: CostumeVersionProposeBody) =>
+      request<CostumeVersionProposeResult>(
+        "POST",
+        `/api/v1/projects/${projectId}/costumes/${costumeId}/versions`,
+        body
+      ),
+    decideVersion: (projectId: string, costumeId: string, versionId: string, body: CostumeDecisionBody) =>
+      request<CostumeVersion>(
+        "POST",
+        `/api/v1/projects/${projectId}/costumes/${costumeId}/versions/${versionId}/decide`,
+        body
+      ),
+    listStates: (projectId: string, costumeId: string) =>
+      request<CostumeState[]>("GET", `/api/v1/projects/${projectId}/costumes/${costumeId}/states`),
+    createState: (projectId: string, costumeId: string, body: CostumeStateCreateBody) =>
+      request<CostumeState>("POST", `/api/v1/projects/${projectId}/costumes/${costumeId}/states`, body),
+  },
+  costumeAssignments: {
+    create: (projectId: string, body: CostumeAssignmentCreateBody) =>
+      request<CostumeAssignment>("POST", `/api/v1/projects/${projectId}/costume-assignments`, body),
+  },
+  continuityFindings: {
+    list: (projectId: string) =>
+      request<ContinuityFinding[]>("GET", `/api/v1/projects/${projectId}/continuity-findings`),
+  },
+  props: {
+    list: (projectId: string) => request<Prop[]>("GET", `/api/v1/projects/${projectId}/props`),
+    create: (projectId: string, body: PropCreateBody) =>
+      request<Prop>("POST", `/api/v1/projects/${projectId}/props`, body),
+    listStates: (projectId: string, propId: string) =>
+      request<PropState[]>("GET", `/api/v1/projects/${projectId}/props/${propId}/states`),
+    createState: (projectId: string, propId: string, body: PropStateCreateBody) =>
+      request<PropState>("POST", `/api/v1/projects/${projectId}/props/${propId}/states`, body),
   },
 };

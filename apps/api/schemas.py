@@ -998,3 +998,198 @@ class VoiceProfileResponse(_ORM):
     consent_id: str | None
     created_by: str
     created_at: datetime
+
+
+# -- D5: Visual World ---------------------------------------------------------------
+
+
+class LocationVersionResponse(_ORM):
+    id: str
+    location_id: str
+    version_number: int
+    status: str
+    parent_version_id: str | None
+    created_from: str
+    approval_request_id: str | None
+    approved_by: str | None
+    approved_at: datetime | None
+    profile: Dict[str, Any]
+    created_by: str
+    created_at: datetime
+
+
+class LocationDetailResponse(BaseModel):
+    id: str
+    canonical_name: str
+    aliases: List[str]
+    current_version: LocationVersionResponse | None
+
+
+class LocationVersionProposeRequest(BaseModel):
+    profile_patch: Dict[str, Any] | None = None
+
+
+class LocationVersionProposeResponse(BaseModel):
+    version: LocationVersionResponse
+    approval_request_id: str
+
+
+class LocationDecisionRequest(BaseModel):
+    decision: ApprovalDecision
+    notes: str | None = None
+
+
+class LocationAdoptResponse(BaseModel):
+    matched_scene_ids: List[str]
+
+
+class EnvironmentStateCreateRequest(BaseModel):
+    scene_id: str
+    location_id: str | None = None
+    changes: Dict[str, Any]
+
+
+class EnvironmentStateResponse(_ORM):
+    id: str
+    scene_id: str
+    location_id: str | None
+    changes: Dict[str, Any]
+    status: str
+    created_by: str
+    created_at: datetime
+
+
+class CostumeCreateRequest(BaseModel):
+    name: str = Field(..., min_length=1, max_length=255)
+    character_id: str | None = None
+
+
+class CostumeResponse(_ORM):
+    id: str
+    project_id: str
+    name: str
+    character_id: str | None
+    current_version_id: str | None
+    created_by: str
+    created_at: datetime
+
+
+class CostumeVersionResponse(_ORM):
+    id: str
+    costume_id: str
+    version_number: int
+    status: str
+    parent_version_id: str | None
+    created_from: str
+    approval_request_id: str | None
+    approved_by: str | None
+    approved_at: datetime | None
+    profile: Dict[str, Any]
+    claim_links: List[str]
+    created_by: str
+    created_at: datetime
+
+
+class CostumeDetailResponse(BaseModel):
+    id: str
+    name: str
+    character_id: str | None
+    current_version: CostumeVersionResponse | None
+
+
+class CostumeVersionProposeRequest(BaseModel):
+    profile_patch: Dict[str, Any] | None = None
+    claim_links: List[str] | None = None
+
+
+class CostumeVersionProposeResponse(BaseModel):
+    version: CostumeVersionResponse
+    approval_request_id: str
+
+
+class CostumeDecisionRequest(BaseModel):
+    decision: ApprovalDecision
+    notes: str | None = None
+
+
+class CostumeStateCreateRequest(BaseModel):
+    state_label: str = Field(..., min_length=1)
+    deltas: Dict[str, Any] | None = None
+
+
+class CostumeStateResponse(_ORM):
+    id: str
+    costume_id: str
+    state_label: str
+    deltas: Dict[str, Any]
+    status: str
+    version: int
+    supersedes_id: str | None
+    created_by: str
+    created_at: datetime
+
+
+class CostumeAssignmentCreateRequest(BaseModel):
+    character_id: str
+    scene_id: str
+    costume_id: str
+    costume_state_id: str | None = None
+
+
+class CostumeAssignmentResponse(_ORM):
+    id: str
+    character_id: str
+    scene_id: str
+    costume_id: str
+    costume_state_id: str | None
+    created_by: str
+    created_at: datetime
+
+
+class ContinuityFindingResponse(_ORM):
+    id: str
+    finding_type: str
+    scene_id: str | None
+    details: Dict[str, Any]
+    status: str
+    created_at: datetime
+
+
+class PropCreateRequest(BaseModel):
+    name: str = Field(..., min_length=1, max_length=255)
+    kind: str = Field(..., description="prop | weapon")
+    type: str | None = None
+    design: str | None = None
+    material: str | None = None
+    scale: str | None = None
+    owner_character_id: str | None = None
+
+
+class PropResponse(_ORM):
+    id: str
+    project_id: str
+    name: str
+    kind: str
+    type: str | None
+    design: str | None
+    material: str | None
+    scale: str | None
+    owner_character_id: str | None
+    created_by: str
+    created_at: datetime
+
+
+class PropStateCreateRequest(BaseModel):
+    scene_id: str
+    holder_character_id: str | None = None
+    notes: str | None = None
+
+
+class PropStateResponse(_ORM):
+    id: str
+    prop_id: str
+    scene_id: str
+    holder_character_id: str | None
+    notes: str | None
+    created_by: str
+    created_at: datetime

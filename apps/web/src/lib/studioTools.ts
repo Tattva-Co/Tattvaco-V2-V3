@@ -9,6 +9,8 @@ export type ToolKey =
   | "film_bible"
   | "character_studio"
   | "consent"
+  | "location_studio"
+  | "costume_props"
   | "audit";
 
 export interface ToolDescriptor {
@@ -92,6 +94,18 @@ export const TOOL_REGISTRY: ToolDescriptor[] = [
     name: "Consent & Performers",
     description: "Performer registry, purpose-specific consent and the voice-clone gate (S-DH-01).",
     sections: ["JRN-04"],
+  },
+  {
+    key: "location_studio",
+    name: "Location Studio",
+    description: "Environment profile versioning, the legacy location link, and scene environment states (S-ENV-01).",
+    sections: ["JRN-05"],
+  },
+  {
+    key: "costume_props",
+    name: "Costumes & Props",
+    description: "Costume Bible, costume states, character x scene assignment, continuity findings, and props/weapons (S-CST-01/02).",
+    sections: ["JRN-05"],
   },
   { key: "audit", name: "Audit Trail", description: "Every project lifecycle action and decision.", sections: [] },
 ];

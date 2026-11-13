@@ -20,6 +20,8 @@ import { StoryboardTool } from "../components/tools/StoryboardTool";
 import { FilmBibleTool } from "../components/tools/FilmBibleTool";
 import { CharacterStudioTool } from "../components/tools/CharacterStudioTool";
 import { ConsentTool } from "../components/tools/ConsentTool";
+import { LocationStudioTool } from "../components/tools/LocationStudioTool";
+import { CostumePropsTool } from "../components/tools/CostumePropsTool";
 import { AuditTool } from "../components/tools/AuditTool";
 import { ProjectOverviewTool } from "../components/tools/ProjectOverviewTool";
 import { ProjectSettingsTool } from "../components/tools/ProjectSettingsTool";
@@ -52,6 +54,14 @@ const TOOL_TITLES: Record<ToolKey, { title: string; subtitle: string }> = {
   consent: {
     title: "Consent & Performers",
     subtitle: "Performer registry, purpose-specific consent and the voice-clone gate.",
+  },
+  location_studio: {
+    title: "Location Studio",
+    subtitle: "Environment profile versioning, the legacy location link, and scene environment states.",
+  },
+  costume_props: {
+    title: "Costumes & Props",
+    subtitle: "Costume Bible, costume states, character x scene assignment, continuity findings, and props/weapons.",
   },
   audit: { title: "Audit Trail", subtitle: "Every project lifecycle action and decision." },
 };
@@ -321,6 +331,8 @@ export function ProjectWorkspacePage() {
           {openTool === "film_bible" && <FilmBibleTool projectId={projectId} onRunStarted={taskTray.trackRun} />}
           {openTool === "character_studio" && <CharacterStudioTool projectId={projectId} />}
           {openTool === "consent" && <ConsentTool projectId={projectId} />}
+          {openTool === "location_studio" && <LocationStudioTool projectId={projectId} />}
+          {openTool === "costume_props" && <CostumePropsTool projectId={projectId} />}
           {openTool === "audit" && <AuditTool projectId={projectId} />}
         </StudioToolPanel>
       )}

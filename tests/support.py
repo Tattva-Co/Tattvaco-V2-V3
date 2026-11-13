@@ -22,10 +22,16 @@ from packages.persistence.models import (
     CharacterModel,
     CharacterStateModel,
     CharacterVersionModel,
+    ContinuityFindingModel,
+    CostumeAssignmentModel,
+    CostumeModel,
+    CostumeStateModel,
+    CostumeVersionModel,
     DialogueSegmentCandidateModel,
     DialogueSegmentModel,
     EntityCandidateModel,
     EntityModel,
+    EnvironmentStateModel,
     EpisodeModel,
     FilmBibleRuleCandidateModel,
     FilmBibleRuleModel,
@@ -35,6 +41,7 @@ from packages.persistence.models import (
     JourneySectionEventModel,
     JourneyStalenessModel,
     LocationModel,
+    LocationVersionModel,
     MembershipModel,
     OrganizationModel,
     OutboxTaskModel,
@@ -44,6 +51,8 @@ from packages.persistence.models import (
     ProjectMembershipModel,
     ProjectModel,
     ProjectVersionModel,
+    PropModel,
+    PropStateModel,
     ResearchClaimCandidateModel,
     ResearchClaimModel,
     ResearchConflictModel,
@@ -125,6 +134,27 @@ def purge_organization(org_id: str) -> None:
         db.query(CharacterVersionModel).filter_by(organization_id=org_id).delete(synchronize_session=False)
         db.query(PerformerConsentModel).filter_by(organization_id=org_id).delete(synchronize_session=False)
         db.query(PerformerModel).filter_by(organization_id=org_id).delete(synchronize_session=False)
+        # D5 tables, same reasoning as D4's block above: location_versions/costume_versions
+        # reference approval_requests (deleted inside the project_ids loop below), and
+        # locations.current_version_id / costumes.current_version_id are genuine circular
+        # FKs (nulled out first). All D5 tables do carry project_id, but are still deleted
+        # here (before the loop) since several of them reference each other in an order
+        # that's simplest to get right in one place rather than interleaved into the loop.
+        db.query(LocationModel).filter_by(organization_id=org_id).update(
+            {"current_version_id": None}, synchronize_session=False
+        )
+        db.query(CostumeModel).filter_by(organization_id=org_id).update(
+            {"current_version_id": None}, synchronize_session=False
+        )
+        db.query(EnvironmentStateModel).filter_by(organization_id=org_id).delete(synchronize_session=False)
+        db.query(ContinuityFindingModel).filter_by(organization_id=org_id).delete(synchronize_session=False)
+        db.query(CostumeAssignmentModel).filter_by(organization_id=org_id).delete(synchronize_session=False)
+        db.query(PropStateModel).filter_by(organization_id=org_id).delete(synchronize_session=False)
+        db.query(CostumeStateModel).filter_by(organization_id=org_id).delete(synchronize_session=False)
+        db.query(CostumeVersionModel).filter_by(organization_id=org_id).delete(synchronize_session=False)
+        db.query(CostumeModel).filter_by(organization_id=org_id).delete(synchronize_session=False)
+        db.query(PropModel).filter_by(organization_id=org_id).delete(synchronize_session=False)
+        db.query(LocationVersionModel).filter_by(organization_id=org_id).delete(synchronize_session=False)
         if project_ids:
             for model in (
                 # Film-bible rows reference research_claims, so they go first.

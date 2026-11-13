@@ -200,6 +200,20 @@ class AuditAction(str, Enum):
     CONSENT_REVOKED = "consent_revoked"
     VOICE_PROFILE_CREATED = "voice_profile_created"
     CONSENT_GATE_BLOCKED = "consent_gate_blocked"
+    LOCATION_VERSION_DRAFTED = "location_version_drafted"
+    LOCATION_VERSION_APPROVED = "location_version_approved"
+    LOCATION_VERSION_REJECTED = "location_version_rejected"
+    LOCATION_ADOPTED = "location_adopted"
+    ENVIRONMENT_STATE_CREATED = "environment_state_created"
+    COSTUME_CREATED = "costume_created"
+    COSTUME_VERSION_DRAFTED = "costume_version_drafted"
+    COSTUME_VERSION_APPROVED = "costume_version_approved"
+    COSTUME_VERSION_REJECTED = "costume_version_rejected"
+    COSTUME_STATE_CREATED = "costume_state_created"
+    COSTUME_ASSIGNMENT_CREATED = "costume_assignment_created"
+    PROP_CREATED = "prop_created"
+    PROP_STATE_CREATED = "prop_state_created"
+    CONTINUITY_FINDING_RAISED = "continuity_finding_raised"
 
 
 class CharacterVersionStatus(str, Enum):
@@ -328,3 +342,22 @@ class RuleStrictness(str, Enum):
 FILM_BIBLE_GRAPH_ID = "film_bible_synthesis"
 FILM_BIBLE_GRAPH_VERSION = "1.0"
 FILM_BIBLE_APPROVAL_SCOPE = "film_bible_rules"
+
+
+class WorldEntityVersionStatus(str, Enum):
+    """D5 (TFD-ENV-001, TFD-CST-001): shared draft/approve lifecycle for
+    `location_versions` and `costume_versions` -- the same shape as D4's
+    `CharacterVersionStatus`, generalized here since two new tables need it rather than
+    one (D4's own enum is left untouched; nothing there needs to change)."""
+
+    DRAFT = "draft"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+
+
+class PropKind(str, Enum):
+    """D5 (TFD-PRP-001): the only two valid values -- AT-PRP-001.1 requires any other
+    value to 422."""
+
+    PROP = "prop"
+    WEAPON = "weapon"

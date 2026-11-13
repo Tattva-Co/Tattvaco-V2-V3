@@ -497,6 +497,9 @@ class LocationModel(Base):
     aliases = Column(JSON, default=list, nullable=False)
     project_version = Column(Integer, default=1, nullable=False)
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    # D5 (TFD-ENV-001/004): the single approved, "current" location_versions row --
+    # same plain-pointer pattern as characters.current_version_id (DEC-057's sibling).
+    current_version_id = Column(String(36), ForeignKey("location_versions.id"), nullable=True)
 
     __table_args__ = (Index("uq_locations_project_name", "project_id", "canonical_name", unique=True),)
 
@@ -695,6 +698,210 @@ class VoiceProfileModel(Base):
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
 
 
+# -- D5: Visual World ---------------------------------------------------------------
+# Scope: TFD-CST-001/002/003, TFD-PRP-001/002, TFD-ENV-001/002/004 (see docs/audit/10
+# DEC-063..06x). TFD-ENV-003 has zero acceptance criteria and is deferred. TFD-CIN-013
+# ("Visual Language Profile") is NOT D5 scope despite the roadmap table's one-line
+# summary -- it belongs to D6/Cinematography's cinematography_profiles table, which
+# doesn't exist yet. The actual shot/package "stale" propagation in TFD-CST-002 and the
+# shot-to-shot continuity check in TFD-PRP-002 both need `shots`, which doesn't exist
+# until D7/D9 -- this module builds the real data models (states, assignments) now and
+# defers only the detection/propagation logic that genuinely has nothing to run against
+# yet, the same split D4's character_states made for its own scene-vs-shot anchoring.
+
+
+class LocationVersionModel(Base):
+    """Immutable per-location environment profile snapshot (TFD-ENV-001), the same
+    draft -> approve -> `locations.current_version_id` pattern as D4's
+    `CharacterVersionModel`. ``profile`` is a dict of ``{field_name: {value, source,
+    status, confidence, approved_by, version, evidence_refs}}`` covering geography,
+    architecture, layout, terrain, materials and period."""
+
+    __tablename__ = "location_versions"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    location_id = Column(String(36), ForeignKey("locations.id"), nullable=False, index=True)
+    project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id"), nullable=False, index=True)
+    version_number = Column(Integer, nullable=False)
+    status = Column(String(20), default="draft", nullable=False)  # draft | approved | rejected
+    parent_version_id = Column(String(36), ForeignKey("location_versions.id"), nullable=True)
+    created_from = Column(String(20), default="manual_edit", nullable=False)
+    approval_request_id = Column(String(36), ForeignKey("approval_requests.id"), nullable=True)
+    approved_by = Column(String(36), ForeignKey("users.id"), nullable=True)
+    approved_at = Column(DateTime(timezone=True), nullable=True)
+    profile = Column(JSON, default=dict, nullable=False)
+    created_by = Column(String(36), ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+    __table_args__ = (Index("uq_location_versions_location_number", "location_id", "version_number", unique=True),)
+
+
+class EnvironmentStateModel(Base):
+    """A scene's environment condition (TFD-ENV-002), e.g. "dusk, light rain" for scene
+    41. Shots don't exist yet, so "shots in scene 41 inherit it unless overridden"
+    resolves at the scene level for now -- the latest non-superseded row for a scene is
+    its effective state."""
+
+    __tablename__ = "environment_states"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id"), nullable=False, index=True)
+    scene_id = Column(String(36), ForeignKey("scenes.id"), nullable=False, index=True)
+    location_id = Column(String(36), ForeignKey("locations.id"), nullable=True)
+    changes = Column(JSON, default=dict, nullable=False)
+    status = Column(String(20), default="active", nullable=False)  # active | superseded
+    created_by = Column(String(36), ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+
+class CostumeModel(Base):
+    """A costume's identity (TFD-CST-001): stable across versions, optionally owned by
+    one character by default (the same single-nullable-link simplification as
+    `characters.performer_id`, not the architecture draft's richer per-scope
+    representation model, which is FD-V2)."""
+
+    __tablename__ = "costumes"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id"), nullable=False, index=True)
+    name = Column(String(255), nullable=False)
+    character_id = Column(String(36), ForeignKey("characters.id"), nullable=True)
+    current_version_id = Column(String(36), ForeignKey("costume_versions.id"), nullable=True)
+    created_by = Column(String(36), ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+
+class CostumeVersionModel(Base):
+    """Immutable per-costume profile snapshot (TFD-CST-001): garments/materials/colours,
+    each a provenance-enveloped characteristic like `CharacterVersionModel`'s facets,
+    plus ``claim_links`` -- a list of `research_claims` IDs, validated tenant-scoped at
+    save time (AT-CST-001.1: "Claim links are by ID and tenant-checked")."""
+
+    __tablename__ = "costume_versions"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    costume_id = Column(String(36), ForeignKey("costumes.id"), nullable=False, index=True)
+    project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id"), nullable=False, index=True)
+    version_number = Column(Integer, nullable=False)
+    status = Column(String(20), default="draft", nullable=False)
+    parent_version_id = Column(String(36), ForeignKey("costume_versions.id"), nullable=True)
+    created_from = Column(String(20), default="manual_edit", nullable=False)
+    approval_request_id = Column(String(36), ForeignKey("approval_requests.id"), nullable=True)
+    approved_by = Column(String(36), ForeignKey("users.id"), nullable=True)
+    approved_at = Column(DateTime(timezone=True), nullable=True)
+    profile = Column(JSON, default=dict, nullable=False)
+    claim_links = Column(JSON, default=list, nullable=False)
+    created_by = Column(String(36), ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+    __table_args__ = (Index("uq_costume_versions_costume_number", "costume_id", "version_number", unique=True),)
+
+
+class CostumeStateModel(Base):
+    """A costume's condition over story time (TFD-CST-002), e.g. "clean" vs
+    "battle-damaged". Each edit is its own versioned row (``supersedes_id`` chains to
+    the one it replaces) -- "changing an approved state marks dependent shot packages
+    `stale`" has no `production_packages`/`shots` to mark yet (D7/D8/D9), so that
+    propagation is deferred; the state itself is fully real and versioned now."""
+
+    __tablename__ = "costume_states"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    costume_id = Column(String(36), ForeignKey("costumes.id"), nullable=False, index=True)
+    project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id"), nullable=False, index=True)
+    state_label = Column(String(255), nullable=False)
+    deltas = Column(JSON, default=dict, nullable=False)
+    status = Column(String(20), default="draft", nullable=False)  # draft | approved
+    version = Column(Integer, default=1, nullable=False)
+    supersedes_id = Column(String(36), ForeignKey("costume_states.id"), nullable=True)
+    created_by = Column(String(36), ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+
+class CostumeAssignmentModel(Base):
+    """Which costume (and state) a character wears in a scene (TFD-CST-003). Assigning
+    a second costume for the same (character, scene, state) is still recorded -- it is
+    not silently resolved (AT-CST-003.1) -- and raises a `ContinuityFindingModel` row
+    instead (`CostumeService.assign`)."""
+
+    __tablename__ = "costume_assignments"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id"), nullable=False, index=True)
+    character_id = Column(String(36), ForeignKey("characters.id"), nullable=False, index=True)
+    scene_id = Column(String(36), ForeignKey("scenes.id"), nullable=False, index=True)
+    costume_id = Column(String(36), ForeignKey("costumes.id"), nullable=False)
+    costume_state_id = Column(String(36), ForeignKey("costume_states.id"), nullable=True)
+    created_by = Column(String(36), ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+
+class PropModel(Base):
+    """A prop or weapon (TFD-PRP-001). ``kind`` is validated at the service layer
+    against `packages.domain.enums.PropKind` -- any other value 422s (AT-PRP-001.1)."""
+
+    __tablename__ = "props"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id"), nullable=False, index=True)
+    name = Column(String(255), nullable=False)
+    kind = Column(String(20), nullable=False)  # prop | weapon
+    type = Column(String(100), nullable=True)
+    design = Column(Text, nullable=True)
+    material = Column(String(255), nullable=True)
+    scale = Column(String(100), nullable=True)
+    owner_character_id = Column(String(36), ForeignKey("characters.id"), nullable=True)
+    created_by = Column(String(36), ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+
+class PropStateModel(Base):
+    """Who (if anyone) holds a prop in a scene (TFD-PRP-002). The actual continuity
+    check ("shot 41.03 shows a holder, shot 41.04 doesn't, with no recorded hand-off")
+    needs `shots`, which doesn't exist until D7/D9 -- this is the data the future check
+    will read; nothing fabricates a shot-level signal that isn't real yet."""
+
+    __tablename__ = "prop_states"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    prop_id = Column(String(36), ForeignKey("props.id"), nullable=False, index=True)
+    project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id"), nullable=False, index=True)
+    scene_id = Column(String(36), ForeignKey("scenes.id"), nullable=False, index=True)
+    holder_character_id = Column(String(36), ForeignKey("characters.id"), nullable=True)
+    notes = Column(Text, nullable=True)
+    created_by = Column(String(36), ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+
+class ContinuityFindingModel(Base):
+    """A deliberately minimal seam (TFD-CST-003, TFD-PRP-002): just enough structure for
+    "a finding is raised, not silently resolved" to be real and visible. This is NOT the
+    full continuity engine (TFD-CON-001..008, PRD §3.16's 9 dimensions, rule/heuristic/
+    model detection methods) -- that belongs to whichever later milestone builds `shots`
+    and a real detection pipeline. `finding_type` is a free string (e.g.
+    "costume_conflict", "props_weapons"), not yet a closed enum, since the full
+    continuity vocabulary isn't built here."""
+
+    __tablename__ = "continuity_findings"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id"), nullable=False, index=True)
+    finding_type = Column(String(50), nullable=False)
+    scene_id = Column(String(36), ForeignKey("scenes.id"), nullable=True)
+    details = Column(JSON, default=dict, nullable=False)
+    status = Column(String(20), default="open", nullable=False)  # open | resolved
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+
 class DialogueSegmentCandidateModel(Base):
     """Extracted verbatim dialogue segments pending human approval (TFD-STY-002). Keyed
     to a scene by ``scene_number`` rather than an FK -- the scene candidate it belongs
@@ -822,6 +1029,11 @@ class SceneModel(Base):
     # locked revision that changed or removed it. Null = no outstanding review. Nothing
     # else about the row changes when this is set ("nothing propagates automatically").
     review_status = Column(String(50), nullable=True)
+    # D5 (TFD-ENV-004): links this scene to its adopted canonical `locations` row,
+    # backfilled by exact `location_name` match when a location is adopted
+    # (LocationService.adopt_legacy_location) -- `location_name` itself is never
+    # touched, so every existing reader of that column is unaffected.
+    location_id = Column(String(36), ForeignKey("locations.id"), nullable=True, index=True)
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
 
 

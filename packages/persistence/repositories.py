@@ -27,10 +27,16 @@ from packages.persistence.models import (
     CharacterModel,
     CharacterStateModel,
     CharacterVersionModel,
+    ContinuityFindingModel,
+    CostumeAssignmentModel,
+    CostumeModel,
+    CostumeStateModel,
+    CostumeVersionModel,
     DialogueSegmentCandidateModel,
     DialogueSegmentModel,
     EntityCandidateModel,
     EntityModel,
+    EnvironmentStateModel,
     EpisodeModel,
     FilmBibleRuleCandidateModel,
     FilmBibleRuleModel,
@@ -39,6 +45,7 @@ from packages.persistence.models import (
     JourneySectionEventModel,
     JourneyStalenessModel,
     LocationModel,
+    LocationVersionModel,
     MembershipModel,
     OrganizationModel,
     OutboxTaskModel,
@@ -48,6 +55,8 @@ from packages.persistence.models import (
     ProjectMembershipModel,
     ProjectModel,
     ProjectVersionModel,
+    PropModel,
+    PropStateModel,
     ResearchClaimCandidateModel,
     ResearchClaimModel,
     ResearchConflictModel,
@@ -688,6 +697,13 @@ class LocationRepository(_Repository):
         )
         return self.db.scalars(stmt).first()
 
+    def get_scoped(self, location_id: str, project_id: str) -> LocationModel:
+        stmt = select(LocationModel).where(LocationModel.id == location_id, LocationModel.project_id == project_id)
+        location = self.db.scalars(stmt).first()
+        if location is None:
+            raise NotFoundError(f"Location '{location_id}' not found.")
+        return location
+
     def add(self, location: LocationModel) -> LocationModel:
         return self._add(location)
 
@@ -854,6 +870,187 @@ class VoiceProfileRepository(_Repository):
 
     def list_for_project(self, project_id: str) -> List[VoiceProfileModel]:
         return list(self.db.scalars(select(VoiceProfileModel).where(VoiceProfileModel.project_id == project_id)))
+
+
+class LocationVersionRepository(_Repository):
+    """D5 (TFD-ENV-001): immutable location_versions rows."""
+
+    def add(self, version: LocationVersionModel) -> LocationVersionModel:
+        return self._add(version)
+
+    def get_scoped(self, version_id: str, project_id: str) -> LocationVersionModel:
+        stmt = select(LocationVersionModel).where(
+            LocationVersionModel.id == version_id, LocationVersionModel.project_id == project_id
+        )
+        version = self.db.scalars(stmt).first()
+        if version is None:
+            raise NotFoundError(f"Location version '{version_id}' not found.")
+        return version
+
+    def next_version_number(self, location_id: str) -> int:
+        count = self.db.scalar(
+            select(func.count()).select_from(LocationVersionModel).where(
+                LocationVersionModel.location_id == location_id
+            )
+        )
+        return (count or 0) + 1
+
+    def list_for_location(self, location_id: str) -> List[LocationVersionModel]:
+        stmt = (
+            select(LocationVersionModel)
+            .where(LocationVersionModel.location_id == location_id)
+            .order_by(LocationVersionModel.version_number)
+        )
+        return list(self.db.scalars(stmt))
+
+
+class EnvironmentStateRepository(_Repository):
+    """D5 (TFD-ENV-002): scene-level environment condition rows."""
+
+    def add(self, state: EnvironmentStateModel) -> EnvironmentStateModel:
+        return self._add(state)
+
+    def list_for_scene(self, scene_id: str) -> List[EnvironmentStateModel]:
+        return list(self.db.scalars(select(EnvironmentStateModel).where(EnvironmentStateModel.scene_id == scene_id)))
+
+    def current_for_scene(self, scene_id: str) -> EnvironmentStateModel | None:
+        stmt = (
+            select(EnvironmentStateModel)
+            .where(EnvironmentStateModel.scene_id == scene_id, EnvironmentStateModel.status == "active")
+            .order_by(EnvironmentStateModel.created_at.desc())
+        )
+        return self.db.scalars(stmt).first()
+
+
+class CostumeRepository(_Repository):
+    """D5 (TFD-CST-001): costume identity rows."""
+
+    def add(self, costume: CostumeModel) -> CostumeModel:
+        return self._add(costume)
+
+    def get_scoped(self, costume_id: str, project_id: str) -> CostumeModel:
+        stmt = select(CostumeModel).where(CostumeModel.id == costume_id, CostumeModel.project_id == project_id)
+        costume = self.db.scalars(stmt).first()
+        if costume is None:
+            raise NotFoundError(f"Costume '{costume_id}' not found.")
+        return costume
+
+    def list_for_project(self, project_id: str) -> List[CostumeModel]:
+        stmt = select(CostumeModel).where(CostumeModel.project_id == project_id).order_by(CostumeModel.name)
+        return list(self.db.scalars(stmt))
+
+
+class CostumeVersionRepository(_Repository):
+    """D5 (TFD-CST-001): immutable costume_versions rows."""
+
+    def add(self, version: CostumeVersionModel) -> CostumeVersionModel:
+        return self._add(version)
+
+    def get_scoped(self, version_id: str, project_id: str) -> CostumeVersionModel:
+        stmt = select(CostumeVersionModel).where(
+            CostumeVersionModel.id == version_id, CostumeVersionModel.project_id == project_id
+        )
+        version = self.db.scalars(stmt).first()
+        if version is None:
+            raise NotFoundError(f"Costume version '{version_id}' not found.")
+        return version
+
+    def next_version_number(self, costume_id: str) -> int:
+        count = self.db.scalar(
+            select(func.count()).select_from(CostumeVersionModel).where(CostumeVersionModel.costume_id == costume_id)
+        )
+        return (count or 0) + 1
+
+    def list_for_costume(self, costume_id: str) -> List[CostumeVersionModel]:
+        stmt = (
+            select(CostumeVersionModel)
+            .where(CostumeVersionModel.costume_id == costume_id)
+            .order_by(CostumeVersionModel.version_number)
+        )
+        return list(self.db.scalars(stmt))
+
+
+class CostumeStateRepository(_Repository):
+    """D5 (TFD-CST-002): versioned costume condition rows."""
+
+    def add(self, state: CostumeStateModel) -> CostumeStateModel:
+        return self._add(state)
+
+    def get_scoped(self, state_id: str, project_id: str) -> CostumeStateModel:
+        stmt = select(CostumeStateModel).where(
+            CostumeStateModel.id == state_id, CostumeStateModel.project_id == project_id
+        )
+        state = self.db.scalars(stmt).first()
+        if state is None:
+            raise NotFoundError(f"Costume state '{state_id}' not found.")
+        return state
+
+    def list_for_costume(self, costume_id: str) -> List[CostumeStateModel]:
+        return list(self.db.scalars(select(CostumeStateModel).where(CostumeStateModel.costume_id == costume_id)))
+
+
+class CostumeAssignmentRepository(_Repository):
+    """D5 (TFD-CST-003): character x scene costume assignments."""
+
+    def add(self, assignment: CostumeAssignmentModel) -> CostumeAssignmentModel:
+        return self._add(assignment)
+
+    def find_conflicting(
+        self, character_id: str, scene_id: str, costume_state_id: str | None
+    ) -> CostumeAssignmentModel | None:
+        stmt = select(CostumeAssignmentModel).where(
+            CostumeAssignmentModel.character_id == character_id,
+            CostumeAssignmentModel.scene_id == scene_id,
+            CostumeAssignmentModel.costume_state_id == costume_state_id,
+        )
+        return self.db.scalars(stmt).first()
+
+    def list_for_project(self, project_id: str) -> List[CostumeAssignmentModel]:
+        return list(self.db.scalars(select(CostumeAssignmentModel).where(CostumeAssignmentModel.project_id == project_id)))
+
+
+class PropRepository(_Repository):
+    """D5 (TFD-PRP-001): props and weapons register."""
+
+    def add(self, prop: PropModel) -> PropModel:
+        return self._add(prop)
+
+    def get_scoped(self, prop_id: str, project_id: str) -> PropModel:
+        stmt = select(PropModel).where(PropModel.id == prop_id, PropModel.project_id == project_id)
+        prop = self.db.scalars(stmt).first()
+        if prop is None:
+            raise NotFoundError(f"Prop '{prop_id}' not found.")
+        return prop
+
+    def list_for_project(self, project_id: str) -> List[PropModel]:
+        stmt = select(PropModel).where(PropModel.project_id == project_id).order_by(PropModel.name)
+        return list(self.db.scalars(stmt))
+
+
+class PropStateRepository(_Repository):
+    """D5 (TFD-PRP-002): per-scene prop holder rows."""
+
+    def add(self, state: PropStateModel) -> PropStateModel:
+        return self._add(state)
+
+    def list_for_prop(self, prop_id: str) -> List[PropStateModel]:
+        return list(self.db.scalars(select(PropStateModel).where(PropStateModel.prop_id == prop_id)))
+
+
+class ContinuityFindingRepository(_Repository):
+    """D5 (TFD-CST-003/TFD-PRP-002): the minimal continuity-finding seam -- see
+    `ContinuityFindingModel`'s docstring for what this deliberately is not."""
+
+    def add(self, finding: ContinuityFindingModel) -> ContinuityFindingModel:
+        return self._add(finding)
+
+    def list_for_project(self, project_id: str) -> List[ContinuityFindingModel]:
+        stmt = (
+            select(ContinuityFindingModel)
+            .where(ContinuityFindingModel.project_id == project_id)
+            .order_by(ContinuityFindingModel.created_at.desc())
+        )
+        return list(self.db.scalars(stmt))
 
 
 class ScreenplayRepository(_Repository):
