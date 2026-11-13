@@ -67,8 +67,8 @@ def _compute_diff(before_text: str, after_text: str) -> Dict[str, Any]:
     after_lines = after_text.splitlines()
     unified = "\n".join(difflib.unified_diff(before_lines, after_lines, lineterm=""))
 
-    before_scenes, _ = ScreenplayParser().parse(before_text)
-    after_scenes, _ = ScreenplayParser().parse(after_text)
+    before_scenes, _, _ = ScreenplayParser().parse(before_text)
+    after_scenes, _, _ = ScreenplayParser().parse(after_text)
     before_by_number = {s["scene_number"]: s for s in before_scenes}
     after_by_number = {s["scene_number"]: s for s in after_scenes}
 

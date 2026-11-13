@@ -95,7 +95,7 @@ def test_extracts_docx_text_the_parser_can_read_as_a_real_scene():
     assert result.extractor == "python-docx"
     assert "INT. WAR COUNCIL CHAMBER - NIGHT" in result.text
 
-    scenes, entities = ScreenplayParser().parse(result.text)
+    scenes, entities, _dialogue = ScreenplayParser().parse(result.text)
     assert len(scenes) == 1
     assert scenes[0]["heading"] == "INT. WAR COUNCIL CHAMBER - NIGHT"
     assert any(e["name"] == "Bhavani" for e in entities)
@@ -108,7 +108,7 @@ def test_extracts_fdx_text_the_parser_can_read_as_a_real_scene():
     assert result.extractor == "fdx_xml"
     assert "INT. WAR COUNCIL CHAMBER - NIGHT" in result.text
 
-    scenes, entities = ScreenplayParser().parse(result.text)
+    scenes, entities, _dialogue = ScreenplayParser().parse(result.text)
     assert len(scenes) == 1
     assert scenes[0]["setting"] == "INT."
     assert any(e["name"] == "Bhavani" for e in entities)

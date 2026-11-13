@@ -9,9 +9,12 @@ from apps.api.dependencies import get_actor, get_db
 from apps.api.schemas import (
     AuditEventResponse,
     CandidatesResponse,
+    CharacterResponse,
+    DialogueSegmentResponse,
     EntityResponse,
     EpisodeCreateRequest,
     EpisodeResponse,
+    LocationResponse,
     OutputProfileCreateRequest,
     OutputProfileResponse,
     OutputProfileUpdateRequest,
@@ -129,6 +132,26 @@ def get_canonical_entities(
     project_id: str, actor: ActorContext = Depends(get_actor), db: Session = Depends(get_db)
 ):
     return ProjectService(db).canonical_entities(actor, project_id)
+
+
+# -- Story intelligence v2 (D3) -----------------------------------------------
+
+
+@router.get("/{project_id}/dialogue-segments", response_model=List[DialogueSegmentResponse])
+def get_dialogue_segments(
+    project_id: str, actor: ActorContext = Depends(get_actor), db: Session = Depends(get_db)
+):
+    return ProjectService(db).dialogue_segments(actor, project_id)
+
+
+@router.get("/{project_id}/characters", response_model=List[CharacterResponse])
+def get_characters(project_id: str, actor: ActorContext = Depends(get_actor), db: Session = Depends(get_db)):
+    return ProjectService(db).characters(actor, project_id)
+
+
+@router.get("/{project_id}/locations", response_model=List[LocationResponse])
+def get_locations(project_id: str, actor: ActorContext = Depends(get_actor), db: Session = Depends(get_db)):
+    return ProjectService(db).locations(actor, project_id)
 
 
 # -- Output profiles (D1, TFD-FMT-002) ---------------------------------------

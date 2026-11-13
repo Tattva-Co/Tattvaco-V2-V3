@@ -23,7 +23,7 @@ class ScreenplaySuggester:
         self._parser = ScreenplayParser()
 
     def suggest(self, content_text: str, scope_notes: str | None = None) -> list[dict[str, Any]]:
-        scenes, _entities = self._parser.parse(content_text)
+        scenes, _entities, _dialogue = self._parser.parse(content_text)
         if not scenes:
             return []
 

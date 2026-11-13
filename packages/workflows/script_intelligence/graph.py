@@ -43,6 +43,7 @@ def parse_script_node(state: ScriptIntelligenceState) -> Dict[str, Any]:
     return {
         "extracted_scenes": [s.model_dump() for s in result.scenes],
         "extracted_entities": [e.model_dump() for e in result.entities],
+        "extracted_dialogue_segments": [d.model_dump() for d in result.dialogue_segments],
     }
 
 
@@ -54,12 +55,14 @@ def generate_candidates_node(state: ScriptIntelligenceState) -> Dict[str, Any]:
             state["actor_id"],
             state.get("extracted_scenes", []),
             state.get("extracted_entities", []),
+            state.get("extracted_dialogue_segments", []),
         )
     return {
         "approval_request_id": proposed.approval_request_id,
         "approval_status": "pending",
         "extracted_scenes": proposed.scenes,
         "extracted_entities": proposed.entities,
+        "extracted_dialogue_segments": proposed.dialogue_segments,
     }
 
 

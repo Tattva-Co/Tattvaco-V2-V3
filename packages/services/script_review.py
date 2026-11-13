@@ -25,8 +25,12 @@ from packages.domain.errors import AssetNotReadyError, ValidationFailure
 from packages.domain.invariants import assert_expected_version
 from packages.persistence.models import (
     ApprovalRequestModel,
+    CharacterModel,
+    DialogueSegmentCandidateModel,
+    DialogueSegmentModel,
     EntityCandidateModel,
     EntityModel,
+    LocationModel,
     ProjectVersionModel,
     SceneCandidateModel,
     SceneModel,
@@ -38,6 +42,8 @@ from packages.persistence.repositories import (
     AuditRepository,
     CandidateRepository,
     CanonicalRepository,
+    CharacterRepository,
+    LocationRepository,
     ProjectRepository,
     WorkflowRunRepository,
 )
@@ -62,6 +68,7 @@ class ProposedCandidates:
     approval_request_id: str
     scenes: List[Dict[str, Any]]
     entities: List[Dict[str, Any]]
+    dialogue_segments: List[Dict[str, Any]]
 
 
 def record_decision(
@@ -80,6 +87,8 @@ class ScriptReviewService:
         self.candidates = CandidateRepository(db)
         self.approvals = ApprovalRepository(db)
         self.runs = WorkflowRunRepository(db)
+        self.characters = CharacterRepository(db)
+        self.locations = LocationRepository(db)
         self.audit = AuditRepository(db)
 
     # -- input ---------------------------------------------------------------
@@ -115,6 +124,7 @@ class ScriptReviewService:
         actor_id: str,
         scenes: Sequence[Dict[str, Any]],
         entities: Sequence[Dict[str, Any]],
+        dialogue_segments: Sequence[Dict[str, Any]] = (),
     ) -> ProposedCandidates:
         run = self.runs.get(scope.run_id)
         scene_rows = [
@@ -150,9 +160,28 @@ class ScriptReviewService:
                     confidence=e.get("confidence", 0.9),
                     status=CandidateStatus.PROPOSED.value,
                     generator_mode=run.generator_mode,
+                    aliases=e.get("aliases", []),
                 )
             )
             for e in entities
+        ]
+        dialogue_rows = [
+            self.candidates.add_dialogue_segment(
+                DialogueSegmentCandidateModel(
+                    workflow_run_id=scope.run_id,
+                    project_id=scope.project_id,
+                    organization_id=scope.org_id,
+                    scene_number=d["scene_number"],
+                    character_name=d["character_name"],
+                    line_text=d["line_text"],
+                    parenthetical=d.get("parenthetical"),
+                    order_in_scene=d["order_in_scene"],
+                    source_locator=d["source_locator"],
+                    status=CandidateStatus.PROPOSED.value,
+                    generator_mode=run.generator_mode,
+                )
+            )
+            for d in dialogue_segments
         ]
 
         scene_summaries = [
@@ -172,6 +201,7 @@ class ScriptReviewService:
                 candidate_summary={
                     "scene_count": len(scene_rows),
                     "entity_count": len(entity_rows),
+                    "dialogue_segment_count": len(dialogue_rows),
                     "scenes": scene_summaries,
                     "entities": entity_summaries,
                 },
@@ -189,6 +219,7 @@ class ScriptReviewService:
                 "workflow_run_id": scope.run_id,
                 "scenes_proposed": len(scene_rows),
                 "entities_proposed": len(entity_rows),
+                "dialogue_segments_proposed": len(dialogue_rows),
             },
         )
         self.runs.set_status(scope.run_id, WorkflowStatus.AWAITING_APPROVAL.value)
@@ -198,6 +229,7 @@ class ScriptReviewService:
             approval_request_id=approval.id,
             scenes=[{**s, "candidate_id": r.id} for s, r in zip(scenes, scene_rows)],
             entities=[{**e, "candidate_id": r.id} for e, r in zip(entities, entity_rows)],
+            dialogue_segments=[{**d, "candidate_id": r.id} for d, r in zip(dialogue_segments, dialogue_rows)],
         )
 
     # -- decide --------------------------------------------------------------
@@ -238,9 +270,11 @@ class ScriptReviewService:
             return chosen is None or candidate_id in set(chosen)
 
         promoted_scenes: List[SceneModel] = []
+        approved_scene_numbers: set[int] = set()
         for sc in self.candidates.scenes_for_run(scope.run_id):
             if selected(sc.id, approved_scene_ids):
                 sc.status = CandidateStatus.APPROVED.value
+                approved_scene_numbers.add(sc.scene_number)
                 promoted_scenes.append(
                     SceneModel(
                         project_id=scope.project_id,
@@ -264,23 +298,62 @@ class ScriptReviewService:
         for ec in self.candidates.entities_for_run(scope.run_id):
             if selected(ec.id, approved_entity_ids):
                 ec.status = CandidateStatus.APPROVED.value
-                promoted_entities.append(
-                    EntityModel(
-                        project_id=scope.project_id,
-                        organization_id=scope.org_id,
-                        name=ec.name,
-                        category=ec.category,
-                        description=ec.description,
-                        source_locator=ec.source_locator,
-                        project_version=next_version,
-                    )
+                entity = EntityModel(
+                    project_id=scope.project_id,
+                    organization_id=scope.org_id,
+                    name=ec.name,
+                    category=ec.category,
+                    description=ec.description,
+                    source_locator=ec.source_locator,
+                    project_version=next_version,
+                    aliases=ec.aliases,
                 )
+                # D3 (TFD-STY-003): resolve into the project's one character/location
+                # row for this name -- reusing it across runs, not duplicating one per
+                # run the way entities themselves accumulate.
+                if ec.category == "character":
+                    entity.resolved_character_id = self._resolve_character(
+                        scope, ec.name, ec.aliases, next_version
+                    )
+                elif ec.category == "location":
+                    entity.resolved_location_id = self._resolve_location(
+                        scope, ec.name, ec.aliases, next_version
+                    )
+                promoted_entities.append(entity)
             else:
                 ec.status = CandidateStatus.REJECTED.value
 
         canonical = CanonicalRepository(self.db)
         canonical.add_scenes(promoted_scenes)
         canonical.add_entities(promoted_entities)
+        self.db.flush()  # assign scene ids before dialogue segments reference them
+
+        scene_id_by_number = {sc.scene_number: sc.id for sc in promoted_scenes}
+        promoted_dialogue_segments: List[DialogueSegmentModel] = []
+        for dc in self.candidates.dialogue_segments_for_run(scope.run_id):
+            # Dialogue has no approval checkbox of its own (TFD-STY-002: verbatim, not
+            # independently editable) -- it is promoted exactly when its own scene is.
+            if dc.scene_number in approved_scene_numbers:
+                dc.status = CandidateStatus.APPROVED.value
+                character = self.characters.get_by_name(scope.project_id, dc.character_name)
+                promoted_dialogue_segments.append(
+                    DialogueSegmentModel(
+                        project_id=scope.project_id,
+                        organization_id=scope.org_id,
+                        scene_id=scene_id_by_number[dc.scene_number],
+                        screenplay_version_id=screenplay_version_id,
+                        character_id=character.id if character else None,
+                        character_name=dc.character_name,
+                        line_text=dc.line_text,
+                        parenthetical=dc.parenthetical,
+                        order_in_scene=dc.order_in_scene,
+                        source_locator=dc.source_locator,
+                        project_version=next_version,
+                    )
+                )
+            else:
+                dc.status = CandidateStatus.REJECTED.value
+        canonical.add_dialogue_segments(promoted_dialogue_segments)
 
         project.current_version = next_version
         version = projects.add_version(
@@ -291,12 +364,13 @@ class ScriptReviewService:
                 branch_name="main",
                 commit_message=(
                     f"Script Intelligence extraction: {len(promoted_scenes)} scenes, "
-                    f"{len(promoted_entities)} entities"
+                    f"{len(promoted_entities)} entities, {len(promoted_dialogue_segments)} dialogue segments"
                 ),
                 committed_by=actor_id,
                 snapshot_data={
                     "scenes_count": len(promoted_scenes),
                     "entities_count": len(promoted_entities),
+                    "dialogue_segments_count": len(promoted_dialogue_segments),
                     "workflow_run_id": scope.run_id,
                 },
             )
@@ -314,6 +388,7 @@ class ScriptReviewService:
                 "new_version": next_version,
                 "promoted_scenes": len(promoted_scenes),
                 "promoted_entities": len(promoted_entities),
+                "promoted_dialogue_segments": len(promoted_dialogue_segments),
             },
         )
         self.runs.set_status(
@@ -323,14 +398,62 @@ class ScriptReviewService:
                 "new_version": next_version,
                 "scenes_count": len(promoted_scenes),
                 "entities_count": len(promoted_entities),
+                "dialogue_segments_count": len(promoted_dialogue_segments),
             },
         )
         self.db.commit()
         return next_version
 
+    def _resolve_character(
+        self, scope: RunScope, name: str, aliases: List[str], project_version: int
+    ) -> str:
+        """TFD-STY-003: one `characters` row per distinct identity per project, reused
+        (and its aliases grown) across every run that mentions them again, rather than
+        one new row per run the way `entities` itself accumulates."""
+        existing = self.characters.get_by_name(scope.project_id, name)
+        if existing is not None:
+            for alias in aliases:
+                if alias not in existing.aliases:
+                    existing.aliases = [*existing.aliases, alias]
+            return existing.id
+        character = self.characters.add(
+            CharacterModel(
+                project_id=scope.project_id,
+                organization_id=scope.org_id,
+                canonical_name=name,
+                aliases=list(aliases),
+                project_version=project_version,
+            )
+        )
+        return character.id
+
+    def _resolve_location(
+        self, scope: RunScope, name: str, aliases: List[str], project_version: int
+    ) -> str:
+        existing = self.locations.get_by_name(scope.project_id, name)
+        if existing is not None:
+            for alias in aliases:
+                if alias not in existing.aliases:
+                    existing.aliases = [*existing.aliases, alias]
+            return existing.id
+        location = self.locations.add(
+            LocationModel(
+                project_id=scope.project_id,
+                organization_id=scope.org_id,
+                canonical_name=name,
+                aliases=list(aliases),
+                project_version=project_version,
+            )
+        )
+        return location.id
+
     def close_rejected(self, scope: RunScope, actor_id: str, notes: str | None = None) -> None:
         """Reject every candidate of the run; canonical project state is untouched."""
-        for candidate in [*self.candidates.scenes_for_run(scope.run_id), *self.candidates.entities_for_run(scope.run_id)]:
+        for candidate in [
+            *self.candidates.scenes_for_run(scope.run_id),
+            *self.candidates.entities_for_run(scope.run_id),
+            *self.candidates.dialogue_segments_for_run(scope.run_id),
+        ]:
             candidate.status = CandidateStatus.REJECTED.value
         self._ensure_decision_recorded(scope, ApprovalDecision.REJECTED, actor_id, notes)
         self.audit.record(

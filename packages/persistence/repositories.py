@@ -22,6 +22,9 @@ from packages.persistence.models import (
     AssetDerivativeModel,
     AssetModel,
     AuditEventModel,
+    CharacterModel,
+    DialogueSegmentCandidateModel,
+    DialogueSegmentModel,
     EntityCandidateModel,
     EntityModel,
     EpisodeModel,
@@ -31,6 +34,7 @@ from packages.persistence.models import (
     JourneyItemStateModel,
     JourneySectionEventModel,
     JourneyStalenessModel,
+    LocationModel,
     MembershipModel,
     OrganizationModel,
     OutboxTaskModel,
@@ -505,6 +509,17 @@ class CandidateRepository(_Repository):
         )
         return list(self.db.scalars(stmt))
 
+    def add_dialogue_segment(self, candidate: DialogueSegmentCandidateModel) -> DialogueSegmentCandidateModel:
+        return self._add(candidate)
+
+    def dialogue_segments_for_run(self, run_id: str) -> List[DialogueSegmentCandidateModel]:
+        stmt = (
+            select(DialogueSegmentCandidateModel)
+            .where(DialogueSegmentCandidateModel.workflow_run_id == run_id)
+            .order_by(DialogueSegmentCandidateModel.scene_number, DialogueSegmentCandidateModel.order_in_scene)
+        )
+        return list(self.db.scalars(stmt))
+
     def add_claim(self, candidate: ResearchClaimCandidateModel) -> ResearchClaimCandidateModel:
         return self._add(candidate)
 
@@ -605,6 +620,67 @@ class CanonicalRepository(_Repository):
         """D2 (TFD-SCR-010): the canonical scenes an impact analysis checks against a
         superseded screenplay version's text."""
         stmt = select(SceneModel).where(SceneModel.screenplay_version_id == screenplay_version_id)
+        return list(self.db.scalars(stmt))
+
+    def add_dialogue_segments(self, segments: Iterable[DialogueSegmentModel]) -> None:
+        self.db.add_all(list(segments))
+
+    def dialogue_segments_for_project(self, project_id: str) -> List[DialogueSegmentModel]:
+        stmt = (
+            select(DialogueSegmentModel)
+            .where(DialogueSegmentModel.project_id == project_id)
+            .order_by(DialogueSegmentModel.created_at, DialogueSegmentModel.order_in_scene)
+        )
+        return list(self.db.scalars(stmt))
+
+    def dialogue_segments_for_scene(self, scene_id: str) -> List[DialogueSegmentModel]:
+        stmt = (
+            select(DialogueSegmentModel)
+            .where(DialogueSegmentModel.scene_id == scene_id)
+            .order_by(DialogueSegmentModel.order_in_scene)
+        )
+        return list(self.db.scalars(stmt))
+
+
+class CharacterRepository(_Repository):
+    """D3 (TFD-STY-003): resolved character identities."""
+
+    def get_by_name(self, project_id: str, canonical_name: str) -> CharacterModel | None:
+        stmt = select(CharacterModel).where(
+            CharacterModel.project_id == project_id, CharacterModel.canonical_name == canonical_name
+        )
+        return self.db.scalars(stmt).first()
+
+    def add(self, character: CharacterModel) -> CharacterModel:
+        return self._add(character)
+
+    def list_for_project(self, project_id: str) -> List[CharacterModel]:
+        stmt = (
+            select(CharacterModel)
+            .where(CharacterModel.project_id == project_id)
+            .order_by(CharacterModel.canonical_name)
+        )
+        return list(self.db.scalars(stmt))
+
+
+class LocationRepository(_Repository):
+    """D3 (TFD-STY-003): resolved location identities."""
+
+    def get_by_name(self, project_id: str, canonical_name: str) -> LocationModel | None:
+        stmt = select(LocationModel).where(
+            LocationModel.project_id == project_id, LocationModel.canonical_name == canonical_name
+        )
+        return self.db.scalars(stmt).first()
+
+    def add(self, location: LocationModel) -> LocationModel:
+        return self._add(location)
+
+    def list_for_project(self, project_id: str) -> List[LocationModel]:
+        stmt = (
+            select(LocationModel)
+            .where(LocationModel.project_id == project_id)
+            .order_by(LocationModel.canonical_name)
+        )
         return list(self.db.scalars(stmt))
 
 

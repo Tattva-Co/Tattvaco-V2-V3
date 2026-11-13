@@ -448,6 +448,94 @@ class AuditEventModel(Base):
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
 
 
+# -- Story intelligence v2 (D3; PRD TFD-STY-002/003) -------------------------------
+
+
+class CharacterModel(Base):
+    """A resolved character identity (TFD-STY-003): one row per distinct character in
+    a project, deduplicated from however many raw cue variants (``entities`` rows,
+    ``entity_candidates.aliases``) referred to them across however many Script
+    Intelligence runs. ``entities.resolved_character_id`` links the legacy rows back
+    here -- the many-to-one direction, since one character can accumulate several
+    legacy entity rows over time (one per run/version that mentioned them)."""
+
+    __tablename__ = "characters"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id"), nullable=False, index=True)
+    canonical_name = Column(String(255), nullable=False)
+    aliases = Column(JSON, default=list, nullable=False)
+    project_version = Column(Integer, default=1, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+    __table_args__ = (Index("uq_characters_project_name", "project_id", "canonical_name", unique=True),)
+
+
+class LocationModel(Base):
+    """A resolved location identity (TFD-STY-003). See CharacterModel -- same shape,
+    same resolve-at-promotion-time and legacy-link pattern, applied to the other
+    entity category TFD-STY-003 names."""
+
+    __tablename__ = "locations"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id"), nullable=False, index=True)
+    canonical_name = Column(String(255), nullable=False)
+    aliases = Column(JSON, default=list, nullable=False)
+    project_version = Column(Integer, default=1, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+    __table_args__ = (Index("uq_locations_project_name", "project_id", "canonical_name", unique=True),)
+
+
+class DialogueSegmentCandidateModel(Base):
+    """Extracted verbatim dialogue segments pending human approval (TFD-STY-002). Keyed
+    to a scene by ``scene_number`` rather than an FK -- the scene candidate it belongs
+    to is not canonical yet either, so there is no ``scene_id`` to point to until both
+    are promoted together."""
+
+    __tablename__ = "dialogue_segment_candidates"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    workflow_run_id = Column(String(36), ForeignKey("workflow_runs.id"), nullable=False, index=True)
+    project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id"), nullable=False, index=True)
+    scene_number = Column(Integer, nullable=False)
+    character_name = Column(String(255), nullable=False)
+    line_text = Column(Text, nullable=False)
+    parenthetical = Column(Text, nullable=True)
+    order_in_scene = Column(Integer, nullable=False)
+    source_locator = Column(String(100), nullable=False)
+    status = Column(String(50), default="proposed", nullable=False)
+    generator_mode = Column(String(20), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+
+class DialogueSegmentModel(Base):
+    """Canonical verbatim dialogue (TFD-STY-002). Immutable once written -- no service
+    method ever updates a row here (AT-STY-002.2: "a canonical dialogue segment is
+    never mutated by any API"); a later revision's re-extraction simply adds new rows
+    at a new ``project_version``, the same pattern scenes/entities already follow."""
+
+    __tablename__ = "dialogue_segments"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id"), nullable=False, index=True)
+    scene_id = Column(String(36), ForeignKey("scenes.id"), nullable=False, index=True)
+    screenplay_version_id = Column(String(36), ForeignKey("screenplay_versions.id"), nullable=True)
+    character_id = Column(String(36), ForeignKey("characters.id"), nullable=True)
+    character_name = Column(String(255), nullable=False)
+    line_text = Column(Text, nullable=False)
+    parenthetical = Column(Text, nullable=True)
+    order_in_scene = Column(Integer, nullable=False)
+    source_locator = Column(String(100), nullable=False)
+    project_version = Column(Integer, default=1, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+
 class SceneCandidateModel(Base):
     """Extracted scene candidates pending human approval."""
     __tablename__ = "scene_candidates"
@@ -485,6 +573,9 @@ class EntityCandidateModel(Base):
     confidence = Column(Float, default=0.9, nullable=False)
     status = Column(String(50), default="proposed", nullable=False)  # proposed, approved, rejected
     generator_mode = Column(String(20), nullable=False)
+    # D3 (TFD-STY-003): raw cue/name variants the parser folded into this one
+    # candidate (e.g. every distinct way a character's name appeared in the script).
+    aliases = Column(JSON, default=list, nullable=False)
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
 
 
@@ -545,6 +636,12 @@ class EntityModel(Base):
     # other canonical item type an impact analysis can flag, per PRD §3.1 invariant 4
     # ("lists affected scenes, characters...").
     review_status = Column(String(50), nullable=True)
+    aliases = Column(JSON, default=list, nullable=False)
+    # D3 (TFD-STY-003): "on approval, a characters/locations row is created, linked to
+    # any matching legacy entities row" -- set at promotion time depending on
+    # ``category``; exactly one of the two is ever non-null for a given row.
+    resolved_character_id = Column(String(36), ForeignKey("characters.id"), nullable=True)
+    resolved_location_id = Column(String(36), ForeignKey("locations.id"), nullable=True)
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
 
 

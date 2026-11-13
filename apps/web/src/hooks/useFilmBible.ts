@@ -21,6 +21,21 @@ export function useEntities(projectId: string) {
   return useQuery({ queryKey: ["entities", projectId], queryFn: () => api.projects.entities(projectId) });
 }
 
+export function useDialogueSegments(projectId: string) {
+  return useQuery({
+    queryKey: ["dialogue-segments", projectId],
+    queryFn: () => api.projects.dialogueSegments(projectId),
+  });
+}
+
+export function useCharacters(projectId: string) {
+  return useQuery({ queryKey: ["characters", projectId], queryFn: () => api.projects.characters(projectId) });
+}
+
+export function useLocations(projectId: string) {
+  return useQuery({ queryKey: ["locations", projectId], queryFn: () => api.projects.locations(projectId) });
+}
+
 export function useProjectVersions(projectId: string) {
   return useQuery({ queryKey: ["project-versions", projectId], queryFn: () => api.projects.versions(projectId) });
 }

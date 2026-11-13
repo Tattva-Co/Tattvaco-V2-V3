@@ -988,6 +988,240 @@
         }
       }
     },
+    "/api/v1/projects/{project_id}/dialogue-segments": {
+      "get": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "Get Dialogue Segments",
+        "operationId": "get_dialogue_segments_api_v1_projects__project_id__dialogue_segments_get",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "X-Actor-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Actor-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DialogueSegmentResponse"
+                  },
+                  "title": "Response Get Dialogue Segments Api V1 Projects  Project Id  Dialogue Segments Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{project_id}/characters": {
+      "get": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "Get Characters",
+        "operationId": "get_characters_api_v1_projects__project_id__characters_get",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "X-Actor-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Actor-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CharacterResponse"
+                  },
+                  "title": "Response Get Characters Api V1 Projects  Project Id  Characters Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{project_id}/locations": {
+      "get": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "Get Locations",
+        "operationId": "get_locations_api_v1_projects__project_id__locations_get",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "X-Actor-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Actor-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LocationResponse"
+                  },
+                  "title": "Response Get Locations Api V1 Projects  Project Id  Locations Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/projects/{project_id}/output-profiles": {
       "get": {
         "tags": [
@@ -5356,6 +5590,43 @@
         ],
         "title": "CandidatesResponse"
       },
+      "CharacterResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "canonical_name": {
+            "type": "string",
+            "title": "Canonical Name"
+          },
+          "aliases": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Aliases"
+          },
+          "project_version": {
+            "type": "integer",
+            "title": "Project Version"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "canonical_name",
+          "aliases",
+          "project_version",
+          "created_at"
+        ],
+        "title": "CharacterResponse"
+      },
       "DevLoginRequest": {
         "properties": {
           "email": {
@@ -5409,6 +5680,91 @@
           "organization_id"
         ],
         "title": "DevLoginResponse"
+      },
+      "DialogueSegmentResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "scene_id": {
+            "type": "string",
+            "title": "Scene Id"
+          },
+          "screenplay_version_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Screenplay Version Id"
+          },
+          "character_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "character_name": {
+            "type": "string",
+            "title": "Character Name"
+          },
+          "line_text": {
+            "type": "string",
+            "title": "Line Text"
+          },
+          "parenthetical": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parenthetical"
+          },
+          "order_in_scene": {
+            "type": "integer",
+            "title": "Order In Scene"
+          },
+          "source_locator": {
+            "type": "string",
+            "title": "Source Locator"
+          },
+          "project_version": {
+            "type": "integer",
+            "title": "Project Version"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "scene_id",
+          "screenplay_version_id",
+          "character_id",
+          "character_name",
+          "line_text",
+          "parenthetical",
+          "order_in_scene",
+          "source_locator",
+          "project_version",
+          "created_at"
+        ],
+        "title": "DialogueSegmentResponse"
       },
       "EntityCandidateResponse": {
         "properties": {
@@ -5508,6 +5864,35 @@
               }
             ],
             "title": "Review Status"
+          },
+          "aliases": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Aliases"
+          },
+          "resolved_character_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolved Character Id"
+          },
+          "resolved_location_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolved Location Id"
           }
         },
         "type": "object",
@@ -5518,7 +5903,10 @@
           "description",
           "source_locator",
           "project_version",
-          "review_status"
+          "review_status",
+          "aliases",
+          "resolved_character_id",
+          "resolved_location_id"
         ],
         "title": "EntityResponse"
       },
@@ -6356,6 +6744,43 @@
           "status"
         ],
         "title": "JourneySubpointResponse"
+      },
+      "LocationResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "canonical_name": {
+            "type": "string",
+            "title": "Canonical Name"
+          },
+          "aliases": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Aliases"
+          },
+          "project_version": {
+            "type": "integer",
+            "title": "Project Version"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "canonical_name",
+          "aliases",
+          "project_version",
+          "created_at"
+        ],
+        "title": "LocationResponse"
       },
       "NextActionSummary": {
         "properties": {

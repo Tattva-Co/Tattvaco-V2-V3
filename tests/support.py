@@ -17,6 +17,9 @@ from packages.persistence.models import (
     AssetDerivativeModel,
     AssetModel,
     AuditEventModel,
+    CharacterModel,
+    DialogueSegmentCandidateModel,
+    DialogueSegmentModel,
     EntityCandidateModel,
     EntityModel,
     EpisodeModel,
@@ -27,6 +30,7 @@ from packages.persistence.models import (
     JourneyItemStateModel,
     JourneySectionEventModel,
     JourneyStalenessModel,
+    LocationModel,
     MembershipModel,
     OrganizationModel,
     OutboxTaskModel,
@@ -119,10 +123,19 @@ def purge_organization(org_id: str) -> None:
                 StoryboardPanelModel,
                 SceneCandidateModel,
                 EntityCandidateModel,
+                # dialogue_segment_candidates references workflow_runs (deleted
+                # separately below, scoped by run_ids) -- clear it before that delete.
+                DialogueSegmentCandidateModel,
+                # dialogue_segments references scenes/characters, so it goes first.
+                DialogueSegmentModel,
                 # scenes.episode_id references episodes, so scenes must go first.
                 SceneModel,
                 EpisodeModel,
+                # entities.resolved_character_id/resolved_location_id reference
+                # characters/locations, so entities must go first.
                 EntityModel,
+                CharacterModel,
+                LocationModel,
                 OutputProfileModel,
                 ProjectVersionModel,
                 ProjectMembershipModel,

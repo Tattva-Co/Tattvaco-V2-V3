@@ -586,6 +586,42 @@ class EntityResponse(_ORM):
     source_locator: str
     project_version: int
     review_status: str | None
+    aliases: List[str]
+    resolved_character_id: str | None
+    resolved_location_id: str | None
+
+
+# -- Story intelligence v2 (D3) -----------------------------------------------
+
+
+class DialogueSegmentResponse(_ORM):
+    id: str
+    scene_id: str
+    screenplay_version_id: str | None
+    character_id: str | None
+    character_name: str
+    line_text: str
+    parenthetical: str | None
+    order_in_scene: int
+    source_locator: str
+    project_version: int
+    created_at: datetime
+
+
+class CharacterResponse(_ORM):
+    id: str
+    canonical_name: str
+    aliases: List[str]
+    project_version: int
+    created_at: datetime
+
+
+class LocationResponse(_ORM):
+    id: str
+    canonical_name: str
+    aliases: List[str]
+    project_version: int
+    created_at: datetime
 
 
 class HealthResponse(BaseModel):

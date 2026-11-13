@@ -98,8 +98,10 @@ class DeterministicModelGateway(ModelGateway):
         self._suggester = ScreenplaySuggester()
 
     def parse_screenplay(self, text: str) -> ScreenplayParseResult:
-        scenes, entities = self._parser.parse(text)
-        return _validated(ScreenplayParseResult, scenes=scenes, entities=entities)
+        scenes, entities, dialogue_segments = self._parser.parse(text)
+        return _validated(
+            ScreenplayParseResult, scenes=scenes, entities=entities, dialogue_segments=dialogue_segments
+        )
 
     def investigate_history(self, topic: str, seed_text: str | None) -> HistoricalResearchResult:
         claims, questions = self._investigator.investigate(topic, seed_text)

@@ -32,11 +32,22 @@ class EntityCandidateData(BaseModel):
     description: str | None = None
     source_locator: str
     confidence: float = 0.9
+    aliases: list[str] = Field(default_factory=list)
+
+
+class DialogueSegmentCandidateData(BaseModel):
+    scene_number: int
+    character_name: str
+    line_text: str
+    parenthetical: str | None = None
+    order_in_scene: int
+    source_locator: str
 
 
 class ScreenplayParseResult(BaseModel):
     scenes: list[SceneCandidateData] = Field(default_factory=list)
     entities: list[EntityCandidateData] = Field(default_factory=list)
+    dialogue_segments: list[DialogueSegmentCandidateData] = Field(default_factory=list)
 
 
 class ResearchClaimData(BaseModel):

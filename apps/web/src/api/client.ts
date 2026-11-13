@@ -86,6 +86,9 @@ export type ApprovalDecisionBody = Schemas["ApprovalDecisionRequest"];
 export type ApprovalDecisionResult = Schemas["ApprovalDecisionResponse"];
 export type Scene = Schemas["SceneResponse"];
 export type Entity = Schemas["EntityResponse"];
+export type DialogueSegment = Schemas["DialogueSegmentResponse"];
+export type Character = Schemas["CharacterResponse"];
+export type Location = Schemas["LocationResponse"];
 export type ResearchQuestion = Schemas["ResearchQuestionResponse"];
 export type ResearchQuestionCreateBody = Schemas["ResearchQuestionCreateRequest"];
 export type ResearchSource = Schemas["ResearchSourceResponse"];
@@ -140,6 +143,9 @@ export const api = {
     auditLog: (id: string) => request<AuditEvent[]>("GET", `/api/v1/projects/${id}/audit-log`),
     scenes: (id: string) => request<Scene[]>("GET", `/api/v1/projects/${id}/scenes`),
     entities: (id: string) => request<Entity[]>("GET", `/api/v1/projects/${id}/entities`),
+    dialogueSegments: (id: string) => request<DialogueSegment[]>("GET", `/api/v1/projects/${id}/dialogue-segments`),
+    characters: (id: string) => request<Character[]>("GET", `/api/v1/projects/${id}/characters`),
+    locations: (id: string) => request<Location[]>("GET", `/api/v1/projects/${id}/locations`),
   },
   projectTemplates: {
     list: () => request<FormatTemplate[]>("GET", "/api/v1/project-templates"),

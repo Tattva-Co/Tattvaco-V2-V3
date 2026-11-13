@@ -24,6 +24,9 @@ class ScriptIntelligenceState(TypedDict, total=False):
     # Extracted candidate structures
     extracted_scenes: List[Dict[str, Any]]
     extracted_entities: List[Dict[str, Any]]
+    # D3 (TFD-STY-002): verbatim dialogue segments, keyed to a scene by scene_number
+    # (scenes are not canonical yet at this point, so there is no scene_id to use).
+    extracted_dialogue_segments: List[Dict[str, Any]]
 
     # Approval gating. For the id lists, None = all candidates, [] = none.
     approval_request_id: str | None

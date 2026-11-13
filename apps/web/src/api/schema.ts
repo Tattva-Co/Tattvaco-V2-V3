@@ -238,6 +238,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/{project_id}/dialogue-segments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Dialogue Segments */
+        get: operations["get_dialogue_segments_api_v1_projects__project_id__dialogue_segments_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/characters": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Characters */
+        get: operations["get_characters_api_v1_projects__project_id__characters_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/locations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Locations */
+        get: operations["get_locations_api_v1_projects__project_id__locations_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/projects/{project_id}/output-profiles": {
         parameters: {
             query?: never;
@@ -1034,6 +1085,22 @@ export interface components {
             /** Approvals */
             approvals: components["schemas"]["ApprovalResponse"][];
         };
+        /** CharacterResponse */
+        CharacterResponse: {
+            /** Id */
+            id: string;
+            /** Canonical Name */
+            canonical_name: string;
+            /** Aliases */
+            aliases: string[];
+            /** Project Version */
+            project_version: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
         /** DevLoginRequest */
         DevLoginRequest: {
             /** Email */
@@ -1059,6 +1126,34 @@ export interface components {
             user_id: string;
             /** Organization Id */
             organization_id: string;
+        };
+        /** DialogueSegmentResponse */
+        DialogueSegmentResponse: {
+            /** Id */
+            id: string;
+            /** Scene Id */
+            scene_id: string;
+            /** Screenplay Version Id */
+            screenplay_version_id: string | null;
+            /** Character Id */
+            character_id: string | null;
+            /** Character Name */
+            character_name: string;
+            /** Line Text */
+            line_text: string;
+            /** Parenthetical */
+            parenthetical: string | null;
+            /** Order In Scene */
+            order_in_scene: number;
+            /** Source Locator */
+            source_locator: string;
+            /** Project Version */
+            project_version: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
         };
         /** EntityCandidateResponse */
         EntityCandidateResponse: {
@@ -1095,6 +1190,12 @@ export interface components {
             project_version: number;
             /** Review Status */
             review_status: string | null;
+            /** Aliases */
+            aliases: string[];
+            /** Resolved Character Id */
+            resolved_character_id: string | null;
+            /** Resolved Location Id */
+            resolved_location_id: string | null;
         };
         /** EpisodeCreateRequest */
         EpisodeCreateRequest: {
@@ -1391,6 +1492,22 @@ export interface components {
             evidence_refs?: unknown[];
             /** Notes */
             notes?: string | null;
+        };
+        /** LocationResponse */
+        LocationResponse: {
+            /** Id */
+            id: string;
+            /** Canonical Name */
+            canonical_name: string;
+            /** Aliases */
+            aliases: string[];
+            /** Project Version */
+            project_version: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
         };
         /** NextActionSummary */
         NextActionSummary: {
@@ -2680,6 +2797,108 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EntityResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_dialogue_segments_api_v1_projects__project_id__dialogue_segments_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Actor-ID"?: string | null;
+            };
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DialogueSegmentResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_characters_api_v1_projects__project_id__characters_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Actor-ID"?: string | null;
+            };
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_locations_api_v1_projects__project_id__locations_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Actor-ID"?: string | null;
+            };
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LocationResponse"][];
                 };
             };
             /** @description Validation Error */

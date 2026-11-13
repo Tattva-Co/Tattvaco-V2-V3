@@ -2,15 +2,27 @@ import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { api } from "../../api/client";
 import {
+  useCharacters,
   useCreateFilmBibleRule,
+  useDialogueSegments,
   useEntities,
   useFilmBibleRules,
+  useLocations,
   useProjectVersions,
   useScenes,
 } from "../../hooks/useFilmBible";
 import { describeError } from "../../lib/describeError";
 
-const TABS = ["Visual World Rules", "Synthesize", "Scenes", "Entities", "Versions"] as const;
+const TABS = [
+  "Visual World Rules",
+  "Synthesize",
+  "Scenes",
+  "Dialogue",
+  "Entities",
+  "Characters",
+  "Locations",
+  "Versions",
+] as const;
 type Tab = (typeof TABS)[number];
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -184,6 +196,80 @@ function EntitiesTab({ projectId }: { projectId: string }) {
   );
 }
 
+/** S-SCR-02 AC2/AC3: dialogue is shown verbatim (byte-for-byte, no reformatting of
+ * `line_text`/`parenthetical`) as structured, scene-grouped rows -- never raw JSON. */
+function DialogueTab({ projectId }: { projectId: string }) {
+  const scenes = useScenes(projectId);
+  const dialogue = useDialogueSegments(projectId);
+  if (scenes.isLoading || dialogue.isLoading) return <div className="state-panel">Loading dialogue…</div>;
+  if (dialogue.data?.length === 0) return <div className="state-panel">No canonical dialogue committed yet.</div>;
+
+  const sceneById = new Map((scenes.data ?? []).map((s) => [s.id, s]));
+  const byScene = new Map<string, typeof dialogue.data>();
+  for (const segment of dialogue.data ?? []) {
+    const existing = byScene.get(segment.scene_id);
+    if (existing) existing.push(segment);
+    else byScene.set(segment.scene_id, [segment]);
+  }
+
+  return (
+    <div>
+      {[...byScene.entries()].map(([sceneId, segments]) => {
+        const scene = sceneById.get(sceneId);
+        return (
+          <div key={sceneId} className="tool-list-item">
+            <h4>{scene ? `Scene ${scene.scene_number}: ${scene.heading}` : "Scene"}</h4>
+            {segments
+              ?.slice()
+              .sort((a, b) => a.order_in_scene - b.order_in_scene)
+              .map((d) => (
+                <p key={d.id}>
+                  <strong>{d.character_name}</strong>
+                  {d.parenthetical && <span className="meta"> ({d.parenthetical})</span>}
+                  {d.line_text && <>: {d.line_text}</>}
+                </p>
+              ))}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function CharactersTab({ projectId }: { projectId: string }) {
+  const characters = useCharacters(projectId);
+  if (characters.isLoading) return <div className="state-panel">Loading characters…</div>;
+  if (characters.data?.length === 0) return <div className="state-panel">No canonical characters resolved yet.</div>;
+  return (
+    <div>
+      {characters.data?.map((c) => (
+        <div key={c.id} className="tool-list-item">
+          <h4>{c.canonical_name}</h4>
+          {c.aliases.length > 0 && <p className="meta">Also known as: {c.aliases.join(", ")}</p>}
+          <p className="meta">v{c.project_version}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function LocationsTab({ projectId }: { projectId: string }) {
+  const locations = useLocations(projectId);
+  if (locations.isLoading) return <div className="state-panel">Loading locations…</div>;
+  if (locations.data?.length === 0) return <div className="state-panel">No canonical locations resolved yet.</div>;
+  return (
+    <div>
+      {locations.data?.map((l) => (
+        <div key={l.id} className="tool-list-item">
+          <h4>{l.canonical_name}</h4>
+          {l.aliases.length > 0 && <p className="meta">Also known as: {l.aliases.join(", ")}</p>}
+          <p className="meta">v{l.project_version}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function VersionsTab({ projectId }: { projectId: string }) {
   const versions = useProjectVersions(projectId);
   if (versions.isLoading) return <div className="state-panel">Loading version history…</div>;
@@ -231,7 +317,10 @@ export function FilmBibleTool({
       {tab === "Visual World Rules" && <RulesTab projectId={projectId} />}
       {tab === "Synthesize" && <SynthesizeTab projectId={projectId} onRunStarted={onRunStarted} />}
       {tab === "Scenes" && <ScenesTab projectId={projectId} />}
+      {tab === "Dialogue" && <DialogueTab projectId={projectId} />}
       {tab === "Entities" && <EntitiesTab projectId={projectId} />}
+      {tab === "Characters" && <CharactersTab projectId={projectId} />}
+      {tab === "Locations" && <LocationsTab projectId={projectId} />}
       {tab === "Versions" && <VersionsTab projectId={projectId} />}
     </div>
   );

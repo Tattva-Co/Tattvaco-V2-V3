@@ -32,7 +32,9 @@ from packages.persistence.repositories import (
     AuditRepository,
     CandidateRepository,
     CanonicalRepository,
+    CharacterRepository,
     EpisodeRepository,
+    LocationRepository,
     OutputProfileRepository,
     ProjectMembershipRepository,
     ProjectRepository,
@@ -258,6 +260,18 @@ class ProjectService:
     def canonical_entities(self, actor: ActorContext, project_id: str) -> List[EntityModel]:
         self.get(actor, project_id)
         return CanonicalRepository(self.db).entities_for_project(project_id)
+
+    def dialogue_segments(self, actor: ActorContext, project_id: str):
+        self.get(actor, project_id)
+        return CanonicalRepository(self.db).dialogue_segments_for_project(project_id)
+
+    def characters(self, actor: ActorContext, project_id: str):
+        self.get(actor, project_id)
+        return CharacterRepository(self.db).list_for_project(project_id)
+
+    def locations(self, actor: ActorContext, project_id: str):
+        self.get(actor, project_id)
+        return LocationRepository(self.db).list_for_project(project_id)
 
     def candidates(self, actor: ActorContext, project_id: str) -> CandidateOverview:
         self.get(actor, project_id)
