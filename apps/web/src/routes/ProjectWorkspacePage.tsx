@@ -22,6 +22,7 @@ import { CharacterStudioTool } from "../components/tools/CharacterStudioTool";
 import { ConsentTool } from "../components/tools/ConsentTool";
 import { LocationStudioTool } from "../components/tools/LocationStudioTool";
 import { CostumePropsTool } from "../components/tools/CostumePropsTool";
+import { CinematographyTool } from "../components/tools/CinematographyTool";
 import { AuditTool } from "../components/tools/AuditTool";
 import { ProjectOverviewTool } from "../components/tools/ProjectOverviewTool";
 import { ProjectSettingsTool } from "../components/tools/ProjectSettingsTool";
@@ -62,6 +63,10 @@ const TOOL_TITLES: Record<ToolKey, { title: string; subtitle: string }> = {
   costume_props: {
     title: "Costumes & Props",
     subtitle: "Costume Bible, costume states, character x scene assignment, continuity findings, and props/weapons.",
+  },
+  cinematography: {
+    title: "Cinematography",
+    subtitle: "Camera/lens/lighting libraries, the versioned Cinematography Bible, and AI shot recommendations with override.",
   },
   audit: { title: "Audit Trail", subtitle: "Every project lifecycle action and decision." },
 };
@@ -333,6 +338,7 @@ export function ProjectWorkspacePage() {
           {openTool === "consent" && <ConsentTool projectId={projectId} />}
           {openTool === "location_studio" && <LocationStudioTool projectId={projectId} />}
           {openTool === "costume_props" && <CostumePropsTool projectId={projectId} />}
+          {openTool === "cinematography" && <CinematographyTool projectId={projectId} />}
           {openTool === "audit" && <AuditTool projectId={projectId} />}
         </StudioToolPanel>
       )}

@@ -11,6 +11,7 @@ export type ToolKey =
   | "consent"
   | "location_studio"
   | "costume_props"
+  | "cinematography"
   | "audit";
 
 export interface ToolDescriptor {
@@ -106,6 +107,12 @@ export const TOOL_REGISTRY: ToolDescriptor[] = [
     name: "Costumes & Props",
     description: "Costume Bible, costume states, character x scene assignment, continuity findings, and props/weapons (S-CST-01/02).",
     sections: ["JRN-05"],
+  },
+  {
+    key: "cinematography",
+    name: "Cinematography",
+    description: "Camera/lens/lighting libraries, the versioned Cinematography Bible, and AI shot recommendations with override (S-CIN-01).",
+    sections: ["JRN-06"],
   },
   { key: "audit", name: "Audit Trail", description: "Every project lifecycle action and decision.", sections: [] },
 ];

@@ -19,6 +19,7 @@ from apps.api.routers import (
     assets,
     auth,
     characters,
+    cinematography,
     consent,
     costumes,
     film_bible,
@@ -93,6 +94,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         locations,
         costumes,
         props,
+        cinematography,
     ):
         app.include_router(module.router, prefix=settings.api_v1_str)
     app.include_router(characters.measurements_router, prefix=settings.api_v1_str)

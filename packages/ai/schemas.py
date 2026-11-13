@@ -110,3 +110,22 @@ class ScreenplaySuggestionData(BaseModel):
 
 class ScreenplaySuggestionResult(BaseModel):
     suggestions: list[ScreenplaySuggestionData] = Field(default_factory=list)
+
+
+class RecommendedFieldData(BaseModel):
+    value: str | list[str]
+    rationale: str
+    metadata_origin: str = "recommended"
+
+
+class CinematographyRecommendationResult(BaseModel):
+    shot_type: RecommendedFieldData
+    position: RecommendedFieldData
+    lens: RecommendedFieldData
+    movement: RecommendedFieldData
+    framing: RecommendedFieldData
+    lighting: RecommendedFieldData
+    background: RecommendedFieldData
+    placement: RecommendedFieldData
+    duration: RecommendedFieldData
+    references: RecommendedFieldData

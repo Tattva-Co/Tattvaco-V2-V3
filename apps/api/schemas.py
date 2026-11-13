@@ -1193,3 +1193,124 @@ class PropStateResponse(_ORM):
     notes: str | None
     created_by: str
     created_at: datetime
+
+
+# -- D6: Cinematography Bible, recommendations, storyboard ingestion/mapping -------
+
+
+class StoryboardIngestRequest(BaseModel):
+    source_asset_id: str
+
+
+class StoryboardMappingCreateRequest(BaseModel):
+    panel_id: str
+    scene_id: str
+
+
+class StoryboardMappingResponse(_ORM):
+    id: str
+    panel_id: str
+    scene_id: str
+    created_at: datetime
+
+
+class CameraProfileCreateRequest(BaseModel):
+    name: str = Field(..., min_length=1, max_length=255)
+    spec_kind: str = Field(..., description="physical | virtual")
+    specs: Dict[str, Any] | None = None
+
+
+class CameraProfileResponse(_ORM):
+    id: str
+    project_id: str
+    name: str
+    spec_kind: str
+    specs: Dict[str, Any]
+    created_by: str
+    created_at: datetime
+
+
+class LensProfileCreateRequest(BaseModel):
+    name: str = Field(..., min_length=1, max_length=255)
+    specs: Dict[str, Any] | None = None
+
+
+class LensProfileResponse(_ORM):
+    id: str
+    project_id: str
+    name: str
+    specs: Dict[str, Any]
+    created_by: str
+    created_at: datetime
+
+
+class LightingProfileCreateRequest(BaseModel):
+    name: str = Field(..., min_length=1, max_length=255)
+    specs: Dict[str, Any] | None = None
+
+
+class LightingProfileResponse(_ORM):
+    id: str
+    project_id: str
+    name: str
+    specs: Dict[str, Any]
+    created_by: str
+    created_at: datetime
+
+
+class CinematographyVersionProposeRequest(BaseModel):
+    camera_profile_ids: List[str] = Field(default_factory=list)
+    lens_profile_ids: List[str] = Field(default_factory=list)
+    lighting_profile_ids: List[str] = Field(default_factory=list)
+    composition_rules: Dict[str, Any] | None = None
+    virtual_camera_profile: Dict[str, Any] | None = None
+    visual_language: Dict[str, Any] | None = None
+
+
+class CinematographyVersionResponse(_ORM):
+    id: str
+    project_id: str
+    version_number: int
+    status: str
+    parent_version_id: str | None
+    approval_request_id: str | None
+    approved_by: str | None
+    approved_at: datetime | None
+    camera_profile_ids: List[str]
+    lens_profile_ids: List[str]
+    lighting_profile_ids: List[str]
+    composition_rules: Dict[str, Any]
+    virtual_camera_profile: Dict[str, Any]
+    visual_language: Dict[str, Any]
+    created_by: str
+    created_at: datetime
+
+
+class CinematographyVersionProposeResponse(BaseModel):
+    version: CinematographyVersionResponse
+    approval_request_id: str
+
+
+class CinematographyDecisionRequest(BaseModel):
+    decision: ApprovalDecision
+    notes: str | None = None
+
+
+class CinematographyRecommendationRequest(BaseModel):
+    intent: str = Field(..., min_length=1)
+
+
+class CinematographyRecommendationResponse(_ORM):
+    id: str
+    project_id: str
+    intent_text: str
+    recommendation: Dict[str, Any]
+    overrides: Dict[str, Any]
+    generator_mode: str
+    created_by: str
+    created_at: datetime
+
+
+class CinematographyOverrideRequest(BaseModel):
+    field_name: str
+    value: Any

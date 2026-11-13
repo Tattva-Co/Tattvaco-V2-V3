@@ -181,6 +181,9 @@ class StoryboardReviewService:
                     description=p.description,
                     visual_notes=p.visual_notes,
                     dialogue_snippet=p.dialogue_snippet,
+                    # D6 (TFD-SB-001): null for every panel generated from a brief;
+                    # set to the rendered page image for one ingested from a PDF/image.
+                    frame_asset_id=p.crop_asset_id,
                     aspect_ratio="16:9",
                 )
                 self.storyboard.add_panel(model)

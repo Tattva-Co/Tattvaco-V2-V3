@@ -26,6 +26,7 @@ from abc import ABC, abstractmethod
 from pydantic import ValidationError
 
 from packages.ai.schemas import (
+    CinematographyRecommendationResult,
     FilmBibleSynthesisResult,
     HistoricalResearchResult,
     ScreenplayParseResult,
@@ -74,6 +75,9 @@ class ModelGateway(ABC):
         self, content_text: str, scope_notes: str | None
     ) -> ScreenplaySuggestionResult: ...
 
+    @abstractmethod
+    def recommend_cinematography(self, intent: str) -> CinematographyRecommendationResult: ...
+
 
 class DeterministicModelGateway(ModelGateway):
     """Wraps the pre-existing generators. See module docstring."""
@@ -85,6 +89,7 @@ class DeterministicModelGateway(ModelGateway):
         # __init__ re-exports pull in this gateway module -- importing them at gateway
         # module load time creates a circular import. By construction time (a node
         # function actually running), every module involved is already fully loaded.
+        from packages.workflows.cinematography_recommendation.recommender import CinematographyRecommender
         from packages.workflows.film_bible_synthesis.synthesizer import FilmBibleSynthesizer
         from packages.workflows.historical_research.investigator import HistoricalInvestigator
         from packages.workflows.screenplay_suggestions.suggester import ScreenplaySuggester
@@ -96,6 +101,7 @@ class DeterministicModelGateway(ModelGateway):
         self._aligner = StoryboardAligner()
         self._synthesizer = FilmBibleSynthesizer()
         self._suggester = ScreenplaySuggester()
+        self._recommender = CinematographyRecommender()
 
     def parse_screenplay(self, text: str) -> ScreenplayParseResult:
         scenes, entities, dialogue_segments = self._parser.parse(text)
@@ -122,6 +128,10 @@ class DeterministicModelGateway(ModelGateway):
     ) -> ScreenplaySuggestionResult:
         suggestions = self._suggester.suggest(content_text, scope_notes=scope_notes)
         return _validated(ScreenplaySuggestionResult, suggestions=suggestions)
+
+    def recommend_cinematography(self, intent: str) -> CinematographyRecommendationResult:
+        fields = self._recommender.recommend(intent)
+        return _validated(CinematographyRecommendationResult, **fields)
 
 
 def get_model_gateway(settings: Settings) -> ModelGateway:

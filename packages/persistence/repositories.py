@@ -23,10 +23,13 @@ from packages.persistence.models import (
     AssetModel,
     AuditEventModel,
     BodyMeasurementModel,
+    CameraProfileModel,
     CharacterFacialReferenceModel,
     CharacterModel,
     CharacterStateModel,
     CharacterVersionModel,
+    CinematographyProfileVersionModel,
+    CinematographyRecommendationModel,
     ContinuityFindingModel,
     CostumeAssignmentModel,
     CostumeModel,
@@ -44,6 +47,8 @@ from packages.persistence.models import (
     JourneyItemStateModel,
     JourneySectionEventModel,
     JourneyStalenessModel,
+    LensProfileModel,
+    LightingProfileModel,
     LocationModel,
     LocationVersionModel,
     MembershipModel,
@@ -72,6 +77,7 @@ from packages.persistence.models import (
     ScreenplayVersionModel,
     StoryboardPanelCandidateModel,
     StoryboardPanelModel,
+    StoryboardPanelSceneMappingModel,
     UserModel,
     VoiceProfileModel,
     WorkflowRunModel,
@@ -1252,6 +1258,145 @@ class StoryboardRepository(_Repository):
             select(StoryboardPanelModel)
             .where(StoryboardPanelModel.scene_id == scene_id)
             .order_by(StoryboardPanelModel.panel_number)
+        )
+        return list(self.db.scalars(stmt))
+
+    def get_panel_scoped(self, panel_id: str, project_id: str) -> StoryboardPanelModel:
+        stmt = select(StoryboardPanelModel).where(
+            StoryboardPanelModel.id == panel_id, StoryboardPanelModel.project_id == project_id
+        )
+        panel = self.db.scalars(stmt).first()
+        if panel is None:
+            raise NotFoundError(f"Storyboard panel '{panel_id}' not found.")
+        return panel
+
+
+class StoryboardPanelSceneMappingRepository(_Repository):
+    """D6 (TFD-SB-003): many-to-many panel<->scene mappings."""
+
+    def add(self, mapping: StoryboardPanelSceneMappingModel) -> StoryboardPanelSceneMappingModel:
+        return self._add(mapping)
+
+    def exists(self, panel_id: str, scene_id: str) -> bool:
+        stmt = select(StoryboardPanelSceneMappingModel).where(
+            StoryboardPanelSceneMappingModel.panel_id == panel_id,
+            StoryboardPanelSceneMappingModel.scene_id == scene_id,
+        )
+        return self.db.scalars(stmt).first() is not None
+
+    def list_for_panel(self, panel_id: str) -> List[StoryboardPanelSceneMappingModel]:
+        return list(
+            self.db.scalars(
+                select(StoryboardPanelSceneMappingModel).where(StoryboardPanelSceneMappingModel.panel_id == panel_id)
+            )
+        )
+
+    def list_for_project(self, project_id: str) -> List[StoryboardPanelSceneMappingModel]:
+        return list(
+            self.db.scalars(
+                select(StoryboardPanelSceneMappingModel).where(
+                    StoryboardPanelSceneMappingModel.project_id == project_id
+                )
+            )
+        )
+
+
+class CameraProfileRepository(_Repository):
+    """D6 (TFD-CIN-005): camera library entries, direct-write canon."""
+
+    def add(self, profile: CameraProfileModel) -> CameraProfileModel:
+        return self._add(profile)
+
+    def list_for_project(self, project_id: str) -> List[CameraProfileModel]:
+        return list(self.db.scalars(select(CameraProfileModel).where(CameraProfileModel.project_id == project_id)))
+
+
+class LensProfileRepository(_Repository):
+    """D6 (TFD-CIN-005): lens library entries, direct-write canon."""
+
+    def add(self, profile: LensProfileModel) -> LensProfileModel:
+        return self._add(profile)
+
+    def list_for_project(self, project_id: str) -> List[LensProfileModel]:
+        return list(self.db.scalars(select(LensProfileModel).where(LensProfileModel.project_id == project_id)))
+
+
+class LightingProfileRepository(_Repository):
+    """D6 (TFD-CIN-005): lighting library entries, direct-write canon."""
+
+    def add(self, profile: LightingProfileModel) -> LightingProfileModel:
+        return self._add(profile)
+
+    def list_for_project(self, project_id: str) -> List[LightingProfileModel]:
+        return list(self.db.scalars(select(LightingProfileModel).where(LightingProfileModel.project_id == project_id)))
+
+
+class CinematographyProfileVersionRepository(_Repository):
+    """D6 (TFD-CIN-005): the Cinematography Bible. One bible per project -- "current" is
+    the latest row with ``status=approved``, not a separate identity-table pointer."""
+
+    def add(self, version: CinematographyProfileVersionModel) -> CinematographyProfileVersionModel:
+        return self._add(version)
+
+    def get_scoped(self, version_id: str, project_id: str) -> CinematographyProfileVersionModel:
+        stmt = select(CinematographyProfileVersionModel).where(
+            CinematographyProfileVersionModel.id == version_id,
+            CinematographyProfileVersionModel.project_id == project_id,
+        )
+        version = self.db.scalars(stmt).first()
+        if version is None:
+            raise NotFoundError(f"Cinematography profile version '{version_id}' not found.")
+        return version
+
+    def next_version_number(self, project_id: str) -> int:
+        count = self.db.scalar(
+            select(func.count()).select_from(CinematographyProfileVersionModel).where(
+                CinematographyProfileVersionModel.project_id == project_id
+            )
+        )
+        return (count or 0) + 1
+
+    def get_current(self, project_id: str) -> CinematographyProfileVersionModel | None:
+        stmt = (
+            select(CinematographyProfileVersionModel)
+            .where(
+                CinematographyProfileVersionModel.project_id == project_id,
+                CinematographyProfileVersionModel.status == "approved",
+            )
+            .order_by(CinematographyProfileVersionModel.version_number.desc())
+        )
+        return self.db.scalars(stmt).first()
+
+    def list_for_project(self, project_id: str) -> List[CinematographyProfileVersionModel]:
+        stmt = (
+            select(CinematographyProfileVersionModel)
+            .where(CinematographyProfileVersionModel.project_id == project_id)
+            .order_by(CinematographyProfileVersionModel.version_number)
+        )
+        return list(self.db.scalars(stmt))
+
+
+class CinematographyRecommendationRepository(_Repository):
+    """D6 (TFD-CIN-004): AI shot-planning recommendations with their overrides."""
+
+    def add(self, recommendation: CinematographyRecommendationModel) -> CinematographyRecommendationModel:
+        return self._add(recommendation)
+
+    def get_scoped(self, recommendation_id: str, project_id: str) -> CinematographyRecommendationModel:
+        stmt = select(CinematographyRecommendationModel).where(
+            CinematographyRecommendationModel.id == recommendation_id,
+            CinematographyRecommendationModel.project_id == project_id,
+        )
+        recommendation = self.db.scalars(stmt).first()
+        if recommendation is None:
+            raise NotFoundError(f"Cinematography recommendation '{recommendation_id}' not found.")
+        return recommendation
+
+    def list_for_project(self, project_id: str) -> List[CinematographyRecommendationModel]:
+        stmt = (
+            select(CinematographyRecommendationModel)
+            .where(CinematographyRecommendationModel.project_id == project_id)
+            .order_by(CinematographyRecommendationModel.created_at.desc())
         )
         return list(self.db.scalars(stmt))
 

@@ -214,6 +214,16 @@ class AuditAction(str, Enum):
     PROP_CREATED = "prop_created"
     PROP_STATE_CREATED = "prop_state_created"
     CONTINUITY_FINDING_RAISED = "continuity_finding_raised"
+    CAMERA_PROFILE_CREATED = "camera_profile_created"
+    LENS_PROFILE_CREATED = "lens_profile_created"
+    LIGHTING_PROFILE_CREATED = "lighting_profile_created"
+    CINEMATOGRAPHY_VERSION_DRAFTED = "cinematography_version_drafted"
+    CINEMATOGRAPHY_VERSION_APPROVED = "cinematography_version_approved"
+    CINEMATOGRAPHY_VERSION_REJECTED = "cinematography_version_rejected"
+    CINEMATOGRAPHY_RECOMMENDATION_REQUESTED = "cinematography_recommendation_requested"
+    CINEMATOGRAPHY_RECOMMENDATION_OVERRIDDEN = "cinematography_recommendation_overridden"
+    STORYBOARD_INGESTION_STARTED = "storyboard_ingestion_started"
+    STORYBOARD_PANEL_MAPPED_TO_SCENE = "storyboard_panel_mapped_to_scene"
 
 
 class CharacterVersionStatus(str, Enum):
@@ -361,3 +371,15 @@ class PropKind(str, Enum):
 
     PROP = "prop"
     WEAPON = "weapon"
+
+
+class MetadataOrigin(str, Enum):
+    """D6 (TFD-CIN-003/004/005): where a camera/cinematography value came from.
+    `ACTUAL` is reserved for footage metadata extraction or a user holding
+    `capture.edit` -- no AI workflow may write it (AT-CIN-003.1). This build's
+    recommendation generator only ever produces `RECOMMENDED`; the Cinematography
+    Bible's own defaults are `CREATIVE_TARGET` (AT-CIN-005.1)."""
+
+    ACTUAL = "actual"
+    CREATIVE_TARGET = "creative_target"
+    RECOMMENDED = "recommended"

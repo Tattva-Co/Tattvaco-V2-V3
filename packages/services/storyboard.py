@@ -23,17 +23,20 @@ from packages.domain.enums import (
     AuditAction,
     WorkflowStatus,
 )
-from packages.domain.errors import InvalidStateError, NotFoundError
+from packages.domain.errors import InvalidStateError, NotFoundError, ValidationFailure
 from packages.persistence.models import (
     ApprovalRequestModel,
     StoryboardPanelModel,
+    StoryboardPanelSceneMappingModel,
     WorkflowRunModel,
 )
 from packages.persistence.repositories import (
     ApprovalRepository,
     AuditRepository,
+    CanonicalRepository,
     OutboxRepository,
     ProjectRepository,
+    StoryboardPanelSceneMappingRepository,
     StoryboardRepository,
     WorkflowRunRepository,
 )
@@ -235,10 +238,59 @@ class StoryboardService:
         self.db = db
         self.projects = ProjectRepository(db)
         self.storyboard = StoryboardRepository(db)
+        self.mappings = StoryboardPanelSceneMappingRepository(db)
+        self.canonical = CanonicalRepository(db)
         self.authz = AuthzService(db)
+        self.audit = AuditRepository(db)
 
     def list_panels(self, actor: ActorContext, project_id: str) -> list[StoryboardPanelModel]:
         project = self.projects.get_scoped(project_id, actor.org_id)
         self.authz.require(actor, "project.read", project)
         return self.storyboard.list_panels_for_project(project_id)
+
+    # -- many-to-many panel<->scene mapping (TFD-SB-003) -------------------------------
+
+    def map_panel_to_scene(
+        self, actor: ActorContext, project_id: str, panel_id: str, scene_id: str
+    ) -> StoryboardPanelSceneMappingModel:
+        project = self.projects.get_scoped(project_id, actor.org_id)
+        self.authz.require(actor, "canon.propose", project)
+        panel = self.storyboard.get_panel_scoped(panel_id, project.id)
+        scene_ids = {s.id for s in self.canonical.scenes_for_project(project.id)}
+        if scene_id not in scene_ids:
+            raise ValidationFailure(f"Scene '{scene_id}' is not in this project.")
+        if self.mappings.exists(panel.id, scene_id):
+            raise ValidationFailure(f"Panel '{panel_id}' is already mapped to scene '{scene_id}'.")
+
+        mapping = self.mappings.add(
+            StoryboardPanelSceneMappingModel(
+                panel_id=panel.id,
+                scene_id=scene_id,
+                project_id=project.id,
+                organization_id=project.organization_id,
+                created_by=actor.user_id,
+            )
+        )
+        self.audit.record(
+            project_id=project.id,
+            organization_id=project.organization_id,
+            actor_id=actor.user_id,
+            action=AuditAction.STORYBOARD_PANEL_MAPPED_TO_SCENE,
+            target_type="storyboard_panel",
+            target_id=panel.id,
+            details={"scene_id": scene_id},
+        )
+        self.db.commit()
+        return mapping
+
+    def list_mappings_for_panel(self, actor: ActorContext, project_id: str, panel_id: str) -> list[StoryboardPanelSceneMappingModel]:
+        project = self.projects.get_scoped(project_id, actor.org_id)
+        self.authz.require(actor, "project.read", project)
+        self.storyboard.get_panel_scoped(panel_id, project.id)
+        return self.mappings.list_for_panel(panel_id)
+
+    def list_mappings_for_project(self, actor: ActorContext, project_id: str) -> list[StoryboardPanelSceneMappingModel]:
+        project = self.projects.get_scoped(project_id, actor.org_id)
+        self.authz.require(actor, "project.read", project)
+        return self.mappings.list_for_project(project.id)
 

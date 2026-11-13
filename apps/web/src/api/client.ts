@@ -170,6 +170,22 @@ export type PropCreateBody = Schemas["PropCreateRequest"];
 export type Prop = Schemas["PropResponse"];
 export type PropStateCreateBody = Schemas["PropStateCreateRequest"];
 export type PropState = Schemas["PropStateResponse"];
+export type StoryboardIngestBody = Schemas["StoryboardIngestRequest"];
+export type StoryboardMappingCreateBody = Schemas["StoryboardMappingCreateRequest"];
+export type StoryboardMapping = Schemas["StoryboardMappingResponse"];
+export type CameraProfileCreateBody = Schemas["CameraProfileCreateRequest"];
+export type CameraProfile = Schemas["CameraProfileResponse"];
+export type LensProfileCreateBody = Schemas["LensProfileCreateRequest"];
+export type LensProfile = Schemas["LensProfileResponse"];
+export type LightingProfileCreateBody = Schemas["LightingProfileCreateRequest"];
+export type LightingProfile = Schemas["LightingProfileResponse"];
+export type CinematographyVersionProposeBody = Schemas["CinematographyVersionProposeRequest"];
+export type CinematographyVersion = Schemas["CinematographyVersionResponse"];
+export type CinematographyVersionProposeResult = Schemas["CinematographyVersionProposeResponse"];
+export type CinematographyDecisionBody = Schemas["CinematographyDecisionRequest"];
+export type CinematographyRecommendationBody = Schemas["CinematographyRecommendationRequest"];
+export type CinematographyRecommendation = Schemas["CinematographyRecommendationResponse"];
+export type CinematographyOverrideBody = Schemas["CinematographyOverrideRequest"];
 
 export const api = {
   auth: {
@@ -256,6 +272,56 @@ export const api = {
   },
   storyboard: {
     panels: (projectId: string) => request<StoryboardPanel[]>("GET", `/api/v1/projects/${projectId}/storyboard/panels`),
+    ingest: (projectId: string, body: StoryboardIngestBody) =>
+      request<WorkflowRun>("POST", `/api/v1/projects/${projectId}/storyboard/ingest`, body),
+    listMappings: (projectId: string) =>
+      request<StoryboardMapping[]>("GET", `/api/v1/projects/${projectId}/storyboard/mappings`),
+    createMapping: (projectId: string, body: StoryboardMappingCreateBody) =>
+      request<StoryboardMapping>("POST", `/api/v1/projects/${projectId}/storyboard/mappings`, body),
+  },
+  cinematography: {
+    listCameraProfiles: (projectId: string) =>
+      request<CameraProfile[]>("GET", `/api/v1/projects/${projectId}/cinematography/camera-profiles`),
+    createCameraProfile: (projectId: string, body: CameraProfileCreateBody) =>
+      request<CameraProfile>("POST", `/api/v1/projects/${projectId}/cinematography/camera-profiles`, body),
+    listLensProfiles: (projectId: string) =>
+      request<LensProfile[]>("GET", `/api/v1/projects/${projectId}/cinematography/lens-profiles`),
+    createLensProfile: (projectId: string, body: LensProfileCreateBody) =>
+      request<LensProfile>("POST", `/api/v1/projects/${projectId}/cinematography/lens-profiles`, body),
+    listLightingProfiles: (projectId: string) =>
+      request<LightingProfile[]>("GET", `/api/v1/projects/${projectId}/cinematography/lighting-profiles`),
+    createLightingProfile: (projectId: string, body: LightingProfileCreateBody) =>
+      request<LightingProfile>("POST", `/api/v1/projects/${projectId}/cinematography/lighting-profiles`, body),
+    getCurrentBible: (projectId: string) =>
+      request<CinematographyVersion | null>("GET", `/api/v1/projects/${projectId}/cinematography/profile`),
+    listBibleVersions: (projectId: string) =>
+      request<CinematographyVersion[]>("GET", `/api/v1/projects/${projectId}/cinematography/profile/versions`),
+    proposeBibleVersion: (projectId: string, body: CinematographyVersionProposeBody) =>
+      request<CinematographyVersionProposeResult>(
+        "POST",
+        `/api/v1/projects/${projectId}/cinematography/profile/versions`,
+        body
+      ),
+    decideBibleVersion: (projectId: string, versionId: string, body: CinematographyDecisionBody) =>
+      request<CinematographyVersion>(
+        "POST",
+        `/api/v1/projects/${projectId}/cinematography/profile/versions/${versionId}/decide`,
+        body
+      ),
+    listRecommendations: (projectId: string) =>
+      request<CinematographyRecommendation[]>("GET", `/api/v1/projects/${projectId}/cinematography/recommendations`),
+    requestRecommendation: (projectId: string, body: CinematographyRecommendationBody) =>
+      request<CinematographyRecommendation>(
+        "POST",
+        `/api/v1/projects/${projectId}/cinematography/recommendations`,
+        body
+      ),
+    overrideRecommendation: (projectId: string, recommendationId: string, body: CinematographyOverrideBody) =>
+      request<CinematographyRecommendation>(
+        "POST",
+        `/api/v1/projects/${projectId}/cinematography/recommendations/${recommendationId}/override`,
+        body
+      ),
   },
   filmBible: {
     rules: {

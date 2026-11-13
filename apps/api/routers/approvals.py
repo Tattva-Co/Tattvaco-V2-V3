@@ -18,6 +18,11 @@ from packages.services.historical_research import HistoricalResearchService
 from packages.services.identity import ActorContext
 from packages.services.script_intelligence import ScriptIntelligenceService
 from packages.services.storyboard import StoryboardIntelligenceService
+from packages.services.storyboard_ingestion import (
+    STORYBOARD_INGESTION_APPROVAL_SCOPE,
+    StoryboardIngestionService,
+)
+from packages.storage.factory import get_storage
 
 router = APIRouter(prefix="/approvals", tags=["approvals"])
 
@@ -63,6 +68,14 @@ def decide_approval(
             notes=req.notes,
             approved_scene_ids=req.approved_scene_ids,
             approved_entity_ids=req.approved_entity_ids,
+        )
+    elif approval.scope == STORYBOARD_INGESTION_APPROVAL_SCOPE:
+        result = StoryboardIngestionService(db, get_storage()).decide(
+            actor,
+            approval_id,
+            req.decision,
+            notes=req.notes,
+            approved_panel_ids=req.approved_panel_ids,
         )
     else:
         # D2's "screenplay_lock" scope (ApprovalRequestModel rows created by

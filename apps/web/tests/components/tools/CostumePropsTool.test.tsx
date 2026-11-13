@@ -50,7 +50,7 @@ describe("CostumePropsTool", () => {
 
   it("lists registered props on the Props & Weapons tab", async () => {
     vi.mocked(api.props.list).mockResolvedValue([
-      { id: "prop-1", project_id: "prj-1", organization_id: "org-1", name: "Vikram's Khanda", kind: "weapon", type: null, design: null, material: null, scale: null, owner_character_id: null, created_by: "user-1", created_at: "2026-01-01T00:00:00Z" },
+      { id: "prop-1", project_id: "prj-1", name: "Vikram's Khanda", kind: "weapon", type: null, design: null, material: null, scale: null, owner_character_id: null, created_by: "user-1", created_at: "2026-01-01T00:00:00Z" },
     ]);
     renderTool();
     await userEvent.click(await screen.findByRole("tab", { name: "Props & Weapons" }));

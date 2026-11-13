@@ -18,10 +18,13 @@ from packages.persistence.models import (
     AssetModel,
     AuditEventModel,
     BodyMeasurementModel,
+    CameraProfileModel,
     CharacterFacialReferenceModel,
     CharacterModel,
     CharacterStateModel,
     CharacterVersionModel,
+    CinematographyProfileVersionModel,
+    CinematographyRecommendationModel,
     ContinuityFindingModel,
     CostumeAssignmentModel,
     CostumeModel,
@@ -40,6 +43,8 @@ from packages.persistence.models import (
     JourneyItemStateModel,
     JourneySectionEventModel,
     JourneyStalenessModel,
+    LensProfileModel,
+    LightingProfileModel,
     LocationModel,
     LocationVersionModel,
     MembershipModel,
@@ -68,6 +73,7 @@ from packages.persistence.models import (
     ScreenplayVersionModel,
     StoryboardPanelCandidateModel,
     StoryboardPanelModel,
+    StoryboardPanelSceneMappingModel,
     UserModel,
     VoiceProfileModel,
     WorkflowRunModel,
@@ -155,6 +161,16 @@ def purge_organization(org_id: str) -> None:
         db.query(CostumeModel).filter_by(organization_id=org_id).delete(synchronize_session=False)
         db.query(PropModel).filter_by(organization_id=org_id).delete(synchronize_session=False)
         db.query(LocationVersionModel).filter_by(organization_id=org_id).delete(synchronize_session=False)
+        # D6 tables: cinematography_profile_versions references approval_requests
+        # (deleted inside the project_ids loop below), same reasoning as the D4/D5
+        # blocks above. camera/lens/lighting_profiles reference nothing (the bible
+        # version's camera_profile_ids/etc. are plain JSON lists, not real FKs) but are
+        # deleted here anyway for locality with the rest of the Cinematography Bible.
+        db.query(CinematographyRecommendationModel).filter_by(organization_id=org_id).delete(synchronize_session=False)
+        db.query(CinematographyProfileVersionModel).filter_by(organization_id=org_id).delete(synchronize_session=False)
+        db.query(CameraProfileModel).filter_by(organization_id=org_id).delete(synchronize_session=False)
+        db.query(LensProfileModel).filter_by(organization_id=org_id).delete(synchronize_session=False)
+        db.query(LightingProfileModel).filter_by(organization_id=org_id).delete(synchronize_session=False)
         if project_ids:
             for model in (
                 # Film-bible rows reference research_claims, so they go first.
@@ -174,6 +190,9 @@ def purge_organization(org_id: str) -> None:
                 ResearchClaimCandidateModel,
                 ResearchQuestionCandidateModel,
                 StoryboardPanelCandidateModel,
+                # storyboard_panel_scene_mappings references storyboard_panels, so it
+                # goes first (TFD-SB-003).
+                StoryboardPanelSceneMappingModel,
                 StoryboardPanelModel,
                 SceneCandidateModel,
                 EntityCandidateModel,

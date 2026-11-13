@@ -1203,6 +1203,146 @@ class StoryboardPanelCandidateModel(Base):
     confidence = Column(Float, default=0.9, nullable=False)
     status = Column(String(50), default="proposed", nullable=False)  # proposed, approved, rejected
     generator_mode = Column(String(20), nullable=False)
+    # D6 (TFD-SB-001): set only for a panel ingested from a PDF/image (never for one
+    # generated from a director brief, which leaves all three null) -- `source`
+    # distinguishes the two so a reader never has to infer it from which fields happen
+    # to be populated.
+    source = Column(String(20), default="generated", nullable=False)  # generated | ingested
+    page_locator = Column(String(100), nullable=True)
+    crop_asset_id = Column(String(36), ForeignKey("assets.id"), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+
+class StoryboardPanelSceneMappingModel(Base):
+    """D6 (TFD-SB-003): many-to-many panel<->scene mapping. `storyboard_panels.scene_id`
+    is retained (AT-SB-003.1 is explicit that it must be) and backfilled into this table
+    by migration `9ba7bb084b15` -- new mappings are recorded here going forward, and
+    `scene_id` itself is never written to again after that backfill."""
+
+    __tablename__ = "storyboard_panel_scene_mappings"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    panel_id = Column(String(36), ForeignKey("storyboard_panels.id"), nullable=False, index=True)
+    scene_id = Column(String(36), ForeignKey("scenes.id"), nullable=False, index=True)
+    project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id"), nullable=False, index=True)
+    created_by = Column(String(36), ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+    __table_args__ = (Index("uq_panel_scene_mapping", "panel_id", "scene_id", unique=True),)
+
+
+# -- D6: Cinematography Bible and recommendations ------------------------------------
+# Scope: TFD-CIN-004/005, TFD-SB-001/003 (see docs/audit/10 DEC-070..07x). TFD-CIN-001/
+# 002/003 (extensible shot `camera_spec`, metadata-origin enforcement on a shot's own
+# value) are deferred to D7 -- every one of their acceptance criteria literally says "a
+# shot camera_spec", and `shots` doesn't exist yet. TFD-CIN-013 ("Visual Language
+# Profile") has no acceptance criterion of its own, but IS one of AT-CIN-005.1's six
+# Given items bundled into a Cinematography Bible version -- built here as
+# `visual_language`, not as separate standalone scope.
+
+
+class CameraProfileModel(Base):
+    """A camera library entry (TFD-CIN-005's "camera package"), physical or virtual.
+    Direct-write canon, like `PropModel` -- AT-CIN-005.1 versions the *bible* as a
+    whole, not each individual library entry."""
+
+    __tablename__ = "camera_profiles"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id"), nullable=False, index=True)
+    name = Column(String(255), nullable=False)
+    spec_kind = Column(String(20), nullable=False)  # physical | virtual
+    specs = Column(JSON, default=dict, nullable=False)
+    created_by = Column(String(36), ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+
+class LensProfileModel(Base):
+    """A lens library entry (TFD-CIN-005's "lens library"). Direct-write canon."""
+
+    __tablename__ = "lens_profiles"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id"), nullable=False, index=True)
+    name = Column(String(255), nullable=False)
+    specs = Column(JSON, default=dict, nullable=False)
+    created_by = Column(String(36), ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+
+class LightingProfileModel(Base):
+    """A lighting library entry (TFD-CIN-005's "lighting library"). Direct-write canon."""
+
+    __tablename__ = "lighting_profiles"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id"), nullable=False, index=True)
+    name = Column(String(255), nullable=False)
+    specs = Column(JSON, default=dict, nullable=False)
+    created_by = Column(String(36), ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+
+class CinematographyProfileVersionModel(Base):
+    """The Cinematography Bible (TFD-CIN-005): unlike characters/locations/costumes,
+    there is one bible per *project*, not one per named entity, so there is no separate
+    identity table -- "current" is simply the latest row with ``status=approved`` for
+    this project (`CinematographyRepository.get_current`), ordered by
+    ``version_number``. Bundles references to camera/lens/lighting library entries
+    (validated tenant-scoped at save time, the same pattern as `costume_versions.
+    claim_links`) plus the three facets with no separate library table: composition
+    rules, the virtual camera profile, and the visual language profile (TFD-CIN-013,
+    folded in here since AT-CIN-005.1 names it as one of the six bundled Given items)."""
+
+    __tablename__ = "cinematography_profile_versions"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id"), nullable=False, index=True)
+    version_number = Column(Integer, nullable=False)
+    status = Column(String(20), default="draft", nullable=False)  # draft | approved | rejected
+    parent_version_id = Column(String(36), ForeignKey("cinematography_profile_versions.id"), nullable=True)
+    approval_request_id = Column(String(36), ForeignKey("approval_requests.id"), nullable=True)
+    approved_by = Column(String(36), ForeignKey("users.id"), nullable=True)
+    approved_at = Column(DateTime(timezone=True), nullable=True)
+    camera_profile_ids = Column(JSON, default=list, nullable=False)
+    lens_profile_ids = Column(JSON, default=list, nullable=False)
+    lighting_profile_ids = Column(JSON, default=list, nullable=False)
+    composition_rules = Column(JSON, default=dict, nullable=False)
+    virtual_camera_profile = Column(JSON, default=dict, nullable=False)
+    visual_language = Column(JSON, default=dict, nullable=False)
+    created_by = Column(String(36), ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+    __table_args__ = (
+        Index("uq_cinematography_versions_project_number", "project_id", "version_number", unique=True),
+    )
+
+
+class CinematographyRecommendationModel(Base):
+    """An AI-generated shot-planning recommendation (TFD-CIN-004) -- genuinely
+    standalone, not shot-scoped: AT-CIN-004.1's own Given clause is an intent string,
+    not a shot. ``recommendation`` holds one entry per field (shot type, position, lens,
+    movement, framing, lighting, background, placement, duration, references), each
+    ``{value, rationale, metadata_origin: "recommended"}``; no field is ever
+    auto-applied (AT-CIN-004.1). ``overrides`` records a director's override
+    per field without touching ``recommendation`` -- the original recommendation is
+    always retained (AT-CIN-004.2)."""
+
+    __tablename__ = "cinematography_recommendations"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id"), nullable=False, index=True)
+    intent_text = Column(Text, nullable=False)
+    recommendation = Column(JSON, default=dict, nullable=False)
+    overrides = Column(JSON, default=dict, nullable=False)
+    generator_mode = Column(String(20), nullable=False)
+    created_by = Column(String(36), ForeignKey("users.id"), nullable=False)
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
 
 
