@@ -44,3 +44,23 @@ class UnsupportedMediaTypeError(ValidationFailure):
 
 class AssetNotReadyError(InvalidStateError):
     """An asset exists but cannot be used yet (still quarantined, or scanned infected)."""
+
+
+class ConsentRequiredError(TenantAccessViolation):
+    """A gated action was attempted without the specific active consent purpose it
+    requires (D4, TFD-CHR-002.2/TFD-PHY-006/TFD-CNS-005). The message is always
+    ``"consent_required: <purpose>"`` so callers can parse the missing purpose out of
+    ``detail`` directly, matching the acceptance criteria's literal wording."""
+
+    def __init__(self, purpose: str):
+        self.purpose = purpose
+        super().__init__(f"consent_required: {purpose}")
+
+
+class PolicyPendingError(TenantAccessViolation):
+    """Performer or consent-record creation is blocked because DEC-007 (retention) and/or
+    DEC-012 (consent template) have not yet been approved (D4, AT-CNS-002.2). No
+    likeness, body or voice data may be stored before Legal closes both."""
+
+    def __init__(self):
+        super().__init__("policy_pending")

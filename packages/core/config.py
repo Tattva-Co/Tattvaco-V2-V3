@@ -114,6 +114,19 @@ class Settings(BaseSettings):
     # Idempotency-Key (TFD-OPS-004): how long a stored response can be replayed.
     idempotency_ttl_hours: int = 24
 
+    # Consent policy gates (D4, AT-CNS-002.2). Both default false -- as of this build,
+    # DEC-007 (retention/purge policy) and DEC-012 (consent template + purpose
+    # vocabulary) are still open in docs/audit/10's register. Flipping either to true is
+    # a Legal/Product decision recorded elsewhere, not a code change; until both are
+    # true, performer and consent-record creation return 403 `policy_pending` (no
+    # likeness, body or voice data may be stored before Legal closes both).
+    dec_007_retention_policy_approved: bool = False
+    dec_012_consent_template_approved: bool = False
+
+    @property
+    def consent_policy_approved(self) -> bool:
+        return self.dec_007_retention_policy_approved and self.dec_012_consent_template_approved
+
     # ModelGateway (C10; packages/ai/gateway.py). "deterministic" wraps the 4 pre-existing
     # rule-based generators (parser/investigator/aligner/synthesizer) behind a validated,
     # typed interface -- real logic, not a placeholder, just not an LLM call (yet). "llm"

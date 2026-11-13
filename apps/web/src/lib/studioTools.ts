@@ -7,6 +7,8 @@ export type ToolKey =
   | "historical_research"
   | "storyboard"
   | "film_bible"
+  | "character_studio"
+  | "consent"
   | "audit";
 
 export interface ToolDescriptor {
@@ -78,6 +80,18 @@ export const TOOL_REGISTRY: ToolDescriptor[] = [
     // whole tool to JRN-05 hid that canon from a writer for most of the journey, even
     // though the Visual World rule tabs it also holds are section-05 work.
     sections: [],
+  },
+  {
+    key: "character_studio",
+    name: "Character Studio",
+    description: "Identity and physical profile versioning, facial references and scene-anchored states (S-CHR-01).",
+    sections: ["JRN-04"],
+  },
+  {
+    key: "consent",
+    name: "Consent & Performers",
+    description: "Performer registry, purpose-specific consent and the voice-clone gate (S-DH-01).",
+    sections: ["JRN-04"],
   },
   { key: "audit", name: "Audit Trail", description: "Every project lifecycle action and decision.", sections: [] },
 ];

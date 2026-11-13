@@ -124,6 +124,28 @@ export type ScreenplaySuggestionGenerateBody = Schemas["ScreenplaySuggestionGene
 export type ScreenplaySuggestionDecisionBody = Schemas["ScreenplaySuggestionDecisionRequest"];
 export type ImpactAnalysis = Schemas["ImpactAnalysisResponse"];
 export type ImpactPreview = Schemas["ImpactPreviewResponse"];
+export type CharacterDetail = Schemas["CharacterDetailResponse"];
+export type CharacterVersion = Schemas["CharacterVersionResponse"];
+export type CharacterVersionProposeBody = Schemas["CharacterVersionProposeRequest"];
+export type CharacterVersionProposeResult = Schemas["CharacterVersionProposeResponse"];
+export type CharacterDecisionBody = Schemas["CharacterDecisionRequest"];
+export type CharacterFacialReferenceCreateBody = Schemas["CharacterFacialReferenceCreateRequest"];
+export type CharacterFacialReference = Schemas["CharacterFacialReferenceResponse"];
+export type CharacterStateCreateBody = Schemas["CharacterStateCreateRequest"];
+export type CharacterState = Schemas["CharacterStateResponse"];
+export type MeasurementCreateBody = Schemas["MeasurementCreateRequest"];
+export type MeasurementCorrectBody = Schemas["MeasurementCorrectRequest"];
+export type Measurement = Schemas["MeasurementResponse"];
+export type PerformerCreateBody = Schemas["PerformerCreateRequest"];
+export type Performer = Schemas["PerformerResponse"];
+export type ConsentCreateBody = Schemas["ConsentCreateRequest"];
+export type ConsentCreateResult = Schemas["ConsentCreateResponse"];
+export type Consent = Schemas["ConsentResponse"];
+export type ConsentDecisionBody = Schemas["ConsentDecisionRequest"];
+export type ConsentRevokeBody = Schemas["ConsentRevokeRequest"];
+export type ConsentCheck = Schemas["ConsentCheckResponse"];
+export type VoiceProfileCreateBody = Schemas["VoiceProfileCreateRequest"];
+export type VoiceProfile = Schemas["VoiceProfileResponse"];
 
 export const api = {
   auth: {
@@ -314,5 +336,85 @@ export const api = {
       ),
     listImpactAnalyses: (projectId: string) =>
       request<ImpactAnalysis[]>("GET", `/api/v1/projects/${projectId}/impact-analyses`),
+  },
+  characters: {
+    get: (projectId: string, characterId: string) =>
+      request<CharacterDetail>("GET", `/api/v1/projects/${projectId}/characters/${characterId}`),
+    listVersions: (projectId: string, characterId: string) =>
+      request<CharacterVersion[]>("GET", `/api/v1/projects/${projectId}/characters/${characterId}/versions`),
+    proposeVersion: (projectId: string, characterId: string, body: CharacterVersionProposeBody) =>
+      request<CharacterVersionProposeResult>(
+        "POST",
+        `/api/v1/projects/${projectId}/characters/${characterId}/versions`,
+        body
+      ),
+    decideVersion: (projectId: string, characterId: string, versionId: string, body: CharacterDecisionBody) =>
+      request<CharacterVersion>(
+        "POST",
+        `/api/v1/projects/${projectId}/characters/${characterId}/versions/${versionId}/decide`,
+        body
+      ),
+    listFacialReferences: (projectId: string, characterId: string) =>
+      request<CharacterFacialReference[]>(
+        "GET",
+        `/api/v1/projects/${projectId}/characters/${characterId}/facial-references`
+      ),
+    addFacialReference: (projectId: string, characterId: string, body: CharacterFacialReferenceCreateBody) =>
+      request<CharacterFacialReference>(
+        "POST",
+        `/api/v1/projects/${projectId}/characters/${characterId}/facial-references`,
+        body
+      ),
+    listStates: (projectId: string, characterId: string) =>
+      request<CharacterState[]>("GET", `/api/v1/projects/${projectId}/characters/${characterId}/states`),
+    createState: (projectId: string, characterId: string, body: CharacterStateCreateBody) =>
+      request<CharacterState>("POST", `/api/v1/projects/${projectId}/characters/${characterId}/states`, body),
+    effectiveState: (projectId: string, characterId: string, sceneNumber: number) =>
+      request<CharacterState | null>(
+        "GET",
+        `/api/v1/projects/${projectId}/characters/${characterId}/effective-state?scene_number=${sceneNumber}`
+      ),
+  },
+  measurements: {
+    history: (projectId: string, subjectType: string, subjectId: string) =>
+      request<Measurement[]>(
+        "GET",
+        `/api/v1/projects/${projectId}/measurements?subject_type=${subjectType}&subject_id=${subjectId}`
+      ),
+    save: (projectId: string, body: MeasurementCreateBody) =>
+      request<Measurement>("POST", `/api/v1/projects/${projectId}/measurements`, body),
+    correct: (projectId: string, measurementId: string, body: MeasurementCorrectBody) =>
+      request<Measurement>("POST", `/api/v1/projects/${projectId}/measurements/${measurementId}/correct`, body),
+    verify: (projectId: string, measurementId: string) =>
+      request<Measurement>("POST", `/api/v1/projects/${projectId}/measurements/${measurementId}/verify`),
+  },
+  performers: {
+    list: (projectId: string) => request<Performer[]>("GET", `/api/v1/projects/${projectId}/performers`),
+    create: (projectId: string, body: PerformerCreateBody) =>
+      request<Performer>("POST", `/api/v1/projects/${projectId}/performers`, body),
+    listConsents: (projectId: string, performerId: string) =>
+      request<Consent[]>("GET", `/api/v1/projects/${projectId}/performers/${performerId}/consents`),
+    createConsent: (projectId: string, performerId: string, body: ConsentCreateBody) =>
+      request<ConsentCreateResult>(
+        "POST",
+        `/api/v1/projects/${projectId}/performers/${performerId}/consents`,
+        body
+      ),
+  },
+  consent: {
+    decide: (projectId: string, consentId: string, body: ConsentDecisionBody) =>
+      request<Consent>("POST", `/api/v1/projects/${projectId}/consents/${consentId}/decide`, body),
+    revoke: (projectId: string, body: ConsentRevokeBody) =>
+      request<Consent>("POST", `/api/v1/projects/${projectId}/consents/revoke`, body),
+    check: (projectId: string, performerId: string, purpose: string) =>
+      request<ConsentCheck>(
+        "GET",
+        `/api/v1/projects/${projectId}/consent-checks?performer_id=${performerId}&purpose=${purpose}`
+      ),
+  },
+  voiceProfiles: {
+    list: (projectId: string) => request<VoiceProfile[]>("GET", `/api/v1/projects/${projectId}/voice-profiles`),
+    create: (projectId: string, body: VoiceProfileCreateBody) =>
+      request<VoiceProfile>("POST", `/api/v1/projects/${projectId}/voice-profiles`, body),
   },
 };

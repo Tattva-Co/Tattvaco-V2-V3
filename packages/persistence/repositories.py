@@ -22,7 +22,11 @@ from packages.persistence.models import (
     AssetDerivativeModel,
     AssetModel,
     AuditEventModel,
+    BodyMeasurementModel,
+    CharacterFacialReferenceModel,
     CharacterModel,
+    CharacterStateModel,
+    CharacterVersionModel,
     DialogueSegmentCandidateModel,
     DialogueSegmentModel,
     EntityCandidateModel,
@@ -39,6 +43,8 @@ from packages.persistence.models import (
     OrganizationModel,
     OutboxTaskModel,
     OutputProfileModel,
+    PerformerConsentModel,
+    PerformerModel,
     ProjectMembershipModel,
     ProjectModel,
     ProjectVersionModel,
@@ -58,6 +64,7 @@ from packages.persistence.models import (
     StoryboardPanelCandidateModel,
     StoryboardPanelModel,
     UserModel,
+    VoiceProfileModel,
     WorkflowRunModel,
 )
 
@@ -651,6 +658,15 @@ class CharacterRepository(_Repository):
         )
         return self.db.scalars(stmt).first()
 
+    def get_scoped(self, character_id: str, project_id: str) -> CharacterModel:
+        stmt = select(CharacterModel).where(
+            CharacterModel.id == character_id, CharacterModel.project_id == project_id
+        )
+        character = self.db.scalars(stmt).first()
+        if character is None:
+            raise NotFoundError(f"Character '{character_id}' not found.")
+        return character
+
     def add(self, character: CharacterModel) -> CharacterModel:
         return self._add(character)
 
@@ -682,6 +698,162 @@ class LocationRepository(_Repository):
             .order_by(LocationModel.canonical_name)
         )
         return list(self.db.scalars(stmt))
+
+
+class CharacterVersionRepository(_Repository):
+    """D4 (TFD-CHR-006): immutable character_versions rows."""
+
+    def add(self, version: CharacterVersionModel) -> CharacterVersionModel:
+        return self._add(version)
+
+    def get_scoped(self, version_id: str, project_id: str) -> CharacterVersionModel:
+        stmt = select(CharacterVersionModel).where(
+            CharacterVersionModel.id == version_id, CharacterVersionModel.project_id == project_id
+        )
+        version = self.db.scalars(stmt).first()
+        if version is None:
+            raise NotFoundError(f"Character version '{version_id}' not found.")
+        return version
+
+    def next_version_number(self, character_id: str) -> int:
+        count = self.db.scalar(
+            select(func.count()).select_from(CharacterVersionModel).where(
+                CharacterVersionModel.character_id == character_id
+            )
+        )
+        return (count or 0) + 1
+
+    def list_for_character(self, character_id: str) -> List[CharacterVersionModel]:
+        stmt = (
+            select(CharacterVersionModel)
+            .where(CharacterVersionModel.character_id == character_id)
+            .order_by(CharacterVersionModel.version_number)
+        )
+        return list(self.db.scalars(stmt))
+
+
+class CharacterFacialReferenceRepository(_Repository):
+    """D4 (TFD-CHR-002): facial identity reference images."""
+
+    def add(self, reference: CharacterFacialReferenceModel) -> CharacterFacialReferenceModel:
+        return self._add(reference)
+
+    def list_for_character(self, character_id: str) -> List[CharacterFacialReferenceModel]:
+        stmt = select(CharacterFacialReferenceModel).where(
+            CharacterFacialReferenceModel.character_id == character_id
+        )
+        return list(self.db.scalars(stmt))
+
+
+class CharacterStateRepository(_Repository):
+    """D4 (TFD-CHR-007): scene-anchored character state deltas over story time."""
+
+    def add(self, state: CharacterStateModel) -> CharacterStateModel:
+        return self._add(state)
+
+    def list_for_character(self, character_id: str) -> List[CharacterStateModel]:
+        return list(self.db.scalars(select(CharacterStateModel).where(CharacterStateModel.character_id == character_id)))
+
+
+class BodyMeasurementRepository(_Repository):
+    """D4 (TFD-PHY-001/002/003/004): append-only measurement observations."""
+
+    def add(self, measurement: BodyMeasurementModel) -> BodyMeasurementModel:
+        return self._add(measurement)
+
+    def get_scoped(self, measurement_id: str, project_id: str) -> BodyMeasurementModel:
+        stmt = select(BodyMeasurementModel).where(
+            BodyMeasurementModel.id == measurement_id, BodyMeasurementModel.project_id == project_id
+        )
+        measurement = self.db.scalars(stmt).first()
+        if measurement is None:
+            raise NotFoundError(f"Measurement '{measurement_id}' not found.")
+        return measurement
+
+    def history_for_subject(self, project_id: str, subject_type: str, subject_id: str) -> List[BodyMeasurementModel]:
+        stmt = (
+            select(BodyMeasurementModel)
+            .where(
+                BodyMeasurementModel.project_id == project_id,
+                BodyMeasurementModel.subject_type == subject_type,
+                BodyMeasurementModel.subject_id == subject_id,
+            )
+            .order_by(BodyMeasurementModel.measurement_key, BodyMeasurementModel.version)
+        )
+        return list(self.db.scalars(stmt))
+
+    def next_version(self, subject_type: str, subject_id: str, measurement_key: str) -> int:
+        current_max = self.db.scalar(
+            select(func.max(BodyMeasurementModel.version)).where(
+                BodyMeasurementModel.subject_type == subject_type,
+                BodyMeasurementModel.subject_id == subject_id,
+                BodyMeasurementModel.measurement_key == measurement_key,
+            )
+        )
+        return (current_max or 0) + 1
+
+
+class PerformerRepository(_Repository):
+    """D4 (TFD-CNS-001): the org-level performer registry."""
+
+    def add(self, performer: PerformerModel) -> PerformerModel:
+        return self._add(performer)
+
+    def get_scoped(self, performer_id: str, org_id: str) -> PerformerModel:
+        stmt = select(PerformerModel).where(
+            PerformerModel.id == performer_id, PerformerModel.organization_id == org_id
+        )
+        performer = self.db.scalars(stmt).first()
+        if performer is None:
+            raise NotFoundError(f"Performer '{performer_id}' not found.")
+        return performer
+
+    def list_for_org(self, org_id: str) -> List[PerformerModel]:
+        stmt = select(PerformerModel).where(PerformerModel.organization_id == org_id).order_by(PerformerModel.display_name)
+        return list(self.db.scalars(stmt))
+
+
+class PerformerConsentRepository(_Repository):
+    """D4 (TFD-CNS-001/002/004): purpose-specific, versioned, revocable consent rows."""
+
+    def add(self, consent: PerformerConsentModel) -> PerformerConsentModel:
+        return self._add(consent)
+
+    def get_scoped(self, consent_id: str, org_id: str) -> PerformerConsentModel:
+        stmt = select(PerformerConsentModel).where(
+            PerformerConsentModel.id == consent_id, PerformerConsentModel.organization_id == org_id
+        )
+        consent = self.db.scalars(stmt).first()
+        if consent is None:
+            raise NotFoundError(f"Consent '{consent_id}' not found.")
+        return consent
+
+    def list_for_performer(self, performer_id: str) -> List[PerformerConsentModel]:
+        stmt = select(PerformerConsentModel).where(PerformerConsentModel.performer_id == performer_id)
+        return list(self.db.scalars(stmt))
+
+    def active_for_purpose(self, performer_id: str, purpose: str) -> PerformerConsentModel | None:
+        """The ``ConsentService.evaluate`` lookup: the single active row (if any) for
+        this performer/purpose pair. Purpose is one row each (architecture doc §6.1), so
+        there is at most one active row per (performer, purpose) at a time -- a new
+        version supersedes the old one via ``supersedes_id`` and the old row's own
+        status moves off ``active``."""
+        stmt = select(PerformerConsentModel).where(
+            PerformerConsentModel.performer_id == performer_id,
+            PerformerConsentModel.purpose == purpose,
+            PerformerConsentModel.status == "active",
+        )
+        return self.db.scalars(stmt).first()
+
+
+class VoiceProfileRepository(_Repository):
+    """D4 (TFD-CNS-005): minimal voice-profile records, enough to gate voice cloning."""
+
+    def add(self, profile: VoiceProfileModel) -> VoiceProfileModel:
+        return self._add(profile)
+
+    def list_for_project(self, project_id: str) -> List[VoiceProfileModel]:
+        return list(self.db.scalars(select(VoiceProfileModel).where(VoiceProfileModel.project_id == project_id)))
 
 
 class ScreenplayRepository(_Repository):

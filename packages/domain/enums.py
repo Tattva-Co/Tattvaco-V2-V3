@@ -185,6 +185,77 @@ class AuditAction(str, Enum):
     SCREENPLAY_SUGGESTIONS_GENERATED = "screenplay_suggestions_generated"
     SCREENPLAY_SUGGESTION_DECIDED = "screenplay_suggestion_decided"
     IMPACT_ANALYSIS_CREATED = "impact_analysis_created"
+    CHARACTER_VERSION_DRAFTED = "character_version_drafted"
+    CHARACTER_VERSION_APPROVED = "character_version_approved"
+    CHARACTER_VERSION_REJECTED = "character_version_rejected"
+    CHARACTER_FACIAL_REFERENCE_ADDED = "character_facial_reference_added"
+    CHARACTER_STATE_CREATED = "character_state_created"
+    MEASUREMENT_RECORDED = "measurement_recorded"
+    MEASUREMENT_CORRECTED = "measurement_corrected"
+    MEASUREMENT_VERIFIED = "measurement_verified"
+    PERFORMER_CREATED = "performer_created"
+    CONSENT_DRAFTED = "consent_drafted"
+    CONSENT_APPROVED = "consent_approved"
+    CONSENT_REJECTED = "consent_rejected"
+    CONSENT_REVOKED = "consent_revoked"
+    VOICE_PROFILE_CREATED = "voice_profile_created"
+    CONSENT_GATE_BLOCKED = "consent_gate_blocked"
+
+
+class CharacterVersionStatus(str, Enum):
+    """D4 (TFD-CHR-006): editing a field creates a draft; approval promotes it to the
+    character's new current version, leaving every earlier version exactly as it was."""
+
+    DRAFT = "draft"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+
+
+class ProvenanceStatus(str, Enum):
+    """D4 (TFD-CHR-005): the status half of a characteristic's provenance envelope.
+    'estimated' must never render as verified (AT-CHR-005.2)."""
+
+    ESTIMATED = "estimated"
+    VERIFIED = "verified"
+    APPROVED = "approved"
+    DISPUTED = "disputed"
+
+
+class MeasurementStatus(str, Enum):
+    """D4 (TFD-PHY-002/004): a body_measurements row's lifecycle. 'measured' is a direct
+    human observation (tape, fitting); 'estimated' always starts from an AI/photograph
+    source and can never become 'verified' without an independent measured/scan
+    observation superseding it (AT-PHY-004.1)."""
+
+    ESTIMATED = "estimated"
+    MEASURED = "measured"
+    VERIFIED = "verified"
+    APPROVED = "approved"
+    SUPERSEDED = "superseded"
+    DISPUTED = "disputed"
+
+
+class CaptureMethod(str, Enum):
+    """D4 (TFD-PHY-002/004). Values match ACCEPTANCE_CRITERIA.md's literal AT-PHY-004
+    text (`ai_estimate`, `calibrated_scan`) rather than the longer architecture-draft
+    vocabulary, since the acceptance criteria are the authoritative source for FD-V1."""
+
+    MANUAL_ENTRY = "manual_entry"
+    AI_ESTIMATE = "ai_estimate"
+    CALIBRATED_SCAN = "calibrated_scan"
+    MANUAL_CORRECTION = "manual_correction"
+    COSTUME_DEPARTMENT_RECORD = "costume_department_record"
+    PERFORMER_SELF_REPORTED = "performer_self_reported"
+
+
+class ConsentStatus(str, Enum):
+    """D4 (TFD-CNS-002/004): a performer_consents row's lifecycle."""
+
+    DRAFT = "draft"
+    ACTIVE = "active"
+    SUSPENDED = "suspended"
+    REVOKED = "revoked"
+    EXPIRED = "expired"
 
 
 class ShotType(str, Enum):

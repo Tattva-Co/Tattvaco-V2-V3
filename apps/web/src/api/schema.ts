@@ -911,6 +911,268 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/{project_id}/characters/{character_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Character Detail */
+        get: operations["get_character_detail_api_v1_projects__project_id__characters__character_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/characters/{character_id}/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Character Versions */
+        get: operations["list_character_versions_api_v1_projects__project_id__characters__character_id__versions_get"];
+        put?: never;
+        /** Propose Character Version */
+        post: operations["propose_character_version_api_v1_projects__project_id__characters__character_id__versions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/characters/{character_id}/versions/{version_id}/decide": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Decide Character Version */
+        post: operations["decide_character_version_api_v1_projects__project_id__characters__character_id__versions__version_id__decide_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/characters/{character_id}/facial-references": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Facial References */
+        get: operations["list_facial_references_api_v1_projects__project_id__characters__character_id__facial_references_get"];
+        put?: never;
+        /** Add Facial Reference */
+        post: operations["add_facial_reference_api_v1_projects__project_id__characters__character_id__facial_references_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/characters/{character_id}/states": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Character States */
+        get: operations["list_character_states_api_v1_projects__project_id__characters__character_id__states_get"];
+        put?: never;
+        /** Create Character State */
+        post: operations["create_character_state_api_v1_projects__project_id__characters__character_id__states_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/characters/{character_id}/effective-state": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Effective State */
+        get: operations["get_effective_state_api_v1_projects__project_id__characters__character_id__effective_state_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/performers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Performers */
+        get: operations["list_performers_api_v1_projects__project_id__performers_get"];
+        put?: never;
+        /** Create Performer */
+        post: operations["create_performer_api_v1_projects__project_id__performers_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/performers/{performer_id}/consents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Consents */
+        get: operations["list_consents_api_v1_projects__project_id__performers__performer_id__consents_get"];
+        put?: never;
+        /** Create Consent */
+        post: operations["create_consent_api_v1_projects__project_id__performers__performer_id__consents_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/consents/{consent_id}/decide": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Decide Consent */
+        post: operations["decide_consent_api_v1_projects__project_id__consents__consent_id__decide_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/consents/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Revoke Consent */
+        post: operations["revoke_consent_api_v1_projects__project_id__consents_revoke_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/consent-checks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Check Consent */
+        get: operations["check_consent_api_v1_projects__project_id__consent_checks_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/voice-profiles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Voice Profiles */
+        get: operations["list_voice_profiles_api_v1_projects__project_id__voice_profiles_get"];
+        put?: never;
+        /** Create Voice Profile */
+        post: operations["create_voice_profile_api_v1_projects__project_id__voice_profiles_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/measurements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Measurement History */
+        get: operations["get_measurement_history_api_v1_projects__project_id__measurements_get"];
+        put?: never;
+        /** Save Measurement */
+        post: operations["save_measurement_api_v1_projects__project_id__measurements_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/measurements/{measurement_id}/correct": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Correct Measurement */
+        post: operations["correct_measurement_api_v1_projects__project_id__measurements__measurement_id__correct_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/measurements/{measurement_id}/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Verify Measurement */
+        post: operations["verify_measurement_api_v1_projects__project_id__measurements__measurement_id__verify_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/dev-login": {
         parameters: {
             query?: never;
@@ -1085,6 +1347,61 @@ export interface components {
             /** Approvals */
             approvals: components["schemas"]["ApprovalResponse"][];
         };
+        /** CharacterDecisionRequest */
+        CharacterDecisionRequest: {
+            decision: components["schemas"]["ApprovalDecision"];
+            /** Notes */
+            notes?: string | null;
+        };
+        /** CharacterDetailResponse */
+        CharacterDetailResponse: {
+            /** Id */
+            id: string;
+            /** Canonical Name */
+            canonical_name: string;
+            /** Aliases */
+            aliases: string[];
+            /** Performer Id */
+            performer_id: string | null;
+            current_version: components["schemas"]["CharacterVersionResponse"] | null;
+        };
+        /** CharacterFacialReferenceCreateRequest */
+        CharacterFacialReferenceCreateRequest: {
+            /** Asset Id */
+            asset_id: string;
+            /**
+             * Role
+             * @description identity_front | identity_side | identity_three_quarter
+             */
+            role: string;
+            /**
+             * Facial Identity Version
+             * @default 1
+             */
+            facial_identity_version: number;
+        };
+        /** CharacterFacialReferenceResponse */
+        CharacterFacialReferenceResponse: {
+            /** Id */
+            id: string;
+            /** Character Id */
+            character_id: string;
+            /** Asset Id */
+            asset_id: string;
+            /** Role */
+            role: string;
+            /** Facial Identity Version */
+            facial_identity_version: number;
+            /** Consent Id */
+            consent_id: string | null;
+            /** Created By */
+            created_by: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
         /** CharacterResponse */
         CharacterResponse: {
             /** Id */
@@ -1100,6 +1417,193 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+        };
+        /** CharacterStateCreateRequest */
+        CharacterStateCreateRequest: {
+            /** State Label */
+            state_label: string;
+            /** Applies From Scene Id */
+            applies_from_scene_id: string;
+            /** Applies Until Scene Id */
+            applies_until_scene_id?: string | null;
+            /** Deltas */
+            deltas?: {
+                [key: string]: unknown;
+            } | null;
+            /** Evidence Refs */
+            evidence_refs?: {
+                [key: string]: unknown;
+            }[] | null;
+        };
+        /** CharacterStateResponse */
+        CharacterStateResponse: {
+            /** Id */
+            id: string;
+            /** Character Id */
+            character_id: string;
+            /** State Label */
+            state_label: string;
+            /** Applies From Scene Id */
+            applies_from_scene_id: string;
+            /** Applies Until Scene Id */
+            applies_until_scene_id: string | null;
+            /** Deltas */
+            deltas: {
+                [key: string]: unknown;
+            };
+            /** Evidence Refs */
+            evidence_refs: {
+                [key: string]: unknown;
+            }[];
+            /** Status */
+            status: string;
+            /** Created By */
+            created_by: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** CharacterVersionProposeRequest */
+        CharacterVersionProposeRequest: {
+            /** Identity Patch */
+            identity_patch?: {
+                [key: string]: unknown;
+            } | null;
+            /** Physical Patch */
+            physical_patch?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /** CharacterVersionProposeResponse */
+        CharacterVersionProposeResponse: {
+            version: components["schemas"]["CharacterVersionResponse"];
+            /** Approval Request Id */
+            approval_request_id: string;
+        };
+        /** CharacterVersionResponse */
+        CharacterVersionResponse: {
+            /** Id */
+            id: string;
+            /** Character Id */
+            character_id: string;
+            /** Version Number */
+            version_number: number;
+            /** Status */
+            status: string;
+            /** Parent Version Id */
+            parent_version_id: string | null;
+            /** Created From */
+            created_from: string;
+            /** Approval Request Id */
+            approval_request_id: string | null;
+            /** Approved By */
+            approved_by: string | null;
+            /** Approved At */
+            approved_at: string | null;
+            /** Identity Profile */
+            identity_profile: {
+                [key: string]: unknown;
+            };
+            /** Physical Profile */
+            physical_profile: {
+                [key: string]: unknown;
+            };
+            /** Created By */
+            created_by: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** ConsentCheckResponse */
+        ConsentCheckResponse: {
+            /** Allowed */
+            allowed: boolean;
+            /** Reason */
+            reason?: string | null;
+        };
+        /** ConsentCreateRequest */
+        ConsentCreateRequest: {
+            /** Purpose */
+            purpose: string;
+            /** Project Scope */
+            project_scope?: string[] | null;
+            /** Valid From */
+            valid_from?: string | null;
+            /** Valid Until */
+            valid_until?: string | null;
+            /** Document Asset Id */
+            document_asset_id?: string | null;
+            /** Template Version */
+            template_version?: string | null;
+        };
+        /** ConsentCreateResponse */
+        ConsentCreateResponse: {
+            consent: components["schemas"]["ConsentResponse"];
+            /** Approval Request Id */
+            approval_request_id: string;
+        };
+        /** ConsentDecisionRequest */
+        ConsentDecisionRequest: {
+            decision: components["schemas"]["ApprovalDecision"];
+            /** Notes */
+            notes?: string | null;
+        };
+        /** ConsentResponse */
+        ConsentResponse: {
+            /** Id */
+            id: string;
+            /** Performer Id */
+            performer_id: string;
+            /** Version */
+            version: number;
+            /** Supersedes Id */
+            supersedes_id: string | null;
+            /** Purpose */
+            purpose: string;
+            /** Project Scope */
+            project_scope: string[] | null;
+            /** Status */
+            status: string;
+            /** Approval Request Id */
+            approval_request_id: string | null;
+            /** Granted At */
+            granted_at: string | null;
+            /** Recorded By */
+            recorded_by: string;
+            /** Approved By */
+            approved_by: string | null;
+            /** Revoked At */
+            revoked_at: string | null;
+            /** Revoked By */
+            revoked_by: string | null;
+            /** Revocation Reason */
+            revocation_reason: string | null;
+            /** Valid From */
+            valid_from: string | null;
+            /** Valid Until */
+            valid_until: string | null;
+            /** Document Asset Id */
+            document_asset_id: string | null;
+            /** Template Version */
+            template_version: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** ConsentRevokeRequest */
+        ConsentRevokeRequest: {
+            /** Performer Id */
+            performer_id: string;
+            /** Purpose */
+            purpose: string;
+            /** Reason */
+            reason?: string | null;
         };
         /** DevLoginRequest */
         DevLoginRequest: {
@@ -1509,6 +2013,94 @@ export interface components {
              */
             created_at: string;
         };
+        /** MeasurementCorrectRequest */
+        MeasurementCorrectRequest: {
+            /** Value */
+            value: number;
+            /** Unit */
+            unit?: string | null;
+            /** Notes */
+            notes?: string | null;
+        };
+        /** MeasurementCreateRequest */
+        MeasurementCreateRequest: {
+            /**
+             * Subject Type
+             * @description performer | character_version
+             */
+            subject_type: string;
+            /** Subject Id */
+            subject_id: string;
+            /** Measurement Key */
+            measurement_key: string;
+            /** Value */
+            value: number;
+            /** Unit */
+            unit?: string | null;
+            /** Capture Method */
+            capture_method: string;
+            /** Confidence */
+            confidence?: number | null;
+            /** Source Asset Id */
+            source_asset_id?: string | null;
+            /** Capture Device Or Tool */
+            capture_device_or_tool?: string | null;
+            /** Notes */
+            notes?: string | null;
+        };
+        /** MeasurementResponse */
+        MeasurementResponse: {
+            /** Id */
+            id: string;
+            /** Subject Type */
+            subject_type: string;
+            /** Subject Id */
+            subject_id: string;
+            /** Measurement Key */
+            measurement_key: string;
+            /** Value */
+            value: number;
+            /** Unit */
+            unit: string;
+            /** Status */
+            status: string;
+            /** Confidence */
+            confidence: number | null;
+            /** Capture Method */
+            capture_method: string;
+            /** Approved By */
+            approved_by: string | null;
+            /** Approved At */
+            approved_at: string | null;
+            /** Version */
+            version: number;
+            /** Capture Device Or Tool */
+            capture_device_or_tool: string | null;
+            /** Source Asset Id */
+            source_asset_id: string | null;
+            /**
+             * Captured At
+             * Format: date-time
+             */
+            captured_at: string;
+            /** Captured By */
+            captured_by: string;
+            /** Verified By */
+            verified_by: string | null;
+            /** Verified At */
+            verified_at: string | null;
+            /** Consent Id */
+            consent_id: string | null;
+            /** Supersedes Id */
+            supersedes_id: string | null;
+            /** Notes */
+            notes: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
         /** NextActionSummary */
         NextActionSummary: {
             /** Jrn Id */
@@ -1606,6 +2198,31 @@ export interface components {
             platform_notes?: string | null;
             /** Is Default */
             is_default?: boolean | null;
+        };
+        /** PerformerCreateRequest */
+        PerformerCreateRequest: {
+            /** Display Name */
+            display_name: string;
+            /** Notes */
+            notes?: string | null;
+        };
+        /** PerformerResponse */
+        PerformerResponse: {
+            /** Id */
+            id: string;
+            /** Organization Id */
+            organization_id: string;
+            /** Display Name */
+            display_name: string;
+            /** Notes */
+            notes: string | null;
+            /** Created By */
+            created_by: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
         };
         /**
          * ProductionMode
@@ -2266,6 +2883,40 @@ export interface components {
             input?: unknown;
             /** Context */
             ctx?: Record<string, never>;
+        };
+        /** VoiceProfileCreateRequest */
+        VoiceProfileCreateRequest: {
+            /**
+             * Kind
+             * @description original_recording | clone | synthetic_voice | dubbing_voice
+             */
+            kind: string;
+            /** Character Id */
+            character_id?: string | null;
+            /** Performer Id */
+            performer_id?: string | null;
+        };
+        /** VoiceProfileResponse */
+        VoiceProfileResponse: {
+            /** Id */
+            id: string;
+            /** Project Id */
+            project_id: string;
+            /** Character Id */
+            character_id: string | null;
+            /** Performer Id */
+            performer_id: string | null;
+            /** Kind */
+            kind: string;
+            /** Consent Id */
+            consent_id: string | null;
+            /** Created By */
+            created_by: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
         };
         /** WorkflowRunResponse */
         WorkflowRunResponse: {
@@ -4566,6 +5217,821 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ImpactAnalysisResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_character_detail_api_v1_projects__project_id__characters__character_id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Actor-ID"?: string | null;
+            };
+            path: {
+                project_id: string;
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterDetailResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_character_versions_api_v1_projects__project_id__characters__character_id__versions_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Actor-ID"?: string | null;
+            };
+            path: {
+                project_id: string;
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterVersionResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    propose_character_version_api_v1_projects__project_id__characters__character_id__versions_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Actor-ID"?: string | null;
+            };
+            path: {
+                project_id: string;
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CharacterVersionProposeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterVersionProposeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    decide_character_version_api_v1_projects__project_id__characters__character_id__versions__version_id__decide_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Actor-ID"?: string | null;
+            };
+            path: {
+                project_id: string;
+                character_id: string;
+                version_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CharacterDecisionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterVersionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_facial_references_api_v1_projects__project_id__characters__character_id__facial_references_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Actor-ID"?: string | null;
+            };
+            path: {
+                project_id: string;
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterFacialReferenceResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_facial_reference_api_v1_projects__project_id__characters__character_id__facial_references_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Actor-ID"?: string | null;
+            };
+            path: {
+                project_id: string;
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CharacterFacialReferenceCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterFacialReferenceResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_character_states_api_v1_projects__project_id__characters__character_id__states_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Actor-ID"?: string | null;
+            };
+            path: {
+                project_id: string;
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterStateResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_character_state_api_v1_projects__project_id__characters__character_id__states_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Actor-ID"?: string | null;
+            };
+            path: {
+                project_id: string;
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CharacterStateCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterStateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_effective_state_api_v1_projects__project_id__characters__character_id__effective_state_get: {
+        parameters: {
+            query: {
+                scene_number: number;
+            };
+            header?: {
+                authorization?: string | null;
+                "X-Actor-ID"?: string | null;
+            };
+            path: {
+                project_id: string;
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterStateResponse"] | null;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_performers_api_v1_projects__project_id__performers_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Actor-ID"?: string | null;
+            };
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PerformerResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_performer_api_v1_projects__project_id__performers_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Actor-ID"?: string | null;
+            };
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PerformerCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PerformerResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_consents_api_v1_projects__project_id__performers__performer_id__consents_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Actor-ID"?: string | null;
+            };
+            path: {
+                project_id: string;
+                performer_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsentResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_consent_api_v1_projects__project_id__performers__performer_id__consents_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Actor-ID"?: string | null;
+            };
+            path: {
+                project_id: string;
+                performer_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConsentCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsentCreateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    decide_consent_api_v1_projects__project_id__consents__consent_id__decide_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Actor-ID"?: string | null;
+            };
+            path: {
+                project_id: string;
+                consent_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConsentDecisionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsentResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    revoke_consent_api_v1_projects__project_id__consents_revoke_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Actor-ID"?: string | null;
+            };
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConsentRevokeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsentResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    check_consent_api_v1_projects__project_id__consent_checks_get: {
+        parameters: {
+            query: {
+                performer_id: string;
+                purpose: string;
+            };
+            header?: {
+                authorization?: string | null;
+                "X-Actor-ID"?: string | null;
+            };
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsentCheckResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_voice_profiles_api_v1_projects__project_id__voice_profiles_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Actor-ID"?: string | null;
+            };
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VoiceProfileResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_voice_profile_api_v1_projects__project_id__voice_profiles_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Actor-ID"?: string | null;
+            };
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VoiceProfileCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VoiceProfileResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_measurement_history_api_v1_projects__project_id__measurements_get: {
+        parameters: {
+            query: {
+                subject_type: string;
+                subject_id: string;
+            };
+            header?: {
+                authorization?: string | null;
+                "X-Actor-ID"?: string | null;
+            };
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeasurementResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    save_measurement_api_v1_projects__project_id__measurements_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Actor-ID"?: string | null;
+            };
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MeasurementCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeasurementResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    correct_measurement_api_v1_projects__project_id__measurements__measurement_id__correct_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Actor-ID"?: string | null;
+            };
+            path: {
+                project_id: string;
+                measurement_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MeasurementCorrectRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeasurementResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    verify_measurement_api_v1_projects__project_id__measurements__measurement_id__verify_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Actor-ID"?: string | null;
+            };
+            path: {
+                project_id: string;
+                measurement_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeasurementResponse"];
                 };
             };
             /** @description Validation Error */

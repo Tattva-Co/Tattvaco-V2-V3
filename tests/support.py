@@ -17,7 +17,11 @@ from packages.persistence.models import (
     AssetDerivativeModel,
     AssetModel,
     AuditEventModel,
+    BodyMeasurementModel,
+    CharacterFacialReferenceModel,
     CharacterModel,
+    CharacterStateModel,
+    CharacterVersionModel,
     DialogueSegmentCandidateModel,
     DialogueSegmentModel,
     EntityCandidateModel,
@@ -35,6 +39,8 @@ from packages.persistence.models import (
     OrganizationModel,
     OutboxTaskModel,
     OutputProfileModel,
+    PerformerConsentModel,
+    PerformerModel,
     ProjectMembershipModel,
     ProjectModel,
     ProjectVersionModel,
@@ -54,6 +60,7 @@ from packages.persistence.models import (
     StoryboardPanelCandidateModel,
     StoryboardPanelModel,
     UserModel,
+    VoiceProfileModel,
     WorkflowRunModel,
 )
 from packages.persistence.repositories import RoleTemplateRepository
@@ -101,6 +108,23 @@ def purge_organization(org_id: str) -> None:
             db.query(OutboxTaskModel).filter(OutboxTaskModel.workflow_run_id.in_(run_ids)).delete(
                 synchronize_session=False
             )
+        # D4 tables, deleted before the project_ids loop below: character_versions and
+        # performer_consents both reference approval_requests (deleted inside that loop),
+        # and characters.current_version_id -> character_versions.id is a genuine
+        # circular FK (nulled out first, same technique as any self-referential chain
+        # elsewhere in this function). performers/performer_consents/
+        # character_facial_references are org-level (no project_id column), so they're
+        # scoped by organization_id directly rather than through project_ids.
+        db.query(CharacterModel).filter_by(organization_id=org_id).update(
+            {"current_version_id": None, "performer_id": None}, synchronize_session=False
+        )
+        db.query(VoiceProfileModel).filter_by(organization_id=org_id).delete(synchronize_session=False)
+        db.query(BodyMeasurementModel).filter_by(organization_id=org_id).delete(synchronize_session=False)
+        db.query(CharacterFacialReferenceModel).filter_by(organization_id=org_id).delete(synchronize_session=False)
+        db.query(CharacterStateModel).filter_by(organization_id=org_id).delete(synchronize_session=False)
+        db.query(CharacterVersionModel).filter_by(organization_id=org_id).delete(synchronize_session=False)
+        db.query(PerformerConsentModel).filter_by(organization_id=org_id).delete(synchronize_session=False)
+        db.query(PerformerModel).filter_by(organization_id=org_id).delete(synchronize_session=False)
         if project_ids:
             for model in (
                 # Film-bible rows reference research_claims, so they go first.

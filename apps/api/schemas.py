@@ -791,3 +791,210 @@ class ImpactAnalysisResponse(_ORM):
 
 class ImpactPreviewResponse(BaseModel):
     affected_items: List[Dict[str, Any]]
+
+
+# -- D4: Character & Digital Human (V1 foundation) ---------------------------------
+
+
+class CharacterVersionResponse(_ORM):
+    id: str
+    character_id: str
+    version_number: int
+    status: str
+    parent_version_id: str | None
+    created_from: str
+    approval_request_id: str | None
+    approved_by: str | None
+    approved_at: datetime | None
+    identity_profile: Dict[str, Any]
+    physical_profile: Dict[str, Any]
+    created_by: str
+    created_at: datetime
+
+
+class CharacterDetailResponse(BaseModel):
+    id: str
+    canonical_name: str
+    aliases: List[str]
+    performer_id: str | None
+    current_version: CharacterVersionResponse | None
+
+
+class CharacterVersionProposeRequest(BaseModel):
+    identity_patch: Dict[str, Any] | None = None
+    physical_patch: Dict[str, Any] | None = None
+
+
+class CharacterVersionProposeResponse(BaseModel):
+    version: CharacterVersionResponse
+    approval_request_id: str
+
+
+class CharacterDecisionRequest(BaseModel):
+    decision: ApprovalDecision
+    notes: str | None = None
+
+
+class CharacterFacialReferenceCreateRequest(BaseModel):
+    asset_id: str
+    role: str = Field(..., description="identity_front | identity_side | identity_three_quarter")
+    facial_identity_version: int = 1
+
+
+class CharacterFacialReferenceResponse(_ORM):
+    id: str
+    character_id: str
+    asset_id: str
+    role: str
+    facial_identity_version: int
+    consent_id: str | None
+    created_by: str
+    created_at: datetime
+
+
+class CharacterStateCreateRequest(BaseModel):
+    state_label: str = Field(..., min_length=1)
+    applies_from_scene_id: str
+    applies_until_scene_id: str | None = None
+    deltas: Dict[str, Any] | None = None
+    evidence_refs: List[Dict[str, Any]] | None = None
+
+
+class CharacterStateResponse(_ORM):
+    id: str
+    character_id: str
+    state_label: str
+    applies_from_scene_id: str
+    applies_until_scene_id: str | None
+    deltas: Dict[str, Any]
+    evidence_refs: List[Dict[str, Any]]
+    status: str
+    created_by: str
+    created_at: datetime
+
+
+class MeasurementCreateRequest(BaseModel):
+    subject_type: str = Field(..., description="performer | character_version")
+    subject_id: str
+    measurement_key: str
+    value: float
+    unit: str | None = None
+    capture_method: str
+    confidence: float | None = None
+    source_asset_id: str | None = None
+    capture_device_or_tool: str | None = None
+    notes: str | None = None
+
+
+class MeasurementCorrectRequest(BaseModel):
+    value: float
+    unit: str | None = None
+    notes: str | None = None
+
+
+class MeasurementResponse(_ORM):
+    id: str
+    subject_type: str
+    subject_id: str
+    measurement_key: str
+    value: float
+    unit: str
+    status: str
+    confidence: float | None
+    capture_method: str
+    approved_by: str | None
+    approved_at: datetime | None
+    version: int
+    capture_device_or_tool: str | None
+    source_asset_id: str | None
+    captured_at: datetime
+    captured_by: str
+    verified_by: str | None
+    verified_at: datetime | None
+    consent_id: str | None
+    supersedes_id: str | None
+    notes: str | None
+    created_at: datetime
+
+
+class PerformerCreateRequest(BaseModel):
+    display_name: str = Field(..., min_length=1, max_length=255)
+    notes: str | None = None
+
+
+class PerformerResponse(_ORM):
+    id: str
+    organization_id: str
+    display_name: str
+    notes: str | None
+    created_by: str
+    created_at: datetime
+
+
+class ConsentCreateRequest(BaseModel):
+    purpose: str
+    project_scope: List[str] | None = None
+    valid_from: datetime | None = None
+    valid_until: datetime | None = None
+    document_asset_id: str | None = None
+    template_version: str | None = None
+
+
+class ConsentResponse(_ORM):
+    id: str
+    performer_id: str
+    version: int
+    supersedes_id: str | None
+    purpose: str
+    project_scope: List[str] | None
+    status: str
+    approval_request_id: str | None
+    granted_at: datetime | None
+    recorded_by: str
+    approved_by: str | None
+    revoked_at: datetime | None
+    revoked_by: str | None
+    revocation_reason: str | None
+    valid_from: datetime | None
+    valid_until: datetime | None
+    document_asset_id: str | None
+    template_version: str | None
+    created_at: datetime
+
+
+class ConsentCreateResponse(BaseModel):
+    consent: ConsentResponse
+    approval_request_id: str
+
+
+class ConsentDecisionRequest(BaseModel):
+    decision: ApprovalDecision
+    notes: str | None = None
+
+
+class ConsentRevokeRequest(BaseModel):
+    performer_id: str
+    purpose: str
+    reason: str | None = None
+
+
+class ConsentCheckResponse(BaseModel):
+    allowed: bool
+    reason: str | None = None
+
+
+class VoiceProfileCreateRequest(BaseModel):
+    kind: str = Field(..., description="original_recording | clone | synthetic_voice | dubbing_voice")
+    character_id: str | None = None
+    performer_id: str | None = None
+
+
+class VoiceProfileResponse(_ORM):
+    id: str
+    project_id: str
+    character_id: str | None
+    performer_id: str | None
+    kind: str
+    consent_id: str | None
+    created_by: str
+    created_at: datetime

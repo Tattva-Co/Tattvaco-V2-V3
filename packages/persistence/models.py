@@ -468,6 +468,17 @@ class CharacterModel(Base):
     aliases = Column(JSON, default=list, nullable=False)
     project_version = Column(Integer, default=1, nullable=False)
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    # D4 (TFD-CNS-001/TFD-CHR-002.2): the performer whose likeness/performance this
+    # character draws on, if any -- a single nullable link, not the architecture draft's
+    # full per-scope representation_type model (digital_double/fictional_avatar mode
+    # selection is TFD-DH, V2). Most characters have none.
+    performer_id = Column(String(36), ForeignKey("performers.id"), nullable=True)
+    # D4 (TFD-CHR-006): the single approved, "current" character_versions row. Simpler
+    # than a uniqueness constraint on character_versions.status -- "current" is just
+    # this pointer, so approving version 3 is one UPDATE, not a partial-index dance
+    # (D2's DEC-050/DEC-051 lesson: don't reach for a DB constraint when a plain FK
+    # pointer already expresses the invariant).
+    current_version_id = Column(String(36), ForeignKey("character_versions.id"), nullable=True)
 
     __table_args__ = (Index("uq_characters_project_name", "project_id", "canonical_name", unique=True),)
 
@@ -488,6 +499,200 @@ class LocationModel(Base):
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
 
     __table_args__ = (Index("uq_locations_project_name", "project_id", "canonical_name", unique=True),)
+
+
+# -- D4: Character & Digital Human (V1 foundation) ---------------------------------
+# Scope: TFD-CHR-001/002/005/006/007/009, TFD-PHY-001/002/003/004/006,
+# TFD-CNS-001/002/004/005 (see docs/audit/10 DEC-056..06x). TFD-CHR-003/004/008 and
+# every TFD-DH-* (digital humans, avatar workflows) are FD-V2 or depend on tables that
+# don't exist yet (costume_states/D5, shots/D7) and are deliberately not stubbed here.
+
+
+class CharacterVersionModel(Base):
+    """Immutable per-character identity+physical snapshot (TFD-CHR-001/005/006).
+    Editing a field never mutates an existing row -- it creates a new ``draft`` version
+    (``parent_version_id`` chains to the one it was copied from); an approval flips
+    ``characters.current_version_id`` to point at it. Version 2 stays exactly as
+    approved even while version 3 is being drafted (AT-CHR-006.1).
+
+    ``identity_profile``/``physical_profile`` are one versioned row, not the architecture
+    draft's 3-table split (character_versions / character_identity_profiles /
+    physical_identity_profiles) -- nothing in ACCEPTANCE_CRITERIA.md requires identity and
+    physical facets to version independently of each other; they always version together
+    here, so merging them is simpler with no loss of any tested behaviour (DEC-057).
+
+    Each is a dict of ``{field_name: {value, source, status, confidence, approved_by,
+    version, evidence_refs}}`` -- the provenance envelope every characteristic carries
+    (AT-CHR-005.1: a save missing ``source`` is rejected at the service layer, 422)."""
+
+    __tablename__ = "character_versions"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    character_id = Column(String(36), ForeignKey("characters.id"), nullable=False, index=True)
+    project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id"), nullable=False, index=True)
+    version_number = Column(Integer, nullable=False)
+    status = Column(String(20), default="draft", nullable=False)  # draft | approved | rejected
+    parent_version_id = Column(String(36), ForeignKey("character_versions.id"), nullable=True)
+    created_from = Column(String(20), default="manual_edit", nullable=False)  # manual_edit | import
+    approval_request_id = Column(String(36), ForeignKey("approval_requests.id"), nullable=True)
+    approved_by = Column(String(36), ForeignKey("users.id"), nullable=True)
+    approved_at = Column(DateTime(timezone=True), nullable=True)
+    identity_profile = Column(JSON, default=dict, nullable=False)
+    physical_profile = Column(JSON, default=dict, nullable=False)
+    created_by = Column(String(36), ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+    __table_args__ = (
+        Index("uq_character_versions_character_number", "character_id", "version_number", unique=True),
+    )
+
+
+class CharacterFacialReferenceModel(Base):
+    """Facial identity reference images (TFD-CHR-002), each linked to its role and the
+    approved facial-identity version it belongs to -- distinct from scene-specific
+    appearance states (``character_states``, TFD-CHR-007). Adding one is consent-gated
+    when the character is linked to a performer (AT-CHR-002.2)."""
+
+    __tablename__ = "character_facial_references"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    character_id = Column(String(36), ForeignKey("characters.id"), nullable=False, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id"), nullable=False, index=True)
+    asset_id = Column(String(36), ForeignKey("assets.id"), nullable=False)
+    role = Column(String(30), nullable=False)  # identity_front | identity_side | identity_three_quarter
+    facial_identity_version = Column(Integer, default=1, nullable=False)
+    consent_id = Column(String(36), ForeignKey("performer_consents.id"), nullable=True)
+    created_by = Column(String(36), ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+
+class CharacterStateModel(Base):
+    """A character's appearance/condition delta over story time, scene-anchored
+    (TFD-CHR-007). The Context Resolver's effective-state rule (CharacterService.
+    effective_state): order by ``applies_from_scene``'s scene_number, take the latest
+    state whose range covers the queried scene; an open ``applies_until_scene_id``
+    (null) means "still in effect"."""
+
+    __tablename__ = "character_states"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    character_id = Column(String(36), ForeignKey("characters.id"), nullable=False, index=True)
+    project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id"), nullable=False, index=True)
+    state_label = Column(String(255), nullable=False)
+    applies_from_scene_id = Column(String(36), ForeignKey("scenes.id"), nullable=False)
+    applies_until_scene_id = Column(String(36), ForeignKey("scenes.id"), nullable=True)
+    deltas = Column(JSON, default=dict, nullable=False)
+    evidence_refs = Column(JSON, default=list, nullable=False)
+    status = Column(String(30), default="approved_canon", nullable=False)
+    created_by = Column(String(36), ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+
+class BodyMeasurementModel(Base):
+    """One append-only measurement *observation* (TFD-PHY-001/002/003/004), never an
+    overwritten value -- a correction creates a new row (``supersedes_id``) so "estimated"
+    and "verified" history both survive (AT-PHY-003.1). ``subject_type='performer'``
+    rows are personal data and require an active ``reference_storage`` consent
+    (``consent_id``, AT-PHY-006.1); ``subject_type='character_version'`` rows (a design
+    target measurement for a fictional character with no real performer) do not."""
+
+    __tablename__ = "body_measurements"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    organization_id = Column(String(36), ForeignKey("organizations.id"), nullable=False, index=True)
+    project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, index=True)
+    subject_type = Column(String(20), nullable=False)  # performer | character_version
+    subject_id = Column(String(36), nullable=False, index=True)
+    measurement_key = Column(String(50), nullable=False)
+    value = Column(Float, nullable=False)
+    unit = Column(String(20), nullable=False)
+    status = Column(String(20), default="estimated", nullable=False)
+    confidence = Column(Float, nullable=True)
+    capture_method = Column(String(40), nullable=False)
+    approved_by = Column(String(36), ForeignKey("users.id"), nullable=True)
+    approved_at = Column(DateTime(timezone=True), nullable=True)
+    version = Column(Integer, default=1, nullable=False)
+    capture_device_or_tool = Column(String(255), nullable=True)
+    source_asset_id = Column(String(36), ForeignKey("assets.id"), nullable=True)
+    captured_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    captured_by = Column(String(36), ForeignKey("users.id"), nullable=False)
+    verified_by = Column(String(36), ForeignKey("users.id"), nullable=True)
+    verified_at = Column(DateTime(timezone=True), nullable=True)
+    consent_id = Column(String(36), ForeignKey("performer_consents.id"), nullable=True)
+    supersedes_id = Column(String(36), ForeignKey("body_measurements.id"), nullable=True)
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+
+class PerformerModel(Base):
+    """A real person (actor, stand-in, voice artist) with legal rights over their
+    likeness, body data and voice (TFD-CNS-001) -- org-level, not project-scoped, since
+    one performer can be linked to characters "across permitted projects"
+    (AT-CNS-001.1). Creation is blocked with 403 ``policy_pending`` while DEC-007/
+    DEC-012 remain unapproved (AT-CNS-002.2); see ``packages.services.consent``."""
+
+    __tablename__ = "performers"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    organization_id = Column(String(36), ForeignKey("organizations.id"), nullable=False, index=True)
+    display_name = Column(String(255), nullable=False)
+    notes = Column(Text, nullable=True)
+    created_by = Column(String(36), ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+
+class PerformerConsentModel(Base):
+    """A purpose-specific, versioned, revocable consent grant (TFD-CNS-001/002/004/005).
+    One row per purpose (architecture doc §6.1 "purpose-specific: one row per purpose,
+    no blanket all-uses") -- AT-CNS-004.1's "consent C for {digital_double, voice_clone}"
+    is modelled as two sibling rows sharing a performer and agreement document, each
+    independently revocable, which satisfies that acceptance criterion exactly while
+    keeping the one-row-per-purpose principle intact (DEC-059)."""
+
+    __tablename__ = "performer_consents"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    organization_id = Column(String(36), ForeignKey("organizations.id"), nullable=False, index=True)
+    performer_id = Column(String(36), ForeignKey("performers.id"), nullable=False, index=True)
+    version = Column(Integer, default=1, nullable=False)
+    supersedes_id = Column(String(36), ForeignKey("performer_consents.id"), nullable=True)
+    purpose = Column(String(50), nullable=False)
+    project_scope = Column(JSON, nullable=True)  # null = org_wide; else a list of project IDs
+    status = Column(String(20), default="draft", nullable=False)  # draft|active|suspended|revoked|expired
+    approval_request_id = Column(String(36), ForeignKey("approval_requests.id"), nullable=True)
+    granted_at = Column(DateTime(timezone=True), nullable=True)
+    recorded_by = Column(String(36), ForeignKey("users.id"), nullable=False)
+    approved_by = Column(String(36), ForeignKey("users.id"), nullable=True)
+    revoked_at = Column(DateTime(timezone=True), nullable=True)
+    revoked_by = Column(String(36), ForeignKey("users.id"), nullable=True)
+    revocation_reason = Column(Text, nullable=True)
+    valid_from = Column(DateTime(timezone=True), nullable=True)
+    valid_until = Column(DateTime(timezone=True), nullable=True)
+    document_asset_id = Column(String(36), ForeignKey("assets.id"), nullable=True)
+    template_version = Column(String(50), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+
+class VoiceProfileModel(Base):
+    """A minimal V1 structural record (TFD-CNS-005): enough to gate "voice permission to
+    use recorded audio is not permission to clone" (``kind='clone'`` requires its own
+    ``voice_clone`` consent purpose, never satisfied by ``reference_storage``). The full
+    voice workflow -- synthesis, dubbing, localisation -- is FD-V2 (TFD-CNS-006/007/008)
+    and not built here."""
+
+    __tablename__ = "voice_profiles"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    organization_id = Column(String(36), ForeignKey("organizations.id"), nullable=False, index=True)
+    project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, index=True)
+    character_id = Column(String(36), ForeignKey("characters.id"), nullable=True)
+    performer_id = Column(String(36), ForeignKey("performers.id"), nullable=True)
+    kind = Column(String(30), nullable=False)  # original_recording | clone | synthetic_voice | dubbing_voice
+    consent_id = Column(String(36), ForeignKey("performer_consents.id"), nullable=True)
+    created_by = Column(String(36), ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
 
 
 class DialogueSegmentCandidateModel(Base):
